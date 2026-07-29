@@ -201,31 +201,119 @@ const MapHub: React.FC = () => {
     else { zoom.set(z); panX.set(tx); panY.set(ty); }
   };
 
-  // pointer pan (drag anywhere) — tap vs drag tracked so pins still dive
+  // ── Unified pointer input: 1 finger/mouse = pan (+ momentum), 2 = pinch-zoom.
+  //    Tap-vs-drag is tracked (didPan) so pins still dive on a clean tap. ──
+  const pointers = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const pinch = useRef<{ dist: number; cx: number; cy: number } | null>(null);
   const dragRef = useRef<{ x: number; y: number } | null>(null);
   const didPan = useRef(false);
+  const vel = useRef<{ x: number; y: number; t: number }>({ x: 0, y: 0, t: 0 });
+  const momRaf = useRef<number | null>(null);
+  const lastTap = useRef<{ t: number; x: number; y: number }>({ t: 0, x: 0, y: 0 });
+
+  // screen point → offset from the map-area center (the transform origin)
+  const relCenter = (cx: number, cy: number) => {
+    const el = areaRef.current; if (!el) return { x: 0, y: 0 };
+    const r = el.getBoundingClientRect();
+    return { x: cx - (r.left + r.width / 2), y: cy - (r.top + r.height / 2) };
+  };
+  // Zoom to z1 while keeping the map point under screen-rel point `p` pinned.
+  const zoomAt = (z1: number, p: { x: number; y: number }, animated = false) => {
+    const z0 = zoomRef.current;
+    const nz = Math.max(Z_MIN, Math.min(Z_MAX, z1));
+    if (nz === z0 && !animated) return;
+    const k = 1 - nz / z0;
+    const nx = panX.get() + (p.x - panX.get()) * k;
+    const ny = panY.get() + (p.y - panY.get()) * k;
+    if (animated) {
+      const o = { duration: 0.34, ease: [0.16, 1, 0.3, 1] as const };
+      animate(zoom, nz, o); animate(panX, nx, o); animate(panY, ny, o);
+    } else { zoom.set(nz); panX.set(nx); panY.set(ny); }
+    clampPan(nz);
+  };
+  const stopMomentum = () => { if (momRaf.current != null) { cancelAnimationFrame(momRaf.current); momRaf.current = null; } };
+
   const onWorldPointerDown = (e: React.PointerEvent) => {
     if (placeMode || diving) return;
+    stopMomentum();
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.current.size === 2) {
+      const [a, b] = [...pointers.current.values()];
+      pinch.current = { dist: Math.hypot(a.x - b.x, a.y - b.y), cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 };
+      dragRef.current = null;
+      return;
+    }
+    // double-tap (touch) → zoom toward the point
+    const now = performance.now();
+    if (now - lastTap.current.t < 300 && Math.hypot(e.clientX - lastTap.current.x, e.clientY - lastTap.current.y) < 30) {
+      const zoomedIn = zoomRef.current > (Z_START + Z_MAX) / 2;
+      zoomAt(zoomedIn ? Z_START : Math.min(Z_MAX, zoomRef.current * 1.8), relCenter(e.clientX, e.clientY), true);
+      lastTap.current.t = 0; didPan.current = true; // swallow the follow-up tap
+      return;
+    }
+    lastTap.current = { t: now, x: e.clientX, y: e.clientY };
     dragRef.current = { x: e.clientX, y: e.clientY }; didPan.current = false;
+    vel.current = { x: 0, y: 0, t: now };
   };
   const onWorldPointerMove = (e: React.PointerEvent) => {
-    if (!dragRef.current || placeMode || diving) return;
+    if (placeMode || diving || !pointers.current.has(e.pointerId)) return;
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.current.size >= 2 && pinch.current) {
+      const [a, b] = [...pointers.current.values()];
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      const midX = (a.x + b.x) / 2, midY = (a.y + b.y) / 2;
+      panX.set(panX.get() + (midX - pinch.current.cx));   // follow two-finger drag
+      panY.set(panY.get() + (midY - pinch.current.cy));
+      zoomAt(zoomRef.current * (dist / (pinch.current.dist || dist)), relCenter(midX, midY));
+      pinch.current = { dist, cx: midX, cy: midY };
+      didPan.current = true;
+      return;
+    }
+    if (!dragRef.current) return;
     const dx = e.clientX - dragRef.current.x, dy = e.clientY - dragRef.current.y;
     if (!didPan.current && Math.hypot(dx, dy) < 5) return;
     didPan.current = true;
     dragRef.current = { x: e.clientX, y: e.clientY };
     panX.set(panX.get() + dx); panY.set(panY.get() + dy); clampPan();
+    const now = performance.now(), dt = now - vel.current.t;
+    if (dt > 0) vel.current = { x: dx / dt, y: dy / dt, t: now };
   };
-  const onWorldPointerUp = () => { dragRef.current = null; };
+  const onWorldPointerUp = (e: React.PointerEvent) => {
+    pointers.current.delete(e.pointerId);
+    if (pointers.current.size < 2) pinch.current = null;
+    if (pointers.current.size === 1) {
+      const [p] = [...pointers.current.values()];
+      dragRef.current = { x: p.x, y: p.y };
+    } else if (pointers.current.size === 0) {
+      dragRef.current = null;
+      // fling — decay the last velocity into an inertial glide
+      if (!placeMode && (Math.abs(vel.current.x) > 0.06 || Math.abs(vel.current.y) > 0.06)) {
+        let vx = vel.current.x * 16, vy = vel.current.y * 16;
+        const step = () => {
+          vx *= 0.92; vy *= 0.92;
+          panX.set(panX.get() + vx); panY.set(panY.get() + vy); clampPan();
+          momRaf.current = Math.hypot(vx, vy) > 0.4 ? requestAnimationFrame(step) : null;
+        };
+        momRaf.current = requestAnimationFrame(step);
+      }
+    }
+  };
   const onWorldWheel = (e: React.WheelEvent) => {
     if (placeMode) return;
-    const z = Math.max(Z_MIN, Math.min(Z_MAX, zoomRef.current * (1 - e.deltaY * 0.0012)));
-    zoom.set(z); clampPan(z);
+    stopMomentum();
+    zoomAt(zoomRef.current * (1 - e.deltaY * 0.0012), relCenter(e.clientX, e.clientY));
+  };
+  const onWorldDoubleClick = (e: React.MouseEvent) => {
+    if (placeMode || diving) return;
+    const zoomedIn = zoomRef.current > (Z_START + Z_MAX) / 2;
+    zoomAt(zoomedIn ? Z_START : Math.min(Z_MAX, zoomRef.current * 1.8), relCenter(e.clientX, e.clientY), true);
   };
   const nudgeZoom = (dir: 1 | -1) => {
-    const z = Math.max(Z_MIN, Math.min(Z_MAX, zoomRef.current * (dir > 0 ? 1.3 : 1 / 1.3)));
-    animate(zoom, z, { duration: 0.3 }); clampPan(z);
+    stopMomentum();
+    zoomAt(zoomRef.current * (dir > 0 ? 1.35 : 1 / 1.35), { x: 0, y: 0 }, true);
   };
+  const resetView = () => { stopMomentum(); frameTo(50, 48, Z_START, true); };
   // Preset cameras — glide to a region of the world.
   const CAMS: { label: string; fx: number; fy: number; z: number }[] = [
     { label: "Wide", fx: 50, fy: 48, z: 1 },
@@ -243,6 +331,7 @@ const MapHub: React.FC = () => {
 
   useEffect(() => () => {
     if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    if (momRaf.current != null) cancelAnimationFrame(momRaf.current);
     if (clearTimer.current) clearTimeout(clearTimer.current);
     if (diveTimer.current) clearTimeout(diveTimer.current);
   }, []);
@@ -354,8 +443,10 @@ const MapHub: React.FC = () => {
           onPointerDown={onWorldPointerDown}
           onPointerMove={onWorldPointerMove}
           onPointerUp={onWorldPointerUp}
+          onPointerCancel={onWorldPointerUp}
           onPointerLeave={onWorldPointerUp}
           onWheel={onWorldWheel}
+          onDoubleClick={onWorldDoubleClick}
         >
           {/* ambient bleed — the map art itself, blurred + dimmed, fills the letterbox gutters */}
           <div className="absolute inset-0 pointer-events-none" aria-hidden>
@@ -384,9 +475,10 @@ const MapHub: React.FC = () => {
               <div className="pointer-events-none absolute right-3 top-1/2 z-30 flex -translate-y-1/2 flex-col gap-1.5">
                 <button onClick={() => nudgeZoom(1)} aria-label="Zoom in" className="pointer-events-auto h-9 w-9 rounded-full border border-pink/30 bg-black/55 font-display text-lg leading-none text-cream/90 backdrop-blur-sm hover:text-white hover:border-pink/60 transition-colors">+</button>
                 <button onClick={() => nudgeZoom(-1)} aria-label="Zoom out" className="pointer-events-auto h-9 w-9 rounded-full border border-pink/30 bg-black/55 font-display text-lg leading-none text-cream/90 backdrop-blur-sm hover:text-white hover:border-pink/60 transition-colors">−</button>
+                <button onClick={resetView} aria-label="Reset view" title="Reset view" className="pointer-events-auto h-9 w-9 rounded-full border border-pink/30 bg-black/55 font-display text-[13px] leading-none text-cream/90 backdrop-blur-sm hover:text-white hover:border-pink/60 transition-colors">⟳</button>
               </div>
               <div className="pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-center">
-                <span className="rounded-full bg-black/45 px-3 py-1 font-whimsy text-[11px] text-pink-light/80 backdrop-blur-sm">drag to explore · scroll to zoom ✦</span>
+                <span className="rounded-full bg-black/45 px-3 py-1 font-whimsy text-[11px] text-pink-light/80 backdrop-blur-sm">drag · pinch · double-tap to zoom ✦</span>
               </div>
             </>
           )}
