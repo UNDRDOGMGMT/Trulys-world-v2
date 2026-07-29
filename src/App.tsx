@@ -2,6 +2,7 @@ import React, { Suspense } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { UnlockProvider } from "@/contexts/UnlockContext";
+import { MemberProvider } from "@/contexts/MemberContext";
 import { TravelProvider } from "@/contexts/TravelContext";
 import Starfield from "@/components/Starfield";
 import PersistentPlayer from "@/components/PersistentPlayer";
@@ -31,6 +32,7 @@ const CorbinInside = React.lazy(() => import("./pages/CorbinInside"));
 const CorbinArcade = React.lazy(() => import("./pages/CorbinArcade"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 const Gate = React.lazy(() => import("./pages/Gate"));
+const Account = React.lazy(() => import("./pages/Account"));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -122,6 +124,7 @@ const AnimatedRoutes = () => {
           <Route path="/corbin-bowl" element={<CorbinBowl />} />
           <Route path="/corbin-bowl/inside" element={<CorbinInside />} />
           <Route path="/corbin-bowl/arcade" element={<CorbinArcade />} />
+          <Route path="/account" element={<Account />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>
@@ -130,8 +133,10 @@ const AnimatedRoutes = () => {
   );
 };
 
-const App = () => {
-  // gate the whole world until you have the code
+// Account-gated: you must be a Truly's World member (or use the backstage code)
+// to enter. MemberProvider wraps BOTH the gate and the site so the gate can
+// create accounts and the site can read them.
+const Gated = () => {
   const [unlocked, setUnlocked] = React.useState(() => {
     try { return localStorage.getItem(GATE_KEY) === '1'; } catch { return false; }
   });
@@ -154,5 +159,11 @@ const App = () => {
     </UnlockProvider>
   );
 };
+
+const App = () => (
+  <MemberProvider>
+    <Gated />
+  </MemberProvider>
+);
 
 export default App;

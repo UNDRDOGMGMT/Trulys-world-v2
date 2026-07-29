@@ -120,6 +120,82 @@ for(const it of ITEMS){ const im=new Image(); im.src='/island/icons/'+it.icon+'.
 
 let objs=[], trail=[], particles=[], pops=[], lives, score, combo, bestCombo, cut, spared, running, ended, spawnT, frenzyT, shake, audio, elapsed, lastT, swkChain;
 
+/* ---------- the blade is HER ARM ----------
+   Four cut-outs shot on turf and keyed in Python (armcut.py). The hand leads the
+   swipe and the forearm trails back off-screen behind it. Pose reads the swipe:
+   an open hand while you're actually slashing, a fist at rest — and the silver
+   cuff snaps on once the combo is live, so the merch IS the power-up state.
+   Every draw is guarded: no PNGs on disk means the game falls back to the plain
+   neon blade exactly as before. */
+const ARM_SRC = { bareFist:'fist', bareOpen:'open', cuffFist:'cuff-fist', cuffOpen:'cuff-open' };
+const ARM = {};
+for(const k in ARM_SRC){ const im=new Image(); im.src='/island/arm/arm-'+ARM_SRC[k]+'.png'; ARM[k]=im; }
+const HAND_Y = 0.20;          // where the knuckles sit down the sprite, 0..1
+let armA = 0, armAng = -Math.PI/2, armSpeed = 0, armPose = 'bareFist';
+let armSwing = 0, armAlt = 0, armFx = null, armFxC = null;      // swing = the punch on contact, alt = which pose is up
+/** called on every stroke and every connect so the arm visibly changes hands */
+function armSwap(){ armAlt ^= 1; armSwing = 1; }
+function armImg(){
+  // cuff once the combo is live; the fist/open pair alternates per slash so
+  // consecutive hits never render the identical frame twice
+  const cuff = combo >= 3;
+  const open = armSpeed > 700 ? armAlt === 0 : armAlt === 1;
+  armPose = (cuff ? 'cuff' : 'bare') + (open ? 'Open' : 'Fist');
+  let im = ARM[armPose];
+  if(!(im && im.complete && im.naturalWidth)) im = ARM[cuff ? 'cuffFist' : 'bareFist'];
+  if(!(im && im.complete && im.naturalWidth)) im = ARM.bareFist;
+  return (im && im.complete && im.naturalWidth) ? im : null;
+}
+function drawArm(){
+  if(armA <= 0.01) return;
+  const im = armImg(); if(!im) return;
+  // Size off the WIDTH so the arm reads at human scale, then run the forearm
+  // past the frame edge — a limb that stops mid-canvas reads as a floating
+  // prop instead of an arm reaching into the shot.
+  const sw = 1 + armSwing * 0.16;          // snaps bigger on contact, settles back
+  const w = Math.max(74, Math.min(168, Math.min(W, H) * 0.155)) * sw;
+  const h = w * im.naturalHeight / im.naturalWidth;
+  // Only reach far enough to clear the frame from HERE — a flat multiple of the
+  // screen diagonal stretched the forearm into a mile-long tube on wide screens.
+  const edge = Math.max(px, W - px, py, H - py) + w;
+  const reach = Math.min(Math.hypot(W, H), edge);
+  ctx.save();
+  ctx.globalAlpha = armA;
+  ctx.translate(px, py);
+  ctx.rotate(armAng + Math.PI / 2 + armSwing * 0.10 * (armAlt ? 1 : -1));  // hand-up sprite leads the swipe, with a swing kick
+  ctx.shadowColor = 'rgba(255,79,163,.5)'; ctx.shadowBlur = 24;
+  const tail = h * (1 - HAND_Y) - h * 0.04;   // sprite length behind the knuckles,
+                                             // pulled back so the join hides under it
+  if(reach > tail){
+    // Bridge the last stretch to the frame edge by repeating a clean mid-forearm
+    // band, faded out so the arm dissolves into the night.
+    //
+    // The fade is built on its OWN offscreen canvas: drawing the band as slices
+    // of decreasing alpha banded visibly once the art went flat cel-shaded, and
+    // a destination-out gradient straight onto the main canvas would have erased
+    // the flags drawn underneath. A private surface gets a per-pixel fade with
+    // neither problem.
+    const y0 = Math.round(im.naturalHeight * 0.86), sh = Math.round(im.naturalHeight * 0.06);
+    const run = Math.min(reach - tail, h * 0.95);
+    const cw = Math.max(1, Math.round(w)), ch = Math.max(1, Math.round(run));
+    if(!armFx){ armFx = document.createElement('canvas'); armFxC = armFx.getContext('2d'); }
+    if(armFx.width !== cw || armFx.height !== ch){ armFx.width = cw; armFx.height = ch; }
+    armFxC.clearRect(0, 0, cw, ch);
+    armFxC.drawImage(im, 0, y0, im.naturalWidth, sh, 0, 0, cw, ch);
+    const g2 = armFxC.createLinearGradient(0, 0, 0, ch);
+    g2.addColorStop(0, 'rgba(0,0,0,0)'); g2.addColorStop(0.45, 'rgba(0,0,0,.55)');
+    g2.addColorStop(1, 'rgba(0,0,0,1)');
+    armFxC.globalCompositeOperation = 'destination-out';
+    armFxC.fillStyle = g2; armFxC.fillRect(0, 0, cw, ch);
+    armFxC.globalCompositeOperation = 'source-over';
+    ctx.shadowBlur = 0;
+    ctx.drawImage(armFx, -w / 2, tail, w, run);
+    ctx.shadowColor = 'rgba(255,79,163,.5)'; ctx.shadowBlur = 24;
+  }
+  ctx.drawImage(im, -w / 2, -h * HAND_Y, w, h);
+  ctx.restore();
+}
+
 /* ---------- SFX ---------- */
 let actx=null; const ac=()=>actx||(actx=new (window.AudioContext||window.webkitAudioContext)());
 function tn(type,f0,f1,d,v){const c=ac(),t=c.currentTime,o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(Math.max(1,f1),t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(0.001,t+d);o.connect(g).connect(c.destination);o.start(t);o.stop(t+d+0.02);}
@@ -188,7 +264,7 @@ function segHit(o, x0,y0,x1,y1){
   const px=x0+t*dx, py=y0+t*dy; return Math.hypot(o.x-px,o.y-py) < o.r+8;
 }
 function doSlice(o, cutAng){
-  o.sliced=true; o.cutAng = cutAng ?? Math.random()*3.14;
+  o.sliced=true; armSwap(); o.cutAng = cutAng ?? Math.random()*3.14;
   const col=o.type==='red'?[255,59,92]:[67,224,138];
   for(let i=0;i<16;i++){const a=Math.random()*6.28,s=90+Math.random()*260;particles.push({x:o.x,y:o.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-80,life:0.5+Math.random()*0.4,c:col});}
   // pop off, then fade
@@ -215,14 +291,16 @@ function move(e){ if(!running||ended) return; const p=pt(e);
   if(down){
     // swkChain counts objects felled by ONE stroke, so it resets on press —
     // resetting it here meant the multi-slice bonus could never exceed 1
-    const ang = Math.atan2(p.y - py, p.x - px);
+    const dx = p.x - px, dy = p.y - py, ang = Math.atan2(dy, dx);
+    const d = Math.hypot(dx, dy);
+    if(d > 2){ armAng = ang; armSpeed = armSpeed * 0.55 + (d * 60) * 0.45; }
     for(const o of objs){ if(!o.sliced && o.wait<=0 && segHit(o,px,py,p.x,p.y)) doSlice(o, ang); }
   trail.push({x:p.x,y:p.y,t:performance.now()}); }
   px=p.x; py=p.y; }
-cv.addEventListener('mousedown',e=>{down=true;swkChain=0;const p=pt(e);px=p.x;py=p.y;});
+cv.addEventListener('mousedown',e=>{down=true;swkChain=0;armSwap();const p=pt(e);px=p.x;py=p.y;});
 addEventListener('mouseup',()=>down=false);
 cv.addEventListener('mousemove',move);
-cv.addEventListener('touchstart',e=>{down=true;swkChain=0;const p=pt(e);px=p.x;py=p.y;},{passive:true});
+cv.addEventListener('touchstart',e=>{down=true;swkChain=0;armSwap();const p=pt(e);px=p.x;py=p.y;},{passive:true});
 cv.addEventListener('touchmove',e=>{move(e);},{passive:true});
 cv.addEventListener('touchend',()=>down=false);
 
@@ -247,6 +325,9 @@ function update(dt){
   }
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=900*dt;p.life-=dt;if(p.life<=0)particles.splice(i,1);}
   for(let i=pops.length-1;i>=0;i--){const p=pops[i];p.y-=40*dt;p.life-=dt;if(p.life<=0)pops.splice(i,1);}
+  armA += ((down && running && !ended ? 1 : 0) - armA) * Math.min(1, dt * 14);
+  armSpeed *= Math.pow(0.02, dt);            // decays back to a fist when you stop
+  armSwing = Math.max(0, armSwing - dt * 5);
   const now=performance.now(); while(trail.length && now-trail[0].t>140) trail.shift();
   el('score').textContent=score;
   el('combo').textContent = combo>=3 ? ('×'+(Math.floor(combo/3)+1)+'  '+combo+' streak') : '';
@@ -305,13 +386,14 @@ function draw(){
       ctx.strokeStyle=pass?'rgba(255,255,255,.9)':'rgba(255,79,163,.7)'; ctx.lineWidth=pass?4:14; ctx.shadowColor='#ff4fa3'; ctx.shadowBlur=pass?0:18; ctx.stroke(); }
     ctx.shadowBlur=0;
   }
+  drawArm();
   ctx.restore();
 }
 function frame(now){ if(running&&!ended){ const dt=Math.min(0.05,(now-lastT)/1000); lastT=now; update(dt); } draw(); requestAnimationFrame(frame); }
 
 /* ---------- flow ---------- */
 const LIVES0=4;   // eased from 3
-function reset(){ objs=[];trail=[];particles=[];pops=[]; lives=LIVES0;score=0;combo=0;bestCombo=0;cut=0;spared=0;elapsed=0;spawnT=0.6;frenzyT=20;shake=0;running=false;ended=false;swkChain=0; renderHearts(); el('score').textContent='0'; el('combo').textContent=''; }
+function reset(){ objs=[];trail=[];particles=[];pops=[]; lives=LIVES0;score=0;combo=0;bestCombo=0;cut=0;spared=0;elapsed=0;spawnT=0.6;frenzyT=20;shake=0;armSwing=0;armAlt=0;running=false;ended=false;swkChain=0; renderHearts(); el('score').textContent='0'; el('combo').textContent=''; }
 function begin(){ reset(); el('startOv').classList.add('hide'); el('endOv').classList.add('hide');
   let n=3; el('count').style.display='flex'; el('countN').textContent=n;
   const iv=setInterval(()=>{ n--; if(n<=0){ clearInterval(iv); el('count').style.display='none'; running=true; lastT=performance.now(); startAudio(); }

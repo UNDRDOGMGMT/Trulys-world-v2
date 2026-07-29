@@ -22,9 +22,13 @@ const prettyPhone = (s: string) => {
   return `(${n.slice(0, 3)}) ${n.slice(3, 6)}-${n.slice(6, 10)}`;
 };
 
-const TrulyList: React.FC<{ tone?: Tone; logo?: boolean; wide?: boolean; onDone?: () => void }> = ({
-  tone = 'dark', logo = false, wide = false, onDone,
-}) => {
+const TrulyList: React.FC<{
+  tone?: Tone; logo?: boolean; wide?: boolean;
+  onDone?: (d: { first: string; last: string; email: string; phone: string }) => void;
+  // fires the instant the form validates (before the Laylo POST) so account
+  // creation / site entry never depends on the capture API being reachable
+  onData?: (d: { first: string; last: string; email: string; phone: string }) => void;
+}> = ({ tone = 'dark', logo = false, wide = false, onDone, onData }) => {
   const [first, setFirst] = useState('');
   const [last, setLast] = useState('');
   const [email, setEmail] = useState('');
@@ -40,6 +44,10 @@ const TrulyList: React.FC<{ tone?: Tone; logo?: boolean; wide?: boolean; onDone?
     if (first.trim().length < 1 || last.trim().length < 1) return setErr('first and last name, please.');
     if (!EMAIL_RE.test(email.trim())) return setErr('need a real email.');
     if (digits(phone).length < 10) return setErr('need a full phone number.');
+    // hand off validated data immediately — entry/account creation is decoupled
+    // from the Laylo capture below, which is best-effort marketing.
+    const captured = { first: first.trim(), last: last.trim(), email: email.trim(), phone: digits(phone) };
+    onData?.(captured);
     setState('sending'); setMsg('');
     try {
       const r = await fetch('/api/subscribe', {
@@ -52,7 +60,7 @@ const TrulyList: React.FC<{ tone?: Tone; logo?: boolean; wide?: boolean; onDone?
       });
       const data = await r.json().catch(() => ({}));
       if (!r.ok || !data.ok) throw new Error(data.error || 'something broke');
-      setState('done'); onDone?.();
+      setState('done'); onDone?.({ first: first.trim(), last: last.trim(), email: email.trim(), phone: digits(phone) });
     } catch (err) {
       setErr(err instanceof Error ? err.message : 'something broke');
     }

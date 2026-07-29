@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { GATE_KEY } from '@/lib/gate';
 import TrulyList from '@/components/TrulyList';
+import { useMember } from '@/contexts/MemberContext';
 
 /**
  * The gate (login). A 90s-film-grain photo of her arm on the grass, with the
@@ -96,9 +97,25 @@ const Countdown: React.FC<{ className?: string; style?: React.CSSProperties }> =
 };
 
 const Gate: React.FC<{ onUnlock: () => void }> = ({ onUnlock }) => {
+  const { signUp, logIn } = useMember();
   const [pw, setPw] = useState('');
   const [denied, setDenied] = useState(false);
+  const [mode, setMode] = useState<'join' | 'login' | 'code'>('join');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginErr, setLoginErr] = useState('');
   const grainRef = useRef<HTMLCanvasElement>(null);
+
+  // signing up (= the Laylo capture) also creates the account + unlocks the site
+  const onJoined = (d: { first: string; last: string; email: string; phone: string }) => {
+    try { signUp(d); } catch { /* ignore */ }
+    setTimeout(onUnlock, 650); // let the "you're on the list ♥" beat land
+  };
+
+  const doLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (logIn(loginEmail)) { onUnlock(); }
+    else { setLoginErr('no account for that email on this device — join above ♥'); }
+  };
 
   // lock the document so the page itself never scrolls — on iOS Safari a
   // scrolling body toggles the address bar, which reflows the layout in a loop
@@ -149,31 +166,47 @@ const Gate: React.FC<{ onUnlock: () => void }> = ({ onUnlock }) => {
     }
   };
 
-  // the passcode row, shared by both layouts
-  const passcodeRow = (
-    <>
-      <span className="font-display text-[9px] uppercase tracking-[0.3em] text-[#f0b4e4]/70"
+  // access row (log-in for returning members + backstage passcode), both layouts
+  const accessRow = (
+    <div className="flex flex-col items-center gap-2">
+      <div className="flex items-center gap-4 font-display text-[9px] uppercase tracking-[0.28em] text-[#f0b4e4]/70"
         style={{ textShadow: '0 1px 8px rgba(0,0,0,0.85)' }}>
-        or if you have the code
-      </span>
-      <form onSubmit={submit} className="flex items-center gap-2">
-        <input
-          value={pw}
-          onChange={(e) => setPw(e.target.value)}
-          placeholder="passcode"
-          aria-label="Passcode"
-          autoCapitalize="characters"
-          className={`w-44 rounded-full border-2 bg-black/45 px-4 py-2 text-center font-display text-sm tracking-[0.2em] text-[#ffd9f2] outline-none backdrop-blur-sm transition-colors placeholder:text-[#f0b4e4]/45 ${denied ? 'border-red-400' : 'border-[#f0b4e4]/55 focus:border-[#f0b4e4]'}`}
-          style={{ boxShadow: '0 0 18px rgba(240,180,228,0.22), inset 0 0 12px rgba(240,180,228,0.08)' }}
-        />
-        <button type="submit"
-          className="rounded-full border-2 border-[#f0b4e4]/55 bg-black/45 px-4 py-2 font-display text-sm text-[#ffd9f2] backdrop-blur-sm transition-colors hover:border-[#f0b4e4] hover:bg-[#f0b4e4]/15"
-          style={{ boxShadow: '0 0 18px rgba(240,180,228,0.22)' }}>
-          enter
+        <button type="button" onClick={() => setMode(mode === 'login' ? 'join' : 'login')}
+          className={`transition-colors hover:text-[#ffd9f2] ${mode === 'login' ? 'text-[#ffd9f2]' : ''}`}>
+          already a member? log in
         </button>
-      </form>
-      <span className="h-4 font-whimsy text-xs text-red-300">{denied ? 'not yet.' : ''}</span>
-    </>
+        <span className="text-[#f0b4e4]/30">·</span>
+        <button type="button" onClick={() => setMode(mode === 'code' ? 'join' : 'code')}
+          className={`transition-colors hover:text-[#ffd9f2] ${mode === 'code' ? 'text-[#ffd9f2]' : ''}`}>
+          have a code?
+        </button>
+      </div>
+
+      {mode === 'login' && (
+        <form onSubmit={doLogin} className="flex flex-col items-center gap-1.5">
+          <div className="flex items-center gap-2">
+            <input value={loginEmail} onChange={(e) => { setLoginEmail(e.target.value); setLoginErr(''); }}
+              placeholder="your email" type="email" inputMode="email" aria-label="Member email"
+              className="w-52 rounded-full border-2 border-[#f0b4e4]/55 bg-black/45 px-4 py-2 text-center font-display text-sm text-[#ffd9f2] outline-none backdrop-blur-sm placeholder:text-[#f0b4e4]/45 focus:border-[#f0b4e4]"
+              style={{ boxShadow: '0 0 18px rgba(240,180,228,0.22)' }} />
+            <button type="submit" className="rounded-full border-2 border-[#f0b4e4]/55 bg-black/45 px-4 py-2 font-display text-sm text-[#ffd9f2] backdrop-blur-sm transition-colors hover:border-[#f0b4e4] hover:bg-[#f0b4e4]/15" style={{ boxShadow: '0 0 18px rgba(240,180,228,0.22)' }}>log in</button>
+          </div>
+          <span className="h-4 font-whimsy text-xs text-red-300">{loginErr}</span>
+        </form>
+      )}
+
+      {mode === 'code' && (
+        <form onSubmit={submit} className="flex flex-col items-center gap-1.5">
+          <div className="flex items-center gap-2">
+            <input value={pw} onChange={(e) => setPw(e.target.value)} placeholder="passcode" aria-label="Passcode" autoCapitalize="characters"
+              className={`w-44 rounded-full border-2 bg-black/45 px-4 py-2 text-center font-display text-sm tracking-[0.2em] text-[#ffd9f2] outline-none backdrop-blur-sm transition-colors placeholder:text-[#f0b4e4]/45 ${denied ? 'border-red-400' : 'border-[#f0b4e4]/55 focus:border-[#f0b4e4]'}`}
+              style={{ boxShadow: '0 0 18px rgba(240,180,228,0.22), inset 0 0 12px rgba(240,180,228,0.08)' }} />
+            <button type="submit" className="rounded-full border-2 border-[#f0b4e4]/55 bg-black/45 px-4 py-2 font-display text-sm text-[#ffd9f2] backdrop-blur-sm transition-colors hover:border-[#f0b4e4] hover:bg-[#f0b4e4]/15" style={{ boxShadow: '0 0 18px rgba(240,180,228,0.22)' }}>enter</button>
+          </div>
+          <span className="h-4 font-whimsy text-xs text-red-300">{denied ? 'not yet.' : ''}</span>
+        </form>
+      )}
+    </div>
   );
 
   // grass tone behind everything so the dark inked countdown is visible even
@@ -199,8 +232,8 @@ const Gate: React.FC<{ onUnlock: () => void }> = ({ onUnlock }) => {
         <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 50%, transparent 52%, rgba(20,10,6,0.5) 100%)' }} />
         <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-2.5 px-6 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-16"
           style={{ background: 'linear-gradient(180deg, transparent, rgba(10,8,4,0.5) 30%, rgba(10,8,4,0.88))' }}>
-          <div className="w-[min(88vw,556px)]"><TrulyList tone="dark" wide /></div>
-          {passcodeRow}
+          <div className="w-[min(88vw,556px)]"><TrulyList tone="dark" wide onData={onJoined} /></div>
+          {accessRow}
         </div>
       </div>
 
@@ -229,8 +262,8 @@ const Gate: React.FC<{ onUnlock: () => void }> = ({ onUnlock }) => {
         {/* only this region scrolls; grass shows through so the box floats on it */}
         <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
           <div className="flex flex-col items-center gap-3 px-3 pb-10 pt-5">
-            <div className="w-full max-w-[480px]"><TrulyList tone="dark" wide /></div>
-            {passcodeRow}
+            <div className="w-full max-w-[480px]"><TrulyList tone="dark" wide onData={onJoined} /></div>
+            {accessRow}
           </div>
         </div>
       </div>

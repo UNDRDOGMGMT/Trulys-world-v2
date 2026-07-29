@@ -12,6 +12,7 @@ import MarqueeStrip from "@/components/MarqueeStrip";
 import Logo from "@/components/Logo";
 import PageMeta from "@/components/PageMeta";
 import { useUnlock } from "@/contexts/UnlockContext";
+import { useMember } from "@/contexts/MemberContext";
 import { useTravel, ASSET_KEY } from "@/contexts/TravelContext";
 import { useIsPortrait } from "@/hooks/useIsPortrait";
 import { playClick, startAmbient, stopAmbient } from "@/lib/audio";
@@ -85,6 +86,7 @@ const MapHub: React.FC = () => {
   const { travelTo } = useTravel();
   const navigate = useNavigate();
   const isPortrait = useIsPortrait();
+  const { member } = useMember();
   const reduceMotion = useReducedMotion();
   const [mapReady, setMapReady] = useState(false);
   const [active, setActive] = useState<string | null>(null);       // hovered (desktop) / selected (touch)
@@ -330,6 +332,13 @@ const MapHub: React.FC = () => {
             <button onClick={() => navigate("/dear-joshua")} className="btn-retro !text-[10px] !py-1 !px-3">
               &#9829; EP
             </button>
+            {member && (
+              <button onClick={() => navigate("/account")} aria-label="Your member dashboard"
+                className="btn-retro !text-[10px] !py-1 !px-3 shimmer-sweep"
+                title={`${member.first} — ${member.points} pts`}>
+                &#9830; {member.points.toLocaleString()}
+              </button>
+            )}
             {/* SING pulled from the top bar for now — karaoke lives in Koreatown (After Hours). Relaunch here later. */}
             <span className="case-label hidden md:inline">THE MAP</span>
           </nav>
