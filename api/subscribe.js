@@ -33,6 +33,39 @@ const CREATOR_ID = process.env.LAYLO_CREATOR_ID || 'b8e6f854-9f16-4434-ac5b-6609
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/** In-memory per-IP sliding window. Resets on cold start (acceptable for launch). */
+const RATE_LIMIT = 5;
+const RATE_WINDOW_MS = 10 * 60 * 1000;
+/** @type {Map<string, number[]>} */
+const hitsByIp = new Map();
+
+function clientIp(req) {
+  const xff = req.headers['x-forwarded-for'];
+  if (typeof xff === 'string' && xff.length) return xff.split(',')[0].trim();
+  return req.socket?.remoteAddress || req.headers['x-real-ip'] || 'unknown';
+}
+
+function rateLimited(ip) {
+  const now = Date.now();
+  const prev = hitsByIp.get(ip) || [];
+  const recent = prev.filter((t) => now - t < RATE_WINDOW_MS);
+  if (recent.length >= RATE_LIMIT) {
+    hitsByIp.set(ip, recent);
+    return true;
+  }
+  recent.push(now);
+  hitsByIp.set(ip, recent);
+  // opportunistic prune so the Map doesn't grow forever on a warm instance
+  if (hitsByIp.size > 5000) {
+    for (const [k, ts] of hitsByIp) {
+      const keep = ts.filter((t) => now - t < RATE_WINDOW_MS);
+      if (keep.length) hitsByIp.set(k, keep);
+      else hitsByIp.delete(k);
+    }
+  }
+  return false;
+}
+
 /** Whatever domain this is actually served from — so attribution follows the
  *  published domain (trulys.world, a preview URL, anything) with no hardcoding. */
 function siteFrom(req) {
@@ -54,6 +87,10 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ ok: false, error: 'method not allowed' });
+  }
+
+  if (rateLimited(clientIp(req))) {
+    return res.status(429).json({ ok: false, error: 'too many tries - wait a bit' });
   }
 
   let body = req.body;
