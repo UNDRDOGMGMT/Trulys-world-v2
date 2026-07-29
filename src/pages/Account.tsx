@@ -64,7 +64,7 @@ const Account: React.FC = () => {
         <div className="absolute top-0 inset-x-0 z-30 flex items-center justify-between px-4 py-3"
           style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}>
           <button onClick={() => navigate('/map')} className="font-display text-[11px] uppercase tracking-[0.14em] text-cream/85 hover:text-white bg-black/45 border border-white/20 rounded-full px-3 py-1.5 backdrop-blur-sm">← Map</button>
-          <button onClick={logOut} className="font-display text-[11px] uppercase tracking-[0.14em] text-cream/70 hover:text-white bg-black/45 border border-white/15 rounded-full px-3 py-1.5 backdrop-blur-sm">Log out</button>
+          <button onClick={() => { logOut(); window.location.assign('/'); }} className="font-display text-[11px] uppercase tracking-[0.14em] text-cream/70 hover:text-white bg-black/45 border border-white/15 rounded-full px-3 py-1.5 backdrop-blur-sm">Log out</button>
         </div>
 
         <div className="relative z-10 max-w-3xl mx-auto px-4 pt-20 pb-10">

@@ -6,6 +6,7 @@ import { useIsPortrait } from "@/hooks/useIsPortrait";
 import MarqueeStrip from "@/components/MarqueeStrip";
 import CountdownTimer from "@/components/CountdownTimer";
 import Logo from "@/components/Logo";
+import SessionChip from "@/components/SessionChip";
 import Shape from "@/components/Shape";
 import HandDrawnFrame from "@/components/HandDrawnFrame";
 import PageMeta from "@/components/PageMeta";
@@ -60,6 +61,10 @@ const Index: React.FC = () => {
         <div className="relative z-10">
           <MarqueeStrip />
         </div>
+
+        {/* session control — dashboard + log out for members, "sign in" otherwise */}
+        <SessionChip className="absolute right-3 z-20"
+          style={{ top: "max(2.7rem, calc(env(safe-area-inset-top) + 2.1rem))" }} />
 
         {/* Decorative shapes */}
         <Shape name="sparkle" size={80} rotate={-12} opacity={0.55} float
