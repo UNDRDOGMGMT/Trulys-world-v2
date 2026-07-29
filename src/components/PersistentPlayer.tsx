@@ -18,7 +18,7 @@ const PLAYLIST: Track[] = [
 ];
 
 const PersistentPlayer: React.FC = () => {
-  const { soundOn } = useUnlock();
+  const { soundOn, setSoundOn } = useUnlock();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -26,40 +26,58 @@ const PersistentPlayer: React.FC = () => {
   const [muted, setMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const progressInterval = useRef<number>();
+  // When true, the next track-src change should start playback (ended / skip / pick).
+  const pendingPlayRef = useRef(false);
   // Per-track set of progress markers already reported, so each fires at most once.
   // Reset when the track changes.
   const reportedMarkersRef = useRef<Set<string>>(new Set());
 
   const track = PLAYLIST[currentIndex];
   const hasAudio = track?.src !== '';
+  // Site "Sound Off" (default) used to mute the element while the volume icon
+  // still looked unmuted — play "worked" with no audible output.
+  const effectivelyMuted = muted || !soundOn;
+
+  const ensureAudible = useCallback(() => {
+    setMuted(false);
+    if (!soundOn) setSoundOn(true);
+    if (audioRef.current) audioRef.current.muted = false;
+  }, [soundOn, setSoundOn]);
+
+  const playCurrent = useCallback(() => {
+    if (!hasAudio || !audioRef.current) return;
+    ensureAudible();
+    // Don't flip state optimistically — the audio element's play/pause
+    // events (wired below) are the source of truth, so the UI can never
+    // show "playing" while nothing is actually audible.
+    audioRef.current.play()
+      .then(() => trackEvent('audio_play', { track_id: track.id, title: track.title }))
+      .catch(() => { /* autoplay/interrupt rejection — stay paused */ });
+  }, [hasAudio, ensureAudible, track?.id, track?.title]);
 
   const togglePlay = useCallback(() => {
     if (!hasAudio || !audioRef.current) return;
     if (isPlaying) {
       audioRef.current.pause();
     } else {
-      // Don't flip state optimistically — the audio element's play/pause
-      // events (wired below) are the source of truth, so the UI can never
-      // show "playing" while nothing is actually audible.
-      audioRef.current.play()
-        .then(() => trackEvent('audio_play', { track_id: track.id, title: track.title }))
-        .catch(() => { /* autoplay/interrupt rejection — stay paused */ });
+      playCurrent();
     }
-  }, [isPlaying, hasAudio, track?.id, track?.title]);
+  }, [isPlaying, hasAudio, playCurrent]);
 
-  const nextTrack = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % PLAYLIST.length);
+  const selectTrack = useCallback((index: number, autoPlay: boolean) => {
+    pendingPlayRef.current = autoPlay;
+    setCurrentIndex(index);
     setProgress(0);
-    setIsPlaying(false);
     reportedMarkersRef.current = new Set();
   }, []);
+
+  const nextTrack = useCallback((autoPlay = false) => {
+    selectTrack((currentIndex + 1) % PLAYLIST.length, autoPlay);
+  }, [currentIndex, selectTrack]);
 
   const prevTrack = useCallback(() => {
-    setCurrentIndex((prev) => (prev - 1 + PLAYLIST.length) % PLAYLIST.length);
-    setProgress(0);
-    setIsPlaying(false);
-    reportedMarkersRef.current = new Set();
-  }, []);
+    selectTrack((currentIndex - 1 + PLAYLIST.length) % PLAYLIST.length, isPlaying);
+  }, [currentIndex, isPlaying, selectTrack]);
 
   useEffect(() => {
     if (!hasAudio) return;
@@ -92,9 +110,9 @@ const PersistentPlayer: React.FC = () => {
 
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.muted = muted || !soundOn;
+      audioRef.current.muted = effectivelyMuted;
     }
-  }, [muted, soundOn]);
+  }, [effectivelyMuted]);
 
   // Drive isPlaying off the real audio element so the play/pause icon and the
   // EQ bars always reflect actual playback (never a stuck optimistic state).
@@ -111,12 +129,19 @@ const PersistentPlayer: React.FC = () => {
     };
   }, [hasAudio, currentIndex]);
 
+  // After src changes (skip / ended / tracklist pick), optionally start playback.
+  useEffect(() => {
+    if (!pendingPlayRef.current || !hasAudio || !audioRef.current) return;
+    pendingPlayRef.current = false;
+    playCurrent();
+  }, [currentIndex, hasAudio, playCurrent]);
+
   // Don't render if no tracks
   if (PLAYLIST.length === 0) return null;
 
   return (
     <>
-      {hasAudio && <audio ref={audioRef} src={track.src} onEnded={nextTrack} preload="metadata" />}
+      {hasAudio && <audio ref={audioRef} src={track.src} onEnded={() => nextTrack(true)} preload="metadata" />}
       <motion.div
         className="fixed bottom-0 left-0 right-0 z-[100] bg-dark-surface/95 backdrop-blur-sm border-t-2 border-pink/20 glitter-border"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
@@ -178,18 +203,24 @@ const PersistentPlayer: React.FC = () => {
               {isPlaying ? <Pause size={17} /> : <Play size={17} />}
             </button>
             <button
-              onClick={nextTrack}
+              onClick={() => nextTrack(isPlaying)}
               className="p-2.5 min-w-[40px] min-h-[40px] flex items-center justify-center text-cream/60 hover:text-cream transition-colors"
               aria-label="Next track"
             >
               <SkipForward size={15} />
             </button>
             <button
-              onClick={() => setMuted(!muted)}
+              onClick={() => {
+                if (effectivelyMuted) {
+                  ensureAudible();
+                } else {
+                  setMuted(true);
+                }
+              }}
               className="p-2.5 min-w-[40px] min-h-[40px] flex items-center justify-center text-cream/60 hover:text-cream transition-colors"
-              aria-label={muted ? 'Unmute' : 'Mute'}
+              aria-label={effectivelyMuted ? 'Unmute' : 'Mute'}
             >
-              {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+              {effectivelyMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
             </button>
           </div>
         </div>
@@ -210,7 +241,10 @@ const PersistentPlayer: React.FC = () => {
               {PLAYLIST.map((t, i) => (
                 <button
                   key={t.id}
-                  onClick={() => { setCurrentIndex(i); setProgress(0); setIsPlaying(false); }}
+                  onClick={() => {
+                    if (i === currentIndex) playCurrent();
+                    else selectTrack(i, true);
+                  }}
                   className={`w-full text-left px-4 py-2 flex items-center justify-between hover:bg-accent/10 transition-colors ${
                     i === currentIndex ? 'bg-accent/5' : ''
                   }`}
