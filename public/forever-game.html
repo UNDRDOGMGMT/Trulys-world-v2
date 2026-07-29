@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>FOREVER — two truths &amp; a lie</title>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Cutive+Mono&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --plum:#22123a; --aubergine:#150a22; --magenta:#ff4fa3; --hot:#ff2d8f;
+    --amber:#ffcf7a; --gold:#ffd98a; --lilac:#9d8bff; --bone:#f4ecda;
+    --green:#66e6a6; --red:#ff4d6d;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
+  html,body{height:100%;overflow:hidden;}
+  body{font-family:'Special Elite',monospace;color:var(--bone);
+    background:
+      radial-gradient(ellipse 120% 70% at 50% 108%, #ff8a3d 0%, rgba(255,79,163,.35) 26%, transparent 52%),
+      linear-gradient(180deg, #1a0b2e 0%, #3a1350 42%, #7a1f5a 74%, #c23b5f 92%, #ff8a3d 100%);}
+  #stage{position:fixed;inset:0;overflow:hidden;display:flex;flex-direction:column;}
+
+  /* Sunset Strip backdrop */
+  .sun{position:absolute;left:50%;bottom:-16%;transform:translateX(-50%);width:52vmin;height:52vmin;border-radius:50%;
+    background:radial-gradient(circle,#ffd98a 0%,#ff9b3d 46%,rgba(255,120,80,0) 70%);opacity:.6;z-index:0;filter:blur(2px);}
+  .palms{position:absolute;left:0;right:0;bottom:0;height:38%;z-index:1;pointer-events:none;}
+  .palm{position:absolute;bottom:0;width:0;height:0;}
+  .strip-glow{position:absolute;left:0;right:0;bottom:0;height:20%;z-index:1;
+    background:linear-gradient(180deg,transparent,rgba(255,79,163,.25));}
+  .scan{position:absolute;inset:0;z-index:6;pointer-events:none;mix-blend-mode:overlay;opacity:.35;
+    background:repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.4) 3px);}
+  .vig{position:absolute;inset:0;z-index:6;pointer-events:none;background:radial-gradient(ellipse at 50% 40%,transparent 52%,rgba(10,3,18,.6) 100%);}
+
+  /* HUD */
+  #hud{position:relative;z-index:8;display:flex;align-items:center;justify-content:space-between;
+    padding:calc(12px + env(safe-area-inset-top)) clamp(14px,4vw,34px) 6px;}
+  .round{font-family:'Cutive Mono',monospace;font-size:12px;letter-spacing:.22em;color:#e9d3ff;text-transform:uppercase;}
+  .round b{color:var(--amber);}
+  .scorepill{display:flex;align-items:center;gap:8px;}
+  .star{color:var(--gold);font-size:20px;filter:drop-shadow(0 0 8px rgba(255,217,138,.7));}
+  .scoreN{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.06em;color:var(--bone);line-height:1;}
+  .streak{font-family:'Cutive Mono',monospace;font-size:11px;color:var(--amber);letter-spacing:.1em;min-width:34px;text-align:right;}
+
+  /* marquee card */
+  #board{position:relative;z-index:7;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:8px clamp(14px,4vw,30px) calc(20px + env(safe-area-inset-bottom));gap:14px;}
+  .prompt{font-family:'Bebas Neue',sans-serif;letter-spacing:.08em;font-size:clamp(20px,4.4vw,34px);
+    color:var(--amber);text-shadow:0 0 18px rgba(255,207,122,.55),0 2px 0 rgba(0,0,0,.3);text-align:center;line-height:1;}
+  .prompt small{display:block;font-family:'Cutive Mono',monospace;font-size:.36em;letter-spacing:.28em;color:#e9d3ff;margin-top:8px;text-transform:uppercase;}
+  .card{width:min(680px,94vw);display:flex;flex-direction:column;gap:12px;}
+  .stmt{position:relative;display:flex;align-items:center;gap:14px;text-align:left;cursor:pointer;
+    background:linear-gradient(180deg,rgba(40,18,64,.92),rgba(24,10,42,.92));
+    border:2px solid rgba(255,207,122,.5);border-radius:14px;padding:16px 18px;
+    box-shadow:0 0 0 3px rgba(0,0,0,.25),inset 0 0 22px rgba(255,79,163,.08);transition:.16s;}
+  .stmt::before{content:"";position:absolute;inset:4px;border-radius:10px;pointer-events:none;
+    background:repeating-linear-gradient(90deg,transparent 0 15px, rgba(255,217,138,.35) 15px 17px);
+    -webkit-mask:linear-gradient(#000,#000) content-box, linear-gradient(#000,#000);-webkit-mask-composite:xor;mask-composite:exclude;
+    padding:0;opacity:.0;transition:.2s;}
+  .stmt:hover{transform:translateY(-2px);border-color:var(--amber);box-shadow:0 8px 26px rgba(0,0,0,.4),0 0 22px rgba(255,207,122,.3);}
+  .stmt .chip{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+    font-family:'Bebas Neue',sans-serif;font-size:20px;color:#2a1730;background:var(--amber);box-shadow:0 0 12px rgba(255,207,122,.6);}
+  .stmt .txt{font-family:'Special Elite',monospace;font-size:clamp(14px,2.2vw,18px);line-height:1.4;color:var(--bone);}
+  .stmt .mark{flex:none;margin-left:auto;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.1em;opacity:0;transition:.2s;}
+  /* revealed states */
+  .stmt.truth{border-color:var(--green);}
+  .stmt.truth .chip{background:var(--green);} .stmt.truth .mark{opacity:1;color:var(--green);}
+  .stmt.lie{border-color:var(--red);box-shadow:0 0 26px rgba(255,77,109,.5);}
+  .stmt.lie .chip{background:var(--red);color:#fff;} .stmt.lie .mark{opacity:1;color:var(--red);}
+  .stmt.picked{outline:3px solid var(--bone);outline-offset:3px;}
+  .stmt.wrongpick{animation:nope .3s;}
+  @keyframes nope{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .reveal-lock{pointer-events:none;}
+  .next{align-self:center;font-family:'Special Elite',monospace;font-size:16px;letter-spacing:.1em;color:#2a1730;
+    background:var(--amber);border:none;border-radius:999px;padding:12px 30px;cursor:pointer;
+    box-shadow:0 0 24px rgba(255,207,122,.55);opacity:0;transform:translateY(8px);pointer-events:none;transition:.25s;}
+  .next.show{opacity:1;transform:none;pointer-events:auto;}
+  .next:hover{transform:translateY(-2px);}
+
+  /* overlays */
+  .ov{position:absolute;inset:0;z-index:12;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;gap:16px;padding:26px;background:radial-gradient(ellipse at 50% 42%,rgba(30,12,44,.72),rgba(8,3,16,.94));backdrop-filter:blur(3px);}
+  .ov.hide{display:none;}
+  .big{font-family:'Bebas Neue',sans-serif;font-size:clamp(40px,10vw,92px);letter-spacing:.03em;line-height:.92;
+    color:var(--amber);text-shadow:0 0 30px rgba(255,207,122,.6);}
+  .big .pink{color:var(--magenta);}
+  .osub{font-family:'Cutive Mono',monospace;font-size:clamp(12px,1.8vw,15px);color:#e9d3ff;max-width:38ch;line-height:1.75;letter-spacing:.04em;}
+  .btn{font-family:'Special Elite',monospace;font-size:clamp(15px,2vw,19px);letter-spacing:.1em;color:#2a1730;background:var(--amber);
+    border:none;border-radius:999px;padding:13px 32px;cursor:pointer;box-shadow:0 0 26px rgba(255,207,122,.5);transition:.15s;}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 0 36px rgba(255,207,122,.8);}
+  .btn.ghost{background:transparent;color:var(--bone);box-shadow:inset 0 0 0 2px rgba(255,255,255,.3);}
+  .grade{font-family:'Bebas Neue',sans-serif;font-size:clamp(26px,6vw,46px);letter-spacing:.06em;}
+  .walkstar{width:120px;height:120px;position:relative;filter:drop-shadow(0 0 20px rgba(255,217,138,.6));}
+  .keys{font-family:'Cutive Mono',monospace;font-size:11px;letter-spacing:.16em;color:#c9b3e0;text-transform:uppercase;}
+  .btnrow{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
+  .toast{position:absolute;bottom:calc(22px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:20;
+    font-family:'Cutive Mono',monospace;font-size:12px;letter-spacing:.1em;color:#2a1730;background:var(--amber);
+    padding:8px 16px;border-radius:999px;opacity:0;transition:.3s;}
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="sun"></div>
+  <svg class="palms" id="palms" viewBox="0 0 1000 380" preserveAspectRatio="none"></svg>
+  <div class="strip-glow"></div>
+
+  <div id="hud">
+    <div class="round">ROUND <b id="rnum">1</b> / 10</div>
+    <div class="scorepill"><span class="star">★</span><span class="scoreN" id="scoreN">0</span><span class="streak" id="streak"></span></div>
+  </div>
+
+  <div id="board">
+    <div class="prompt">SPOT THE LIE<small>two truths · one lie</small></div>
+    <div class="card" id="card"></div>
+    <button class="next" id="nextBtn">Next ▸</button>
+  </div>
+
+  <div class="scan"></div><div class="vig"></div>
+
+  <!-- start -->
+  <div class="ov" id="startOv">
+    <div class="big">FOR<span class="pink">EVER</span></div>
+    <div class="osub">Two truths and a lie, ten rounds, down Sunset. Each card has three statements about Truly — <b>tap the one that's the lie</b>. "Forever" plays you through. How well do you really know her?</div>
+    <button class="btn" id="startBtn">▸ take the quiz</button>
+    <div class="keys">tap a line · or press 1 / 2 / 3</div>
+  </div>
+
+  <!-- end -->
+  <div class="ov hide" id="endOv">
+    <div class="grade" id="gradeLabel">SUPERFAN</div>
+    <div class="big" id="finalScore">10<span style="font-size:.5em;color:#e9d3ff"> / 10</span></div>
+    <div class="osub" id="endSub"></div>
+    <div class="btnrow">
+      <button class="btn" id="againBtn">▸ play again</button>
+      <button class="btn ghost" id="shareBtn">share score</button>
+    </div>
+  </div>
+  <div class="toast" id="toast">copied!</div>
+</div>
+
+<script>
+/* ============================================================
+   FOREVER — Two Truths and a Lie (Sunset Boulevard)
+   Vertical slice: full engine + Hollywood skin. The 10 sets below
+   are ON-BRAND PLACEHOLDERS drawn from the site/song lore — swap
+   them for Truly's real 10 (each: three statements + the lie index).
+   A/B/C order is randomized per round so the lie isn't always in
+   the same slot. "Forever" plays underneath via the audio hook.
+   ============================================================ */
+
+// REPLACE with Truly's real sets. lie = index (0-based) of the false statement.
+const ROUNDS = [
+  { s:["The black car in Cruise Night has the plate TRULY.",
+       "Her sphinx cat is named Countess.",
+       "The Macan's wrecked fender is the front-right one."], lie:2 }, // it's back-left
+  { s:["The EP is called Dear Joshua.",
+       "Fear The Reaper is a song on the EP.",
+       "Boyfriend Island is a song on the EP."], lie:2 },              // it's a lyric, not a track
+  { s:["Her whole world is drawn as a map of Los Angeles.",
+       "Cruise Night takes place Downtown at night.",
+       "Fear The Reaper is set in Malibu."], lie:2 },                  // Silver Lake
+  { s:["Shadows is the lead single.",
+       "The EP has six songs on it.",
+       "Forever is the lead single."], lie:2 },                        // Shadows is
+  { s:["There's a game where you type her letter to Joshua.",
+       "The Reaper drops things on you from the Silver Lake stairs.",
+       "You play as the Reaper, not the girl."], lie:2 },              // you play Truly
+  { s:["Do Not Disturb is set at the Chateau in West Hollywood.",
+       "Countess is a cat you should never hit in the games.",
+       "The Chateau game is set in Long Beach."], lie:2 },             // WeHo
+  { s:["Her planet has a glowing pink road network.",
+       "You can spin the planet and tap a city to enter it.",
+       "The planet only has one city on it."], lie:2 },                // 14 districts
+  { s:["Dear Joshua ends on the line 'take this personal'.",
+       "The Reaper game rewards you for dodging close.",
+       "The typing game gives you unlimited mistakes."], lie:2 },      // 20 = out of ink
+  { s:["The Cruise Night car is a black Porsche Macan.",
+       "There are neighborhoods for WeHo, Venice and the Valley.",
+       "The site is set entirely in New York."], lie:2 },              // LA
+  { s:["Every song on the EP gets its own mini-game.",
+       "Forever's game is Two Truths and a Lie.",
+       "Forever's game is a racing game."], lie:2 },                   // it's this quiz
+];
+
+const el=(id)=>document.getElementById(id);
+let order=[], ri=0, score=0, streak=0, best=0, rounds=[], locked=false, audio=null;
+
+/* palms */
+(function palms(){
+  const svg=el('palms'); let h='';
+  const trees=[[70,300],[180,340],[350,320],[640,330],[820,300],[930,340]];
+  for(const [x,base] of trees){
+    h+=`<path d="M${x} 380 C ${x-4} ${380-base} ${x+2} ${380-base} ${x+2} ${380-base}" stroke="#1a0a26" stroke-width="9" fill="none"/>`;
+    for(let a=-70;a<=70;a+=28){
+      const ex=x+Math.sin(a*Math.PI/180)*72, ey=380-base-Math.cos(a*Math.PI/180)*46;
+      h+=`<path d="M${x} ${380-base} Q ${(x+ex)/2} ${380-base-40} ${ex} ${ey}" stroke="#160a22" stroke-width="6" fill="none" opacity=".9"/>`;
+    }
+  }
+  svg.innerHTML=h;
+})();
+
+/* ---------- SFX ---------- */
+let actx=null; const ac=()=>actx||(actx=new (window.AudioContext||window.webkitAudioContext)());
+function applause(){
+  const c=ac(),t=c.currentTime,n=c.createBufferSource(),len=c.sampleRate*0.9,b=c.createBuffer(1,len,c.sampleRate),d=b.getChannelData(0);
+  for(let i=0;i<len;i++){const env=Math.min(1,i/8000)*Math.pow(1-i/len,1.2);d[i]=(Math.random()*2-1)*env;}
+  n.buffer=b;const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=2600;f.Q.value=0.6;
+  const g=c.createGain();g.gain.value=0.16;n.connect(f).connect(g).connect(c.destination);n.start();
+  // sparkle
+  [1320,1760,2200].forEach((fr,k)=>{const o=c.createOscillator(),og=c.createGain();o.type='sine';o.frequency.value=fr;
+    og.gain.setValueAtTime(0.001,t+k*0.05);og.gain.exponentialRampToValueAtTime(0.08,t+k*0.05+0.02);og.gain.exponentialRampToValueAtTime(0.001,t+k*0.05+0.3);
+    o.connect(og).connect(c.destination);o.start(t+k*0.05);o.stop(t+k*0.05+0.32);});
+}
+function scratch(){
+  const c=ac(),t=c.currentTime,o=c.createOscillator(),g=c.createGain();
+  o.type='sawtooth';o.frequency.setValueAtTime(700,t);o.frequency.linearRampToValueAtTime(120,t+0.12);o.frequency.linearRampToValueAtTime(500,t+0.2);o.frequency.exponentialRampToValueAtTime(60,t+0.34);
+  g.gain.setValueAtTime(0.16,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.36);o.connect(g).connect(c.destination);o.start(t);o.stop(t+0.38);
+}
+function tick(){const c=ac(),t=c.currentTime,o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=880;g.gain.setValueAtTime(0.08,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.08);o.connect(g).connect(c.destination);o.start(t);o.stop(t+0.1);}
+
+/* ---------- audio hook (real master swaps in) ---------- */
+function startAudio(){ try{ audio=new Audio('/audio/03-forever.mp3'); audio.volume=0.7; audio.loop=true; audio.play().catch(()=>{}); }catch(e){} }
+
+/* ---------- flow ---------- */
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function begin(){
+  score=0; streak=0; ri=0; locked=false;
+  // build rounds with randomized A/B/C order, tracking the lie's new slot
+  rounds = ROUNDS.map(r=>{
+    const idx=shuffle([0,1,2]);
+    return { s: idx.map(i=>r.s[i]), lie: idx.indexOf(r.lie) };
+  });
+  el('startOv').classList.add('hide'); el('endOv').classList.add('hide');
+  el('scoreN').textContent='0'; el('streak').textContent='';
+  startAudio(); renderRound();
+}
+
+function renderRound(){
+  locked=false;
+  const r=rounds[ri]; el('rnum').textContent=ri+1;
+  el('nextBtn').classList.remove('show');
+  const card=el('card'); card.className='card'; card.innerHTML='';
+  r.s.forEach((txt,i)=>{
+    const row=document.createElement('button'); row.className='stmt'; row.dataset.i=i;
+    row.innerHTML=`<span class="chip">${'ABC'[i]}</span><span class="txt">${txt}</span><span class="mark"></span>`;
+    row.onclick=()=>pick(i);
+    card.appendChild(row);
+  });
+}
+
+function pick(i){
+  if(locked) return; locked=true;
+  const r=rounds[ri]; const rows=[...el('card').children];
+  const correct = i===r.lie;
+  rows.forEach((row,k)=>{
+    row.classList.add(k===r.lie?'lie':'truth');
+    row.querySelector('.mark').textContent = k===r.lie?'LIE':'TRUE';
+  });
+  rows[i].classList.add('picked');
+  el('card').classList.add('reveal-lock');
+  if(correct){ score++; streak++; el('scoreN').textContent=score; applause();
+    el('streak').textContent = streak>=2? '🔥'+streak : '';
+  } else { streak=0; el('streak').textContent=''; rows[i].classList.add('wrongpick'); scratch(); }
+  el('nextBtn').textContent = ri>=rounds.length-1 ? 'See your result ▸' : 'Next ▸';
+  setTimeout(()=>el('nextBtn').classList.add('show'), 550);
+}
+
+el('nextBtn').onclick=()=>{
+  tick(); el('card').classList.remove('reveal-lock');
+  if(ri>=rounds.length-1){ finish(); return; }
+  ri++; const card=el('card'); card.style.opacity=0; card.style.transform='translateX(28px)';
+  setTimeout(()=>{ renderRound(); card.style.transition='.28s'; card.style.opacity=1; card.style.transform='none'; setTimeout(()=>card.style.transition='',300); },160);
+};
+
+function finish(){
+  if(audio){ try{audio.pause();}catch(e){} }
+  const g = score>=9?['SUPERFAN','You know her better than she knows herself.']
+        : score>=6?['FAN','You’ve clearly been paying attention.']
+        : ['STRANGER','...do you even follow her? Run it back.'];
+  el('gradeLabel').textContent=g[0];
+  el('finalScore').innerHTML=`${score}<span style="font-size:.5em;color:#e9d3ff"> / 10</span>`;
+  el('endSub').textContent=g[1];
+  el('endOv').classList.remove('hide');
+  el('endOv')._share=`I scored ${score}/10 on Truly's "Forever" — Two Truths & a Lie. ${g[0]}. play at trulys.world`;
+}
+
+el('startBtn').onclick=begin;
+el('againBtn').onclick=begin;
+el('shareBtn').onclick=async()=>{
+  const txt=el('endOv')._share||'';
+  try{ if(navigator.share){ await navigator.share({text:txt}); return; } }catch(e){}
+  try{ await navigator.clipboard.writeText(txt); const t=el('toast'); t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1400); }catch(e){}
+};
+window.addEventListener('keydown',e=>{
+  if(!el('startOv').classList.contains('hide')){ if(e.key===' '||e.key==='Enter') begin(); return; }
+  if(el('nextBtn').classList.contains('show') && (e.key==='Enter'||e.key===' ')){ el('nextBtn').click(); return; }
+  if(['1','2','3'].includes(e.key)) pick(+e.key-1);
+});
+</script>
+</body>
+</html>

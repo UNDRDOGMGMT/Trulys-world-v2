@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>BOY — say it to his face</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&family=Cutive+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{ --plum:#22123a; --aubergine:#150a22; --magenta:#ff4fa3; --hot:#ff2d8f; --amber:#ffcf7a; --lilac:#9d8bff; --bone:#f4ecda; --red:#ff2d55; --green:#43e08a; }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
+  html,body{height:100%;overflow:hidden;background:var(--aubergine);}
+  body{font-family:'Special Elite',monospace;color:var(--bone);touch-action:none;}
+  #stage{position:fixed;inset:0;overflow:hidden;}
+  #street{position:absolute;inset:0;z-index:0;background:#150a22 center/cover no-repeat;}
+  #street.shake{animation:sh .26s;} @keyframes sh{0%,100%{transform:none}25%{transform:translate(-7px,4px)}70%{transform:translate(6px,-3px)}}
+  .vig{position:absolute;inset:0;z-index:5;pointer-events:none;background:radial-gradient(ellipse at 50% 42%,transparent 54%,rgba(6,3,14,.68) 100%);}
+  .scan{position:absolute;inset:0;z-index:5;pointer-events:none;mix-blend-mode:overlay;opacity:.28;background:repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.4) 3px);}
+
+  #guyWrap{position:absolute;left:56%;top:52%;z-index:2;transform:translate(-50%,-50%);transform-origin:50% 100%;transition:transform .45s cubic-bezier(.2,1,.3,1),filter .12s;pointer-events:none;}
+  #guy{height:min(62vh,560px);display:block;filter:drop-shadow(0 18px 30px rgba(0,0,0,.55));transition:transform .12s;}
+  #guyWrap.flinch{transform:translate(calc(-50% + 10px),-50%) scale(var(--gs,1));}
+  #guyWrap.hit #guy{filter:brightness(2.1) drop-shadow(0 0 20px var(--magenta));}
+  #trulyWrap{position:absolute;left:5%;bottom:-2%;z-index:4;pointer-events:none;transition:transform .12s;}
+  #truly{height:min(46vh,380px);display:block;filter:drop-shadow(0 -6px 22px rgba(255,79,163,.35));}
+  #trulyWrap.throw{transform:translateY(-6px) rotate(-2deg) scale(1.03);}
+
+  #fx{position:absolute;inset:0;z-index:6;}
+
+  /* HUD */
+  #hud{position:absolute;top:0;left:0;right:0;z-index:8;display:flex;justify-content:space-between;align-items:flex-start;
+    padding:calc(12px + env(safe-area-inset-top)) clamp(14px,4vw,32px) 8px;pointer-events:none;}
+  .egobar{width:min(52vw,340px);}
+  .egolab{font-family:'Cutive Mono',monospace;font-size:9px;letter-spacing:.22em;color:#e2c7f0;text-transform:uppercase;}
+  .egometer{height:14px;border-radius:8px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:5px;border:1px solid rgba(255,79,163,.4);}
+  .egofill{height:100%;width:100%;background:linear-gradient(90deg,var(--red),var(--amber));transition:width .3s;}
+  .stageN{font-family:'Bebas Neue',sans-serif;font-size:15px;color:var(--amber);margin-top:2px;letter-spacing:.05em;}
+  .scorebox{text-align:right;}
+  .score{font-family:'Bebas Neue',sans-serif;font-size:clamp(24px,3.6vw,36px);letter-spacing:.05em;line-height:1;color:var(--bone);text-shadow:0 0 12px rgba(255,79,163,.5);}
+  .scorelab{font-family:'Cutive Mono',monospace;font-size:9px;letter-spacing:.22em;color:#e2c7f0;text-transform:uppercase;}
+  .combo{font-family:'Bebas Neue',sans-serif;font-size:clamp(16px,2.4vw,24px);color:var(--amber);letter-spacing:.04em;min-height:20px;text-shadow:0 0 12px rgba(255,207,122,.6);}
+
+  #tapHint{position:absolute;bottom:calc(128px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:7;
+    font-family:'Cutive Mono',monospace;font-size:11px;letter-spacing:.14em;color:#e2c7f0;text-transform:uppercase;opacity:.7;pointer-events:none;text-align:center;}
+
+  /* lyric deck — pick a line, fire it at him */
+  #deck{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom));z-index:9;
+    display:flex;gap:8px;justify-content:center;align-items:stretch;flex-wrap:wrap;padding:0 12px;pointer-events:none;}
+  .lyric{pointer-events:auto;font-family:'Bebas Neue',sans-serif;font-size:clamp(14px,3.3vw,21px);letter-spacing:.02em;line-height:1.02;
+    color:var(--bone);background:rgba(20,10,30,.82);border:2px solid rgba(255,79,163,.5);border-radius:14px;padding:10px 15px;
+    max-width:46vw;cursor:pointer;box-shadow:0 6px 20px -6px rgba(255,79,163,.5);transition:transform .12s,border-color .12s,box-shadow .12s,opacity .2s;
+    backdrop-filter:blur(4px);text-align:center;display:flex;align-items:center;}
+  .lyric:hover{transform:translateY(-2px);border-color:var(--magenta);box-shadow:0 0 26px rgba(255,79,163,.65);}
+  .lyric:active{transform:scale(.95);}
+  .lyric.sig{border-color:var(--amber);color:var(--amber);animation:sigpulse 1s infinite;}
+  @keyframes sigpulse{0%,100%{box-shadow:0 0 18px rgba(255,207,122,.5)}50%{box-shadow:0 0 36px rgba(255,207,122,.95)}}
+
+  .ov{position:absolute;inset:0;z-index:14;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    gap:15px;padding:26px;background:radial-gradient(ellipse at 50% 42%,rgba(21,10,34,.74),rgba(6,3,14,.95));backdrop-filter:blur(3px);}
+  .ov.hide{display:none;}
+  .big{font-family:'Bebas Neue',sans-serif;font-size:clamp(38px,10vw,100px);letter-spacing:.03em;line-height:.9;color:var(--amber);text-shadow:0 0 30px rgba(255,207,122,.6);}
+  .big .pink{color:var(--magenta);} .big.red{color:var(--red);text-shadow:0 0 30px rgba(255,45,85,.6);}
+  .osub{font-family:'Cutive Mono',monospace;font-size:clamp(12px,1.8vw,15px);color:#e6d4f4;max-width:40ch;line-height:1.75;letter-spacing:.04em;}
+  .btn{font-family:'Special Elite',monospace;font-size:clamp(15px,2vw,19px);letter-spacing:.1em;color:#2a1730;background:var(--amber);border:none;border-radius:999px;padding:13px 32px;cursor:pointer;box-shadow:0 0 26px rgba(255,207,122,.5);transition:.15s;}
+  .btn:hover{transform:translateY(-1px);}
+  .keys{font-family:'Cutive Mono',monospace;font-size:11px;letter-spacing:.13em;color:#c3b0e0;text-transform:uppercase;}
+  #count{position:absolute;inset:0;z-index:13;display:none;align-items:center;justify-content:center;pointer-events:none;}
+  #count b{font-family:'Bebas Neue',sans-serif;font-size:clamp(70px,18vw,170px);color:var(--bone);text-shadow:0 0 30px rgba(255,79,163,.7);animation:cpop .7s;}
+  @keyframes cpop{from{transform:scale(1.7);opacity:0}40%{opacity:1}to{transform:scale(1);opacity:.9}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="street"></div>
+  <div id="guyWrap"><img id="guy" src="/boy/guy-1.png?v=joshua2" alt=""></div>
+  <div id="trulyWrap"><img id="truly" src="/boy/truly.png" alt=""></div>
+  <canvas id="fx"></canvas>
+  <div class="vig"></div><div class="scan"></div>
+
+  <div id="hud">
+    <div class="egobar">
+      <div class="egolab">his ego</div>
+      <div class="egometer"><div class="egofill" id="egofill"></div></div>
+      <div class="stageN" id="stageN">ALL THAT CONFIDENCE</div>
+    </div>
+    <div class="scorebox">
+      <div class="score" id="score">0</div>
+      <div class="scorelab">read to filth</div>
+      <div class="combo" id="combo"></div>
+    </div>
+  </div>
+
+  <div id="tapHint">pick a line, fire it at him · tap his comebacks to shut them down</div>
+  <div id="deck"></div>
+  <div id="count"><b id="countN">3</b></div>
+
+  <div class="ov" id="startOv">
+    <div class="big">BO<span class="pink">Y</span></div>
+    <div class="osub">Joshua's posted up outside Free People acting like he did nothing wrong. <b>Pick a line from the deck and fire it at him</b> — every truth from the song chips his ego down. When he tries to <b>clap back</b>, tap the bubble to shut it down before it lands. Read him until there's nothing left but a little boy.</div>
+    <button class="btn" id="startBtn">▸ say it to his face</button>
+    <div class="keys">tap / click / space</div>
+  </div>
+
+  <div class="ov hide" id="endOv">
+    <div class="big" id="endTitle">…BOY.</div>
+    <div class="osub" id="endSub"></div>
+    <button class="btn" id="retryBtn">▸ run it back</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   BOY — verbal-assault reskin. Truly throws her own lyrics at the
+   bleached-buzzcut fuckboy outside Free People in Silver Lake; each
+   line chips his EGO down and shrinks him from cocky → wincing →
+   crying little boy. Tap his comeback bubbles to shut them down.
+   Higgsfield art: /boy/guy-1..3, truly, street. Vertical slice:
+   when the "Boy" master lands, throw lines on the beat.
+   ============================================================ */
+const el=id=>document.getElementById(id);
+const guyWrap=el('guyWrap'), guy=el('guy'), trulyWrap=el('trulyWrap'), street=el('street');
+street.style.backgroundImage="url('/boy/street.jpg?v=joshua2')";
+const fx=el('fx'), ctx=fx.getContext('2d');
+let W=0,H=0,DPR=1;
+function resize(){ DPR=Math.min(2,window.devicePixelRatio||1); W=innerWidth; H=innerHeight; fx.width=W*DPR; fx.height=H*DPR; fx.style.width=W+'px'; fx.style.height=H+'px'; ctx.setTransform(DPR,0,0,DPR,0,0); }
+addEventListener('resize',resize); resize();
+
+// the lyric one-liners she throws — escalating, signature last
+const LINES=[
+  "I thought you were a man",
+  "the world was in your hands",
+  "but you chose to destroy",
+  "I hate your hair dye on my sheets",
+  "I hate your scent on my sleeves",
+  "I hate who you turned out to be",
+  "you'll relapse on your confidence",
+  "a week since you could speak",
+  "you've never been a man",
+  "by that day I'll be over it",
+  "underneath it all…",
+];
+const SIG="you're just a little boy";
+// his weak clap-backs (tap to shut down)
+const COMEBACKS=["you're crazy","my ex was crazy too","u up?","whatever","I could pull anyone","it's not that deep","you'll miss me","new phone who dis"];
+const STAGES=[
+  {img:'/boy/guy-1.png?v=joshua2', gs:1.0,  name:'ALL THAT CONFIDENCE'},
+  {img:'/boy/guy-2.png?v=joshua2', gs:0.82, name:'STARTING TO CRACK'},
+  {img:'/boy/guy-3.png?v=joshua2', gs:0.6,  name:'…A LITTLE BOY'},
+];
+
+let ego, lineI, score, combo, bestCombo, stage, running, ended, shots, particles, pops, bubble, cbT, audio, lastT, elapsed;
+
+/* ---------- SFX ---------- */
+let actx=null; const ac=()=>actx||(actx=new (window.AudioContext||window.webkitAudioContext)());
+function tone(type,f0,f1,d,v){const c=ac(),t=c.currentTime,o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(Math.max(1,f1),t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(0.001,t+d);o.connect(g).connect(c.destination);o.start(t);o.stop(t+d+0.02);}
+const sThrow=()=>tone('sine',900,1400,0.09,0.05);
+const sHit=()=>{tone('square',260,60,0.16,0.14);const c=ac(),t=c.currentTime,n=c.createBufferSource(),b=c.createBuffer(1,2600,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<2600;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/2600,2);n.buffer=b;const g=c.createGain();g.gain.value=0.1;n.connect(g).connect(c.destination);n.start();};
+const sShutdown=()=>tone('square',700,300,0.1,0.08);
+const sRecover=()=>tone('sawtooth',180,240,0.18,0.08);
+const sWin=()=>{[600,760,920,1160].forEach((f,k)=>setTimeout(()=>tone('sine',f,f*1.3,0.16,0.1),k*70));};
+
+/* ---------- audio hook (real master swaps in) ---------- */
+function startAudio(){ try{ audio=new Audio('/audio/05-boy.mp3'); audio.volume=0.72; audio.loop=true; audio.play().catch(()=>{}); }catch(e){} }
+
+/* ---------- geometry helpers ---------- */
+function guyCenter(){ const r=guy.getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height*0.34}; }
+function trulyMouth(){ const r=el('truly').getBoundingClientRect(); return {x:r.left+r.width*0.7, y:r.top+r.height*0.18}; }
+
+/* ---------- flow ---------- */
+function reset(){ ego=100; lineI=0; score=0; combo=0; bestCombo=0; stage=0; running=false; ended=false;
+  shots=[]; particles=[]; pops=[]; bubble=null; cbT=3.2; elapsed=0;
+  guy.src=STAGES[0].img; guyWrap.style.setProperty('--gs',1); guyWrap.style.transform='translate(-50%,-50%) scale(1)';
+  el('egofill').style.width='100%'; el('stageN').textContent=STAGES[0].name; el('score').textContent='0'; el('combo').textContent='';
+  dealDeck(); el('deck').style.visibility='hidden'; el('tapHint').style.visibility='hidden';
+}
+function begin(){ reset(); el('startOv').classList.add('hide'); el('endOv').classList.add('hide');
+  let n=3; el('count').style.display='flex'; el('countN').textContent=n;
+  const iv=setInterval(()=>{ n--; if(n<=0){ clearInterval(iv); el('count').style.display='none'; running=true; lastT=performance.now(); startAudio(); el('deck').style.visibility='visible'; el('tapHint').style.visibility='visible'; }
+    else { el('countN').textContent=n; el('countN').style.animation='none'; void el('countN').offsetWidth; el('countN').style.animation=''; } },700); }
+
+function applyStage(){
+  const want = ego>66?0 : ego>33?1 : 2;
+  if(want!==stage){ stage=want; const s=STAGES[stage]; guy.src=s.img; el('stageN').textContent=s.name;
+    guyWrap.style.setProperty('--gs',s.gs); guyWrap.style.transform=`translate(-50%,-50%) scale(${s.gs})`; }
+}
+
+/* ---------- the lyric DECK — pick a line, fire it at him ---------- */
+let pool=[], deck=[];
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function nextLyric(){ if(pool.length===0) pool=shuffle(LINES.slice()); return { text: pool.pop(), sig:false }; }
+function dealDeck(){ pool=shuffle(LINES.slice()); deck=[nextLyric(),nextLyric(),nextLyric()]; renderDeck(); }
+function renderDeck(){
+  const d=el('deck'); if(!d) return; d.innerHTML='';
+  deck.forEach((card,idx)=>{
+    const b=document.createElement('button');
+    b.className='lyric'+(card.sig?' sig':'');
+    b.textContent=(card.sig?'★ ':'')+card.text;
+    b.addEventListener('click',()=>pickLyric(idx));
+    d.appendChild(b);
+  });
+}
+// once his ego is low enough, slip the finisher into the deck (glowing)
+function offerFinisher(){ if(!running||ended) return; if(deck.some(c=>c.sig)) return;
+  deck[(Math.random()*deck.length)|0]={text:SIG,sig:true}; renderDeck(); }
+function pickLyric(idx){
+  if(!running||ended) return;
+  const card=deck[idx]; if(!card) return;
+  throwLine(card.text, card.sig);
+  deck[idx]=nextLyric();                 // refill the slot with a fresh line
+  renderDeck();
+  if(ego<=20) offerFinisher();           // keep the finisher on the table until it lands
+}
+
+/* ---------- throwing a chosen line ---------- */
+function throwLine(text, sig){
+  if(!running||ended) return;
+  const from=trulyMouth(), to=guyCenter();
+  shots.push({text, x:from.x, y:from.y, x0:from.x,y0:from.y, x1:to.x,y1:to.y, t:0, dur:0.34, sig:!!sig, done:false});
+  sThrow(); trulyWrap.classList.remove('throw'); void trulyWrap.offsetWidth; trulyWrap.classList.add('throw'); setTimeout(()=>trulyWrap.classList.remove('throw'),150);
+}
+function land(shot){
+  const dmg = (shot.sig?10:2.2) * (1 + Math.min(0.5, combo*0.05));   // eased: slower ego drain so the read spans the song
+  ego=Math.max(0,ego-dmg); combo++; bestCombo=Math.max(bestCombo,combo);
+  const gain=Math.round((shot.sig?40:10)*(1+Math.floor(combo/3)*0.5)); score+=gain;
+  el('score').textContent=score; el('egofill').style.width=ego+'%';
+  el('combo').textContent = combo>=3? ('×'+(Math.floor(combo/3)+1)+'  '+combo+' streak'):'';
+  sHit(); street.classList.remove('shake'); void street.offsetWidth; street.classList.add('shake');
+  guyWrap.classList.remove('hit','flinch'); void guyWrap.offsetWidth; guyWrap.classList.add('hit','flinch');
+  setTimeout(()=>guyWrap.classList.remove('hit','flinch'),150);
+  const c=guyCenter(); for(let i=0;i<16;i++){const a=Math.random()*6.28,s=90+Math.random()*230;particles.push({x:c.x,y:c.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-60,life:0.5+Math.random()*0.4,col:shot.sig?[255,79,163]:[255,207,122]});}
+  pops.push({x:c.x,y:c.y-40,txt:shot.sig?'💥 '+SIG.toUpperCase():'+'+gain,life:shot.sig?1.4:0.8,c:shot.sig?'#ff4fa3':'#ffcf7a',big:shot.sig});
+  applyStage();
+  if(ego<=20 && !ended) offerFinisher();
+  if(ego<=0) win();
+}
+
+/* ---------- his comebacks ---------- */
+function spawnComeback(){
+  if(bubble||ended) return;
+  const c=guyCenter(); const txt=COMEBACKS[(Math.random()*COMEBACKS.length)|0];
+  bubble={x:c.x+70, y:c.y-70, txt, life:2.2, r:0};
+}
+function popBubble(){ if(!bubble) return; sShutdown(); const gain=15*(1+Math.floor(combo/3)); score+=gain; combo++; el('score').textContent=score;
+  pops.push({x:bubble.x,y:bubble.y,txt:'SHUT DOWN +'+gain,life:0.9,c:'#43e08a'}); bubble=null; }
+function bubbleLands(){ // he recovers a little, combo breaks
+  sRecover(); ego=Math.min(100,ego+4); combo=0; el('combo').textContent=''; el('egofill').style.width=ego+'%'; applyStage();
+  pops.push({x:bubble.x,y:bubble.y,txt:'he recovers +7',life:1,c:'#9d8bff'}); bubble=null;
+  if(ego>=100) lose();
+}
+
+/* ---------- input ---------- */
+function at(e){ const t=e.touches?e.touches[0]:e; return {x:t.clientX,y:t.clientY}; }
+function tap(e){
+  if(!el('startOv').classList.contains('hide')){ return; }
+  if(!el('endOv').classList.contains('hide')){ return; }
+  if(!running||ended) return;
+  const p=at(e);
+  // tapping the stage only shuts down his comeback bubbles now — lines come from the deck
+  if(bubble && Math.hypot(p.x-bubble.x,p.y-bubble.y) < bubble.r+40){ popBubble(); }
+}
+fx.addEventListener('mousedown',tap);
+fx.addEventListener('touchstart',e=>{tap(e);},{passive:true});
+addEventListener('keydown',e=>{
+  if(e.key===' '||e.key==='Enter'){ e.preventDefault();
+    if(!el('startOv').classList.contains('hide')){ begin(); return; }
+    if(!el('endOv').classList.contains('hide')){ begin(); return; }
+    if(bubble){ popBubble(); return; }   // space shuts down a pending clap-back…
+    pickLyric(0);                        // …otherwise fires the first line in the deck
+  }
+  if(e.key>='1'&&e.key<='3' && running && !ended){ pickLyric(+e.key-1); } // 1/2/3 fire deck slots
+});
+el('startBtn').onclick=begin; el('retryBtn').onclick=begin;
+
+/* ---------- end ---------- */
+function endScreen(t,cls,sub){ ended=true; if(audio){try{audio.pause();}catch(e){}} el('deck').style.visibility='hidden'; el('tapHint').style.visibility='hidden'; el('endTitle').textContent=t; el('endTitle').className='big '+cls; el('endSub').innerHTML=sub; el('endOv').classList.remove('hide'); }
+function win(){ if(ended)return; ended=true; sWin(); guy.src=STAGES[2].img; guyWrap.style.setProperty('--gs',0.55); guyWrap.style.transform='translate(-50%,-45%) scale(0.55)';
+  pops.push({x:guyCenter().x,y:guyCenter().y-60,txt:'💥 '+SIG.toUpperCase(),life:2,c:'#ff4fa3',big:true});
+  setTimeout(()=>endScreen('…BOY.','pink', `You read him down to nothing outside Free People. Best streak <b>${bestCombo}</b>. He'll have this to tell all his friends — what really happened.`),1200); }
+function lose(){ if(ended)return; endScreen('HE TALKED HIS WAY OUT','red', "You let too many clap-backs land and he wriggled off the hook. Get back out there and finish it."); }
+
+/* ---------- loop ---------- */
+function update(dt){
+  elapsed+=dt;
+  // shots travel then land
+  for(let i=shots.length-1;i>=0;i--){ const s=shots[i]; s.t+=dt/s.dur;
+    if(s.t>=1 && !s.done){ s.done=true; land(s); shots.splice(i,1); continue; }
+    const e=1-Math.pow(1-Math.min(1,s.t),2); s.x=s.x0+(s.x1-s.x0)*e; s.y=s.y0+(s.y1-s.y0)*e;
+  }
+  // comebacks
+  if(running && !ended){ cbT-=dt; if(cbT<=0 && !bubble && ego<96){ spawnComeback(); cbT=3.6+Math.random()*2.6; } }
+  if(bubble){ bubble.r=Math.min(1,(2.2-bubble.life)/0.25)*1; bubble.life-=dt; if(bubble.life<=0) bubbleLands(); }
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=800*dt;p.life-=dt;if(p.life<=0)particles.splice(i,1);}
+  for(let i=pops.length-1;i>=0;i--){const p=pops[i];p.y-=34*dt;p.life-=dt;if(p.life<=0)pops.splice(i,1);}
+}
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  // flying lines
+  for(const s of shots){ const sc=0.5+Math.min(1,s.t)*0.9; ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(-0.06); ctx.scale(sc,sc);
+    ctx.font="700 30px 'Bebas Neue',sans-serif"; ctx.textAlign='center'; ctx.lineWidth=6; ctx.strokeStyle='#2a1730';
+    ctx.strokeText(s.text.toUpperCase(), 0,0); ctx.fillStyle=s.sig?'#ff4fa3':'#ffcf7a'; ctx.shadowColor=s.sig?'#ff2d8f':'#ffcf7a'; ctx.shadowBlur=16; ctx.fillText(s.text.toUpperCase(),0,0); ctx.restore(); }
+  ctx.shadowBlur=0;
+  // particles
+  for(const p of particles){ ctx.globalAlpha=Math.max(0,p.life); ctx.fillStyle=`rgb(${p.col[0]},${p.col[1]},${p.col[2]})`; ctx.beginPath(); ctx.arc(p.x,p.y,3.5,0,6.28); ctx.fill(); }
+  ctx.globalAlpha=1;
+  // comeback bubble
+  if(bubble){ const b=bubble; ctx.save(); ctx.translate(b.x,b.y); ctx.font="700 24px 'Bebas Neue',sans-serif"; ctx.textAlign='center';
+    const w=Math.max(90,ctx.measureText(b.txt.toUpperCase()).width+34), h=44;
+    ctx.fillStyle='rgba(20,10,30,.9)'; ctx.strokeStyle='#9d8bff'; ctx.lineWidth=2.5; ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(-w/2,-h/2,w,h,12); else ctx.rect(-w/2,-h/2,w,h); ctx.fill(); ctx.stroke();
+    // timer ring
+    ctx.strokeStyle='#ff2d55'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(-w/2+2,-h/2-2,7,-1.57,-1.57+6.28*(b.life/2.2)); ctx.stroke();
+    ctx.fillStyle='#e6d4f4'; ctx.shadowColor='#9d8bff'; ctx.shadowBlur=8; ctx.fillText(b.txt.toUpperCase(),0,8); ctx.shadowBlur=0;
+    ctx.fillStyle='#ff2d55'; ctx.font="700 12px 'Bebas Neue',sans-serif"; ctx.fillText('TAP TO SHUT DOWN', 0, h/2+14); ctx.restore(); }
+  // pops
+  for(const p of pops){ ctx.globalAlpha=Math.max(0,Math.min(1,p.life)); ctx.font=`700 ${p.big?40:26}px 'Bebas Neue',sans-serif`; ctx.textAlign='center'; ctx.fillStyle=p.c; ctx.shadowColor=p.c; ctx.shadowBlur=14; ctx.fillText(p.txt,p.x,p.y); ctx.shadowBlur=0; }
+  ctx.globalAlpha=1; ctx.textAlign='left';
+}
+function frame(now){ if(running&&!ended){ const dt=Math.min(0.05,(now-lastT)/1000); lastT=now; update(dt); } draw(); requestAnimationFrame(frame); }
+
+reset(); requestAnimationFrame(frame);
+</script>
+</body>
+</html>

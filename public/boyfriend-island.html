@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>BOYFRIEND ISLAND — slice the red flags</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&family=Cutive+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{ --aubergine:#150a22; --plum:#22123a; --magenta:#ff4fa3; --hot:#ff2d8f; --amber:#ffcf7a; --lilac:#9d8bff; --teal:#5fe3d4; --bone:#f4ecda; --red:#ff3b5c; --green:#43e08a; }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
+  html,body{height:100%;overflow:hidden;background:var(--aubergine);}
+  body{font-family:'Special Elite',monospace;color:var(--bone);touch-action:none;}
+  #stage{position:fixed;inset:0;overflow:hidden;}
+  #bg{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,#2a0f3e 0%,#5a1a55 55%,#c23b6f 84%,#ff9b5a 100%) center/cover no-repeat;}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:2;}
+  .vig{position:absolute;inset:0;z-index:3;pointer-events:none;background:radial-gradient(ellipse at 50% 40%,transparent 56%,rgba(6,3,14,.6) 100%);}
+  .scan{position:absolute;inset:0;z-index:3;pointer-events:none;mix-blend-mode:overlay;opacity:.25;background:repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.4) 3px);}
+
+  #hud{position:absolute;top:0;left:0;right:0;z-index:6;display:flex;justify-content:space-between;align-items:flex-start;
+    padding:calc(12px + env(safe-area-inset-top)) clamp(14px,4vw,32px) 8px;pointer-events:none;}
+  .hearts{display:flex;gap:5px;font-size:22px;} .heart{color:var(--red);filter:drop-shadow(0 0 6px rgba(255,59,92,.6));transition:.2s;} .heart.gone{color:#3a2440;opacity:.5;transform:scale(.8);}
+  .scorebox{text-align:right;}
+  .score{font-family:'Bebas Neue',sans-serif;font-size:clamp(26px,4vw,40px);letter-spacing:.05em;line-height:1;color:var(--bone);text-shadow:0 0 14px rgba(255,79,163,.5);}
+  .scorelab{font-family:'Cutive Mono',monospace;font-size:9px;letter-spacing:.22em;color:#d6b8e8;text-transform:uppercase;}
+  .combo{font-family:'Bebas Neue',sans-serif;font-size:clamp(16px,2.4vw,24px);color:var(--amber);letter-spacing:.04em;min-height:20px;text-shadow:0 0 12px rgba(255,207,122,.6);}
+
+  .ov{position:absolute;inset:0;z-index:14;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    gap:15px;padding:26px;background:radial-gradient(ellipse at 50% 42%,rgba(21,10,34,.7),rgba(6,3,14,.94));backdrop-filter:blur(3px);}
+  .ov.hide{display:none;}
+  .big{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,8.5vw,80px);letter-spacing:.02em;line-height:.92;color:var(--amber);text-shadow:0 0 28px rgba(255,207,122,.6);}
+  .big .pink{color:var(--magenta);}
+  .osub{font-family:'Cutive Mono',monospace;font-size:clamp(12px,1.8vw,15px);color:#e6d4f4;max-width:40ch;line-height:1.7;letter-spacing:.03em;}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;font-family:'Cutive Mono',monospace;font-size:12px;color:#e6d4f4;letter-spacing:.04em;}
+  .legend b{font-family:'Bebas Neue',sans-serif;letter-spacing:.06em;}
+  .legend .r b{color:var(--red);} .legend .g b{color:var(--green);}
+  .btn{font-family:'Special Elite',monospace;font-size:clamp(15px,2vw,19px);letter-spacing:.1em;color:#2a1730;background:var(--amber);border:none;border-radius:999px;padding:13px 32px;cursor:pointer;box-shadow:0 0 26px rgba(255,207,122,.5);transition:.15s;}
+  .btn:hover{transform:translateY(-1px);}
+  .grade{font-family:'Bebas Neue',sans-serif;font-size:clamp(24px,5.5vw,44px);letter-spacing:.05em;color:var(--magenta);}
+  .oscore{display:flex;gap:24px;font-family:'Cutive Mono',monospace;} .oscore div{color:#e7dcff;font-size:15px;} .oscore span{display:block;font-size:9px;letter-spacing:.2em;color:#a892c0;text-transform:uppercase;margin-top:2px;}
+  #count{position:absolute;inset:0;z-index:13;display:none;align-items:center;justify-content:center;pointer-events:none;}
+  #count b{font-family:'Bebas Neue',sans-serif;font-size:clamp(70px,18vw,170px);color:var(--bone);text-shadow:0 0 30px rgba(255,79,163,.7);animation:cpop .7s;}
+  @keyframes cpop{from{transform:scale(1.7);opacity:0}40%{opacity:1}to{transform:scale(1);opacity:.9}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg"></div>
+  <canvas id="cv"></canvas>
+  <div class="vig"></div><div class="scan"></div>
+
+  <div id="hud">
+    <div class="hearts" id="hearts"></div>
+    <div class="scorebox">
+      <div class="score" id="score">0</div>
+      <div class="scorelab">red flags cut</div>
+      <div class="combo" id="combo"></div>
+    </div>
+  </div>
+
+  <div id="count"><b id="countN">3</b></div>
+
+  <div class="ov" id="startOv">
+    <div class="big">BOYFRIEND<br><span class="pink">ISLAND</span></div>
+    <div class="osub">They keep tossing them up. Swipe to <b>slice every RED FLAG</b> — the BBLs, the "u up?" texts, the gym selfies. But if you slice a <b>GREEN FLAG</b>, that's a keeper you just wrecked — it costs you.</div>
+    <div class="legend"><span class="r">slice → <b>RED FLAGS</b></span><span class="g">spare → <b>GREEN FLAGS</b></span></div>
+    <button class="btn" id="startBtn">▸ start slicing</button>
+  </div>
+
+  <div class="ov hide" id="endOv">
+    <div class="grade" id="grade">RED FLAG RADAR: ELITE</div>
+    <div class="big" id="endScore">0</div>
+    <div class="oscore">
+      <div id="fCut">0<span>red flags cut</span></div>
+      <div id="fBest">0<span>best combo</span></div>
+      <div id="fSpared">0<span>keepers spared</span></div>
+    </div>
+    <div class="osub" id="endSub"></div>
+    <button class="btn" id="retryBtn">▸ back to the island</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   BOYFRIEND ISLAND — Fruit-Ninja slicer. Truly slices the RED
+   FLAGS (fuckboy activities / BBLs) tossed up like fruit, and
+   must SPARE the GREEN FLAGS (the keepers). Non-violent: flags &
+   confetti splats, no gore. Song: "You Two Deserve Each Other".
+   Vertical slice: toss rhythm is procedural (waves) — beat-map to
+   the master later; the audio hook is already wired.
+   ============================================================ */
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d'), el=id=>document.getElementById(id);
+let W=0,H=0,DPR=1;
+function resize(){ DPR=Math.min(2,window.devicePixelRatio||1); W=innerWidth; H=innerHeight; cv.width=W*DPR; cv.height=H*DPR; cv.style.width=W+'px'; cv.style.height=H+'px'; ctx.setTransform(DPR,0,0,DPR,0,0); }
+addEventListener('resize',resize); resize();
+// swap in the Higgsfield island backdrop if present
+(function(){ const img=new Image(); img.onload=()=>{ const b=el('bg').style;
+    b.backgroundImage=`linear-gradient(180deg,rgba(21,10,34,.15),rgba(21,10,34,.05) 40%,rgba(21,10,34,.35)), url('/island/island.jpg')`;
+    b.backgroundSize='cover, cover'; b.backgroundPosition='center, center'; b.backgroundRepeat='no-repeat, no-repeat'; }; img.src='/island/island.jpg'; })();
+
+// each sliceable object = a little Higgsfield cartoon sticker + label + red/green type
+const ITEMS=[
+  { icon:'peach',       label:'BBL',          type:'red' },
+  { icon:'uup',         label:'u up? 3am',    type:'red' },
+  { icon:'dumbbell',    label:'gym selfie',   type:'red' },
+  { icon:'read',        label:'left on read', type:'red' },
+  { icon:'brokenheart', label:'texts his ex', type:'red' },
+  { icon:'heartbomb',   label:'lovebomb',     type:'red' },
+  { icon:'bitcoin',     label:'crypto bro',   type:'red' },
+  { icon:'ghost',       label:'ghosted you',  type:'red' },
+  { icon:'vape',        label:'vapes indoors',type:'red' },
+  { icon:'couch',       label:'goes to therapy', type:'green' },
+  { icon:'briefcase',   label:'has a job',    type:'green' },
+  { icon:'bouquet',     label:'brings flowers',type:'green' },
+  { icon:'puppy',       label:'loyal',        type:'green' },
+  { icon:'speech',      label:'communicates', type:'green' },
+];
+const REDS=ITEMS.filter(i=>i.type==='red'), GREENS=ITEMS.filter(i=>i.type==='green');
+const IMG={};  // preloaded sticker images, keyed by icon name
+for(const it of ITEMS){ const im=new Image(); im.src='/island/icons/'+it.icon+'.png'; IMG[it.icon]=im; }
+
+let objs=[], trail=[], particles=[], pops=[], lives, score, combo, bestCombo, cut, spared, running, ended, spawnT, frenzyT, shake, audio, elapsed, lastT, swkChain;
+
+/* ---------- SFX ---------- */
+let actx=null; const ac=()=>actx||(actx=new (window.AudioContext||window.webkitAudioContext)());
+function tn(type,f0,f1,d,v){const c=ac(),t=c.currentTime,o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(Math.max(1,f1),t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(0.001,t+d);o.connect(g).connect(c.destination);o.start(t);o.stop(t+d+0.02);}
+const sSlice=(n=0)=>tn('sawtooth',700+n*120,300,0.09,0.06);
+const sSplat=()=>{const c=ac(),t=c.currentTime,s=c.createBufferSource(),b=c.createBuffer(1,2600,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<2600;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/2600,2);s.buffer=b;const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=1400;const g=c.createGain();g.gain.value=0.12;s.connect(f).connect(g).connect(c.destination);s.start();};
+const sPenalty=()=>tn('sawtooth',200,60,0.3,0.16);
+const sCombo=()=>{[880,1100,1320].forEach((f,k)=>setTimeout(()=>tn('sine',f,f*1.3,0.12,0.08),k*55));};
+
+/* ---------- audio hook (real master swaps in) ---------- */
+function startAudio(){ try{ audio=new Audio('/audio/06-you-two-deserve-each-other.m4a'); audio.volume=0.72; audio.loop=true; audio.play().catch(()=>{}); }catch(e){} }
+
+/* ---------- spawn ----------
+   The old launch used vy = -sqrt(H)*34, but the height an object NEEDS to climb
+   scales with H, not sqrt(H) — so every toss peaked ~70% down the screen and the
+   whole wave stayed bunched in the bottom third. Launch speed is now solved from
+   a TARGET APEX instead, which is resolution-independent and lets each object in
+   a wave peak at a different height. */
+const GRAV = 1500;
+const objR = () => Math.max(38, Math.min(50, Math.min(W, H) * 0.055));
+
+/** speed needed to rise from the spawn line to `apexY` */
+function launchV(apexY){ return -Math.sqrt(2 * GRAV * Math.max(60, (H + 50) - apexY)); }
+
+function toss(it, x, apexY, delay, fan){
+  const vy = launchV(apexY);
+  const T = (2 * Math.abs(vy)) / GRAV;          // seconds airborne
+  const R = objR();
+  let vx = fan;
+  // keep the whole arc on screen — scale the fan rather than clipping it later
+  const land = x + vx * T;
+  if (land < R + 10)      vx = (R + 10 - x) / T;
+  else if (land > W - R - 10) vx = (W - R - 10 - x) / T;
+  objs.push({
+    x, y: H + 50, vx, vy, wait: delay,
+    rot: (Math.random() - 0.5) * 0.5, spin: (Math.random() - 0.5) * 2.2,
+    type: it.type, label: it.label, icon: it.icon,
+    r: R, apexY, sliced: false, missed: false,
+  });
+}
+
+function spawnWave(frenzy){
+  const n = frenzy ? 5 + ((Math.random() * 3) | 0) : 1 + ((Math.random() * 3) | 0);
+  // fan the whole wave across most of the width, not the middle 44%
+  const spread = Math.min(W * 0.62, 120 * n);
+  const cx = W * (0.5 + (Math.random() - 0.5) * 0.34);
+  const R = objR();
+  for (let i = 0; i < n; i++){
+    const red = frenzy ? true : Math.random() < 0.82;
+    const pool = red ? REDS : GREENS;
+    const it = pool[(Math.random() * pool.length) | 0];
+    const t = n === 1 ? 0 : i / (n - 1) - 0.5;                 // -0.5 .. 0.5
+    const x = Math.max(R + 12, Math.min(W - R - 12, cx + t * spread + (Math.random() - 0.5) * 40));
+    // each one peaks somewhere different in the top two-thirds
+    const apexY = H * (0.10 + Math.random() * 0.30);
+    // ...and leaves the water a beat apart, so a wave arrives as a ladder
+    const delay = frenzy ? i * 0.10 : Math.random() * 0.34;
+    toss(it, x, apexY, delay, t * (110 + Math.random() * 90));
+  }
+}
+
+/* ---------- slice detection ---------- */
+function segHit(o, x0,y0,x1,y1){
+  // distance from object center to the swipe segment
+  const dx=x1-x0, dy=y1-y0, l2=dx*dx+dy*dy;
+  let t=l2? ((o.x-x0)*dx+(o.y-y0)*dy)/l2 : 0; t=Math.max(0,Math.min(1,t));
+  const px=x0+t*dx, py=y0+t*dy; return Math.hypot(o.x-px,o.y-py) < o.r+8;
+}
+function doSlice(o, cutAng){
+  o.sliced=true; o.cutAng = cutAng ?? Math.random()*3.14;
+  const col=o.type==='red'?[255,59,92]:[67,224,138];
+  for(let i=0;i<16;i++){const a=Math.random()*6.28,s=90+Math.random()*260;particles.push({x:o.x,y:o.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-80,life:0.5+Math.random()*0.4,c:col});}
+  // pop off, then fade
+  o.sliceT=0; o.vy=Math.min(o.vy,-40)-70; o.spin*=1.6;
+  if(o.type==='red'){
+    cut++; combo++; bestCombo=Math.max(bestCombo,combo); swkChain++;
+    const apexHit = Math.abs(o.vy) < 260;            // caught it hanging at the top
+    let gain=10*Math.max(1,Math.floor(combo/3)+ (swkChain>1?swkChain:0));
+    if(apexHit){ gain=Math.round(gain*1.5); pops.push({x:o.x,y:o.y-52,txt:'HIGH!',life:.8,c:'#5fe3d4'}); }
+    score+=gain; sSlice(swkChain); if(swkChain===1)sSplat();
+    if(combo>0 && combo%5===0){ sCombo(); pops.push({x:o.x,y:o.y-30,txt:combo+' COMBO!',life:1,c:'#ffcf7a'}); }
+    else pops.push({x:o.x,y:o.y-24,txt:'+'+gain,life:0.8,c:'#ff9ec4'});
+  } else {
+    lives--; combo=0; sPenalty(); renderHearts(); shake=1;
+    pops.push({x:o.x,y:o.y-24,txt:'KEEPER! −1',life:1.1,c:'#43e08a'});
+    if(lives<=0) end(false);
+  }
+}
+
+/* ---------- pointer ---------- */
+let down=false, px=0, py=0;
+function pt(e){ const t=e.touches?e.touches[0]:e; return {x:t.clientX,y:t.clientY}; }
+function move(e){ if(!running||ended) return; const p=pt(e);
+  if(down){
+    // swkChain counts objects felled by ONE stroke, so it resets on press —
+    // resetting it here meant the multi-slice bonus could never exceed 1
+    const ang = Math.atan2(p.y - py, p.x - px);
+    for(const o of objs){ if(!o.sliced && o.wait<=0 && segHit(o,px,py,p.x,p.y)) doSlice(o, ang); }
+  trail.push({x:p.x,y:p.y,t:performance.now()}); }
+  px=p.x; py=p.y; }
+cv.addEventListener('mousedown',e=>{down=true;swkChain=0;const p=pt(e);px=p.x;py=p.y;});
+addEventListener('mouseup',()=>down=false);
+cv.addEventListener('mousemove',move);
+cv.addEventListener('touchstart',e=>{down=true;swkChain=0;const p=pt(e);px=p.x;py=p.y;},{passive:true});
+cv.addEventListener('touchmove',e=>{move(e);},{passive:true});
+cv.addEventListener('touchend',()=>down=false);
+
+/* ---------- loop ---------- */
+function renderHearts(){const b=el("hearts");b.innerHTML="";for(let i=0;i<LIVES0;i++){const s=document.createElement('span');s.className='heart'+(i>=lives?' gone':'');s.textContent='♥';b.appendChild(s);}}
+function update(dt){
+  elapsed+=dt;
+  if(shake>0) shake=Math.max(0,shake-dt*2.4);
+  // a frenzy every ~20s: a full arc of red flags, all of them keepers of nothing
+  frenzyT-=dt;
+  if(frenzyT<=0){ frenzyT=20+Math.random()*6; spawnWave(true); spawnT=1.5;
+    pops.push({x:W/2,y:H*0.3,txt:'RED FLAG FRENZY',life:1.4,c:'#ff3b5c'}); sCombo(); }
+  spawnT-=dt;
+  if(spawnT<=0){ spawnWave(false); const ramp=Math.max(0.85, 1.7-elapsed*0.006); spawnT=ramp*(0.8+Math.random()*0.5); }
+  const g=GRAV;
+  for(let i=objs.length-1;i>=0;i--){ const o=objs[i];
+    if(o.wait>0){ o.wait=Math.max(0,o.wait-dt); continue; }   // still queued below the waterline
+    o.vy+=g*dt; o.x+=o.vx*dt; o.y+=o.vy*dt; o.rot+=o.spin*dt;
+    if(o.sliced){ o.sliceT+=dt; if(o.sliceT>0.3){ objs.splice(i,1); continue; } }
+    if(!o.sliced && !o.missed && o.y>H+70 && o.vy>0){ o.missed=true; if(o.type==='red'){ combo=0; el('combo').textContent=''; } else { spared++; } }
+    if(o.y>H+120) objs.splice(i,1);
+  }
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=900*dt;p.life-=dt;if(p.life<=0)particles.splice(i,1);}
+  for(let i=pops.length-1;i>=0;i--){const p=pops[i];p.y-=40*dt;p.life-=dt;if(p.life<=0)pops.splice(i,1);}
+  const now=performance.now(); while(trail.length && now-trail[0].t>140) trail.shift();
+  el('score').textContent=score;
+  el('combo').textContent = combo>=3 ? ('×'+(Math.floor(combo/3)+1)+'  '+combo+' streak') : '';
+}
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  if(shake>0) ctx.translate((Math.random()-.5)*13*shake,(Math.random()-.5)*13*shake);
+  // sliceable cartoon stickers
+  for(const o of objs){
+    if(o.wait>0) continue;
+    const im=IMG[o.icon]; if(!im||!im.complete||!im.naturalWidth) continue;
+    const a=o.sliced?Math.max(0,1-o.sliceT/0.3):1, pop=o.sliced?(1+o.sliceT*1.6):1;
+    const R=o.r*2.0*pop, iw=R*(im.naturalWidth/im.naturalHeight), ih=R, red=o.type==='red';
+    ctx.save(); ctx.translate(o.x,o.y); ctx.rotate(o.rot);
+    if(!o.sliced){ // colored glow ring behind — keeps the red / green rule instant
+      ctx.beginPath(); ctx.arc(0,0,o.r+6,0,6.28);
+      ctx.fillStyle=red?'rgba(255,59,92,.22)':'rgba(67,224,138,.22)';
+      ctx.shadowColor=red?'#ff3b5c':'#43e08a'; ctx.shadowBlur=22; ctx.fill(); ctx.shadowBlur=0;
+      ctx.globalAlpha=0.9; ctx.lineWidth=3; ctx.strokeStyle=red?'#ff3b5c':'#43e08a'; ctx.stroke();
+    }
+    ctx.globalAlpha=a;
+    if(o.sliced){
+      // fall apart along the blade: draw the sticker twice, each copy clipped to
+      // one side of the cut line and drifting out along the cut's normal
+      ctx.restore();
+      const A=o.cutAng, sep=o.sliceT*130, nx=-Math.sin(A), ny=Math.cos(A);
+      for(const side of [-1,1]){
+        ctx.save(); ctx.globalAlpha=a;
+        ctx.translate(o.x+nx*sep*side, o.y+ny*sep*side);
+        ctx.rotate(A);
+        ctx.beginPath(); ctx.rect(-iw, side<0? -ih : 0, iw*2, ih); ctx.clip();
+        ctx.rotate(o.rot+o.sliceT*1.4*side - A);
+        ctx.drawImage(im, -iw/2, -ih/2, iw, ih);
+        ctx.restore();
+      }
+      ctx.save();
+    } else ctx.drawImage(im, -iw/2, -ih/2, iw, ih);
+    if(!o.sliced){ // label under the sticker
+      ctx.rotate(-o.rot);
+      ctx.font="700 16px 'Bebas Neue',sans-serif"; ctx.textAlign='center';
+      ctx.lineWidth=4; ctx.strokeStyle='rgba(10,4,20,.9)'; ctx.strokeText(o.label.toUpperCase(),0,o.r+22);
+      ctx.fillStyle=red?'#ffd0da':'#c7f7dd'; ctx.fillText(o.label.toUpperCase(),0,o.r+22); ctx.textAlign='left';
+    }
+    ctx.restore();
+  }
+  // particles (juice)
+  for(const p of particles){ ctx.globalAlpha=Math.max(0,p.life); ctx.fillStyle=`rgb(${p.c[0]},${p.c[1]},${p.c[2]})`; ctx.beginPath(); ctx.arc(p.x,p.y,3.5,0,6.28); ctx.fill(); }
+  ctx.globalAlpha=1;
+  // pop text
+  for(const p of pops){ ctx.globalAlpha=Math.max(0,p.life); ctx.font="700 26px 'Bebas Neue',sans-serif"; ctx.fillStyle=p.c; ctx.textAlign='center'; ctx.shadowColor=p.c; ctx.shadowBlur=12; ctx.fillText(p.txt,p.x,p.y); ctx.shadowBlur=0; }
+  ctx.globalAlpha=1; ctx.textAlign='left';
+  // blade trail
+  if(trail.length>1){ ctx.lineCap='round'; ctx.lineJoin='round';
+    for(let pass=0;pass<2;pass++){ ctx.beginPath(); ctx.moveTo(trail[0].x,trail[0].y); for(let i=1;i<trail.length;i++) ctx.lineTo(trail[i].x,trail[i].y);
+      ctx.strokeStyle=pass?'rgba(255,255,255,.9)':'rgba(255,79,163,.7)'; ctx.lineWidth=pass?4:14; ctx.shadowColor='#ff4fa3'; ctx.shadowBlur=pass?0:18; ctx.stroke(); }
+    ctx.shadowBlur=0;
+  }
+  ctx.restore();
+}
+function frame(now){ if(running&&!ended){ const dt=Math.min(0.05,(now-lastT)/1000); lastT=now; update(dt); } draw(); requestAnimationFrame(frame); }
+
+/* ---------- flow ---------- */
+const LIVES0=4;   // eased from 3
+function reset(){ objs=[];trail=[];particles=[];pops=[]; lives=LIVES0;score=0;combo=0;bestCombo=0;cut=0;spared=0;elapsed=0;spawnT=0.6;frenzyT=20;shake=0;running=false;ended=false;swkChain=0; renderHearts(); el('score').textContent='0'; el('combo').textContent=''; }
+function begin(){ reset(); el('startOv').classList.add('hide'); el('endOv').classList.add('hide');
+  let n=3; el('count').style.display='flex'; el('countN').textContent=n;
+  const iv=setInterval(()=>{ n--; if(n<=0){ clearInterval(iv); el('count').style.display='none'; running=true; lastT=performance.now(); startAudio(); }
+    else { el('countN').textContent=n; el('countN').style.animation='none'; void el('countN').offsetWidth; el('countN').style.animation=''; } },700); }
+function end(won){ if(ended)return; ended=true; if(audio){try{audio.pause();}catch(e){}}
+  // spared = green flags that fell untouched
+  const g = score>=800?['RED FLAG RADAR: ELITE',"Not one keeper wrecked, not one red flag left standing. Unbothered. Moisturized."]
+        : score>=350?['RED FLAG RADAR: DECENT',"You caught most of them. A couple slipped past — you'll live."]
+        : ['RED FLAG RADAR: BLIND',"...you sliced a keeper, didn't you. We need to talk."];
+  el('grade').textContent=g[0]; el('endSub').textContent=g[1];
+  el('endScore').textContent=score; el('fCut').firstChild.textContent=cut; el('fBest').firstChild.textContent=bestCombo; el('fSpared').firstChild.textContent=spared;
+  el('endOv').classList.remove('hide');
+}
+el('startBtn').onclick=begin; el('retryBtn').onclick=begin;
+addEventListener('keydown',e=>{ if((e.key===' '||e.key==='Enter') && (!el('startOv').classList.contains('hide')||!el('endOv').classList.contains('hide'))) begin(); });
+// end when the song finishes (real master) — until then, a generous fallback
+setInterval(()=>{ if(running&&!ended&&elapsed>95) end(true); },500);
+
+reset(); requestAnimationFrame(frame);
+</script>
+</body>
+</html>

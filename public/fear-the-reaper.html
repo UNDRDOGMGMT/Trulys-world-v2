@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>FEAR THE REAPER — dodge her</title>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Cutive+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --aubergine:#150a22; --plum:#22123a; --magenta:#ff4fa3; --hot:#ff2d8f;
+    --amber:#ffcf7a; --lilac:#9d8bff; --bone:#f2ead8; --red:#ff2d55; --reaper:#b9ff5e;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
+  html,body{height:100%;overflow:hidden;background:var(--aubergine);}
+  body{font-family:'Special Elite',monospace;color:var(--bone);touch-action:none;}
+  #wrap{position:fixed;inset:0;}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+  .scan{position:absolute;inset:0;z-index:5;pointer-events:none;mix-blend-mode:overlay;opacity:.4;
+    background:repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.4) 3px);}
+  .vig{position:absolute;inset:0;z-index:5;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 44%,transparent 55%,rgba(4,2,10,.7) 100%);}
+
+  /* HUD */
+  #hud{position:absolute;top:0;left:0;right:0;z-index:8;display:flex;align-items:flex-start;justify-content:space-between;
+    padding:calc(12px + env(safe-area-inset-top)) clamp(12px,4vw,32px) 12px;pointer-events:none;}
+  .lives{display:flex;gap:5px;font-size:22px;filter:drop-shadow(0 0 6px rgba(255,45,85,.6));}
+  .heart{color:var(--red);transition:.2s;}
+  .heart.gone{color:#3a2440;filter:none;opacity:.5;transform:scale(.8);}
+  .scorebox{text-align:right;font-family:'Cutive Mono',monospace;}
+  /* embedded in the site the wrapper pins an EXIT chip top-right — drop clear of it */
+  body.embedded .scorebox{padding-top:34px;}
+  .score{font-size:clamp(20px,3.4vw,30px);color:var(--bone);text-shadow:0 0 12px rgba(255,79,163,.5);line-height:1;}
+  .scorelab{font-size:9px;letter-spacing:.24em;color:#9a8ab8;text-transform:uppercase;margin-top:2px;}
+  .combo{font-size:11px;color:var(--amber);letter-spacing:.1em;margin-top:3px;min-height:14px;}
+
+  /* mobile controls */
+  #pads{position:absolute;bottom:0;left:0;right:0;z-index:9;display:none;justify-content:space-between;align-items:flex-end;
+    padding:0 14px calc(16px + env(safe-area-inset-bottom));gap:10px;}
+  .pad{width:clamp(74px,22vw,110px);height:clamp(74px,22vw,110px);border-radius:24px;
+    background:rgba(34,18,58,.72);border:2px solid rgba(255,79,163,.4);backdrop-filter:blur(4px);
+    display:flex;align-items:center;justify-content:center;font-size:34px;color:var(--magenta);
+    box-shadow:0 0 20px rgba(255,79,163,.18);}
+  .pad:active{background:rgba(255,79,163,.28);transform:scale(.96);}
+  .pad.dash{width:clamp(64px,18vw,92px);height:clamp(64px,18vw,92px);font-size:15px;letter-spacing:.08em;
+    border-color:rgba(255,207,122,.5);color:var(--amber);}
+  body.touch #pads{display:flex;}
+
+  /* overlays */
+  .ov{position:absolute;inset:0;z-index:12;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;gap:15px;padding:26px;background:radial-gradient(ellipse at 50% 44%,rgba(21,10,34,.72),rgba(6,3,14,.94));backdrop-filter:blur(3px);}
+  .ov.hide{display:none;}
+  .otitle{font-size:clamp(30px,7vw,64px);line-height:1.02;letter-spacing:.02em;color:var(--magenta);
+    text-shadow:0 0 26px rgba(255,79,163,.6);}
+  .otitle.red{color:var(--red);text-shadow:0 0 26px rgba(255,45,85,.6);}
+  .osub{font-family:'Cutive Mono',monospace;font-size:clamp(12px,1.8vw,15px);color:#d3c4ea;max-width:36ch;line-height:1.75;letter-spacing:.04em;}
+  .keys{font-family:'Cutive Mono',monospace;font-size:11px;letter-spacing:.16em;color:#8a7ba8;text-transform:uppercase;}
+  .btn{font-family:'Special Elite',monospace;font-size:clamp(15px,2vw,19px);letter-spacing:.1em;color:#2a1730;background:var(--amber);
+    border:none;border-radius:999px;padding:13px 32px;cursor:pointer;box-shadow:0 0 26px rgba(255,207,122,.5);transition:.15s;}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 0 36px rgba(255,207,122,.8);}
+  .oscore{display:flex;gap:24px;font-family:'Cutive Mono',monospace;margin-top:2px;}
+  .oscore div{color:#e7dcff;font-size:15px;}.oscore span{display:block;font-size:9px;letter-spacing:.2em;color:#8a7ba8;text-transform:uppercase;margin-top:2px;}
+  #count{position:absolute;inset:0;z-index:11;display:none;align-items:center;justify-content:center;pointer-events:none;}
+  #count b{font-size:clamp(60px,16vw,150px);color:var(--bone);text-shadow:0 0 30px rgba(255,79,163,.7);animation:pop .7s ease-out;}
+  @keyframes pop{from{transform:scale(1.6);opacity:0}40%{opacity:1}to{transform:scale(1);opacity:.9}}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="cv"></canvas>
+  <div class="scan"></div><div class="vig"></div>
+
+  <div id="hud">
+    <div class="lives" id="lives"></div>
+    <div class="scorebox">
+      <div class="score" id="score">0</div>
+      <div class="scorelab">survived</div>
+      <div class="combo" id="combo"></div>
+    </div>
+  </div>
+
+  <div id="pads">
+    <div class="pad" id="padL">◄</div>
+    <div class="pad dash" id="padD">DASH</div>
+    <div class="pad" id="padR">►</div>
+  </div>
+
+  <div id="count"><b id="countN">3</b></div>
+
+  <div class="ov" id="startOv">
+    <div class="otitle">FEAR THE REAPER</div>
+    <div class="osub">The Reaper's up on the Silver Lake stairs, dropping everything he's got on the beat. Weave left and right and <b>don't let him catch you</b>. Dodge close for bonus — lose all your hearts and he wins.</div>
+    <button class="btn" id="startBtn">▸ run for it</button>
+    <div class="keys">← → or A / D · dash: space</div>
+  </div>
+
+  <div class="ov hide" id="endOv">
+    <div class="otitle" id="endTitle">YOU SURVIVED</div>
+    <div class="osub" id="endSub"></div>
+    <div class="oscore">
+      <div id="fScore">0<span>score</span></div>
+      <div id="fTime">0s<span>survived</span></div>
+      <div id="fMiss">0<span>near misses</span></div>
+    </div>
+    <button class="btn" id="retryBtn">▸ run it back</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   FEAR THE REAPER — Donkey-Kong-style vertical dodge
+   Drops are BEAT-MAPPED to the real master (02-fear-the-reaper):
+   fear-the-reaper-beatmap.json holds spawn times on the song's
+   actual beats (lane + kind + chorus doubles baked for fairness).
+   The game fires them off audio.currentTime; if the master can't
+   play, it falls back to the procedural scheduler below.
+   ============================================================ */
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let W=0,H=0,DPR=1;
+function resize(){
+  DPR = Math.min(2, window.devicePixelRatio||1);
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = W*DPR; cv.height = H*DPR; cv.style.width=W+'px'; cv.style.height=H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener('resize', resize); resize();
+
+/* ---------- Higgsfield art (public/reaper) ----------
+   Every character, drop and backdrop is illustrated now; only the telegraph
+   beam, particles and glows are still drawn. IMG entries stay null-safe so a
+   failed fetch degrades to the old procedural shapes instead of a blank frame. */
+const IMG={};
+const ART={reaper:'reaper.png', truly:'truly.png', trulyL:'truly-l.png',
+           scythe:'obj-scythe.png', hourglass:'obj-hourglass.png',
+           heart:'obj-heart.png', barrel:'obj-barrel.png',
+           bgWide:'stairs.jpg', bgTall:'stairs-v.jpg'};
+for(const k in ART){ const im=new Image(); im.onerror=()=>{IMG[k]=null;}; im.src='/reaper/'+ART[k]; IMG[k]=im; }
+const ready=k=>{const i=IMG[k];return i&&i.complete&&i.naturalWidth>0;};
+/** draw an image centred on (cx,cy) at a given HEIGHT, preserving aspect */
+function spr(k,cx,cy,h,rot){
+  if(!ready(k)) return false;
+  const im=IMG[k], w=h*im.naturalWidth/im.naturalHeight;
+  if(rot){ ctx.save(); ctx.translate(cx,cy); ctx.rotate(rot); ctx.drawImage(im,-w/2,-h/2,w,h); ctx.restore(); }
+  else ctx.drawImage(im,cx-w/2,cy-h/2,w,h);
+  return true;
+}
+/** cover-fit an image over the whole canvas */
+function cover(k){
+  if(!ready(k)) return false;
+  const im=IMG[k], s=Math.max(W/im.naturalWidth,H/im.naturalHeight);
+  const w=im.naturalWidth*s, h=im.naturalHeight*s;
+  ctx.drawImage(im,(W-w)/2,(H-h)/2,w,h);
+  return true;
+}
+
+if (('ontouchstart' in window) || navigator.maxTouchPoints>0) document.body.classList.add('touch');
+if (window.self !== window.top) document.body.classList.add('embedded');
+
+const el=(id)=>document.getElementById(id);
+const LIVES0 = 6;   // eased from 3 so you survive deeper into the song
+let state='start';   // start | count | play | over
+let player, reaper, objs, particles, lives, score, nearMiss, elapsed, last, invuln, shake, spawnT, audio, ended;
+let spawnIdx=0;                 // pointer into the beat-mapped spawn list
+let BEATMAP=null, useBeats=false;  // real beat-synced drops when the map + audio are live
+// Load the pre-computed beat-map (drops land on the master's actual beats).
+fetch('/fear-the-reaper-beatmap.json').then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.spawns&&j.spawns.length) BEATMAP=j; }).catch(()=>{});
+
+/* ---------- WebAudio SFX ---------- */
+let actx=null; const ac=()=>actx||(actx=new (window.AudioContext||window.webkitAudioContext)());
+function tone(type,f0,f1,t0,t1,vol){const c=ac(),t=c.currentTime,o=c.createOscillator(),g=c.createGain();
+  o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(Math.max(1,f1),t+t1);
+  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+t1);o.connect(g).connect(c.destination);o.start(t);o.stop(t+t1+0.02);}
+const sWhoosh=()=>tone('sawtooth',600,120,0,0.18,0.05);
+const sHit=()=>{tone('square',180,40,0,0.22,0.18);const c=ac(),t=c.currentTime,n=c.createBufferSource(),b=c.createBuffer(1,3000,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<3000;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/3000,2);n.buffer=b;const g=c.createGain();g.gain.value=0.12;n.connect(g).connect(c.destination);n.start();};
+const sMiss=()=>tone('sine',900,1500,0,0.12,0.10);
+const sCackle=()=>{tone('sawtooth',420,300,0,0.08,0.06);setTimeout(()=>tone('sawtooth',360,260,0,0.08,0.05),90);setTimeout(()=>tone('sawtooth',300,200,0,0.1,0.05),180);};
+const sOver=()=>tone('sawtooth',300,30,0,0.9,0.2);
+
+/* ---------- audio hook (real master swaps in) ---------- */
+function startAudio(){ try{ audio=new Audio(BEATMAP?BEATMAP.src:'/audio/02-fear-the-reaper.m4a'); audio.volume=0.72;
+    audio.play().then(()=>{ if(BEATMAP) useBeats=true; }).catch(()=>{ useBeats=false; });  // beat-sync only if the master really plays
+    audio.onended=()=>{ if(state==='play') win(); }; }catch(e){ useBeats=false; } }
+
+/* ---------- setup ---------- */
+function reset(){
+  // on touch the ◄/DASH/► pads own the bottom ~150px — keep her lane above them
+  const floor = document.body.classList.contains('touch') ? 170 : 96;
+  player={ x:W/2, y:H-floor, w:40, h:60, vx:0, tx:W/2, face:1, dashT:0, dashCd:0 };
+  reaper={ x:W/2, t:0, wind:0, flashT:0 };
+  objs=[]; particles=[]; lives=LIVES0; score=0; nearMiss=0; elapsed=0; invuln=0; shake=0; spawnT=0; ended=false;
+  spawnIdx=0; useBeats=false;
+  renderLives();
+  el('score').textContent='0'; el('combo').textContent='';
+}
+function renderLives(){ const box=el('lives'); box.innerHTML=''; for(let i=0;i<LIVES0;i++){const s=document.createElement('span');s.className='heart'+(i>=lives?' gone':'');s.textContent='♥';box.appendChild(s);} }
+
+/* ---------- input ---------- */
+const keys={};
+window.addEventListener('keydown',e=>{
+  if(['ArrowLeft','ArrowRight','a','d','A','D',' '].includes(e.key)) e.preventDefault();
+  if(state==='start' && (e.key===' '||e.key==='Enter')){ begin(); return; }
+  if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A') keys.l=1;
+  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D') keys.r=1;
+  if(e.key===' ') dash();
+});
+window.addEventListener('keyup',e=>{
+  if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A') keys.l=0;
+  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D') keys.r=0;
+});
+const hold=(id,on,off)=>{const b=el(id);['touchstart','mousedown'].forEach(ev=>b.addEventListener(ev,e=>{e.preventDefault();on();},{passive:false}));['touchend','touchcancel','mouseup','mouseleave'].forEach(ev=>b.addEventListener(ev,e=>{e.preventDefault();off&&off();}));};
+hold('padL',()=>keys.l=1,()=>keys.l=0);
+hold('padR',()=>keys.r=1,()=>keys.r=0);
+hold('padD',()=>dash());
+// drag anywhere to steer
+let dragging=false;
+cv.addEventListener('touchstart',e=>{dragging=true;player&&(player.tx=e.touches[0].clientX);},{passive:true});
+cv.addEventListener('touchmove',e=>{if(dragging&&player)player.tx=e.touches[0].clientX;},{passive:true});
+cv.addEventListener('touchend',()=>dragging=false);
+function dash(){ if(state!=='play'||!player||player.dashCd>0) return; player.dashT=0.18; player.dashCd=0.7; sWhoosh(); }
+
+/* ---------- flow ---------- */
+el('startBtn').onclick=begin;
+el('retryBtn').onclick=()=>{ el('endOv').classList.add('hide'); begin(); };
+function begin(){
+  reset(); el('startOv').classList.add('hide'); el('endOv').classList.add('hide');
+  state='count'; let n=3; el('count').style.display='flex'; el('countN').textContent=n;
+  el('countN').style.animation='none'; void el('countN').offsetWidth; el('countN').style.animation='';
+  const iv=setInterval(()=>{ n--; if(n<=0){ clearInterval(iv); el('count').style.display='none'; state='play'; last=performance.now(); startAudio(); }
+    else { el('countN').textContent=n; el('countN').style.animation='none'; void el('countN').offsetWidth; el('countN').style.animation=''; } },700);
+}
+function endScreen(title,cls,sub){
+  state='over'; ended=true;
+  el('endTitle').textContent=title; el('endTitle').className='otitle '+cls; el('endSub').innerHTML=sub;
+  el('fScore').firstChild.textContent=Math.floor(score);
+  el('fTime').firstChild.textContent=elapsed.toFixed(0)+'s';
+  el('fMiss').firstChild.textContent=nearMiss;
+  el('endOv').classList.remove('hide');
+}
+function win(){ if(ended)return; endScreen('YOU SURVIVED','', "You outran him for the whole track. The Reaper's still up on those stairs, fuming."); }
+function gameOver(){ if(ended)return; sOver(); if(audio){try{audio.pause();}catch(e){}} endScreen('THE REAPER GOT YOU','red', "He caught you on the stairs. The song stops where you fell."); }
+
+/* ---------- spawning (procedural, beat-map-ready) ---------- */
+const KINDS=['scythe','hourglass','heart','barrel'];
+function difficulty(){
+  // eased: drops start sparser, ramp slower, and objects fall gentler so a run
+  // comfortably lasts 45-60s+. Interval between drops shrinks over time; a denser
+  // (but shorter, later) "chorus" window every ~28s.
+  const base = Math.max(0.6, 1.2 - elapsed*0.006);
+  const inChorus = (elapsed % 28) > 23;          // ~5s barrage
+  return { interval: inChorus ? base*0.7 : base, chorus: inChorus, speed: 150 + elapsed*1.6 };
+}
+function spawnDrop(chorus, speed, spec){
+  reaper.wind=0.35; reaper.flashT=0.25; if(Math.random()<0.5) sCackle(); else sWhoosh();
+  // beat-mapped spec carries exact lane(s)/kind/count; procedural falls back to random.
+  if(spec){
+    const xs=[spec.x]; if(spec.n===2 && spec.x2!=null) xs.push(spec.x2);
+    for(const xf of xs){
+      const kind = spec.kind || KINDS[(Math.random()*KINDS.length)|0];
+      objs.push({ x: 40 + xf*(W-80), y:-30, vy: speed*(0.9+Math.random()*0.2), vx:(Math.random()-0.5)*24,
+        r: kind==='barrel'?22:18, kind, rot:Math.random()*6, spin:(Math.random()-0.5)*7,
+        warn:0.32, scored:false, hit:false });
+    }
+    return;
+  }
+  const n = chorus ? (Math.random()<0.5?2:1) : 1;
+  for(let k=0;k<n;k++){
+    const x = 40 + Math.random()*(W-80);
+    const kind = KINDS[(Math.random()*KINDS.length)|0];
+    objs.push({ x, y:-30, vy: speed*(0.9+Math.random()*0.35), vx:(Math.random()-0.5)*40,
+      r: kind==='barrel'?22:18, kind, rot:Math.random()*6, spin:(Math.random()-0.5)*7,
+      warn:0.32, scored:false, hit:false });
+  }
+}
+
+/* ---------- update ---------- */
+function update(dt){
+  elapsed += dt;
+  // player movement
+  const spd = 520 * (player.dashT>0?2.4:1);
+  if(keys.l && !dragging) player.tx -= spd*dt;
+  if(keys.r && !dragging) player.tx += spd*dt;
+  player.tx = Math.max(24, Math.min(W-24, player.tx));
+  player.x += (player.tx-player.x)*Math.min(1, dt*16);
+  player.face = (player.tx<player.x-1)?-1:(player.tx>player.x+1?1:player.face);
+  if(player.dashT>0) player.dashT-=dt; if(player.dashCd>0) player.dashCd-=dt;
+  if(invuln>0) invuln-=dt; if(shake>0) shake-=dt;
+  if(reaper.wind>0) reaper.wind-=dt; if(reaper.flashT>0) reaper.flashT-=dt;
+  reaper.t += dt; reaper.x = W/2 + Math.sin(reaper.t*0.8)*(W*0.32);
+
+  // spawn — beat-synced off the real master when it's playing, else procedural
+  if(useBeats && audio && BEATMAP){
+    const ct = audio.currentTime;
+    const spd = 150 + ct*1.4;
+    while(spawnIdx < BEATMAP.spawns.length && BEATMAP.spawns[spawnIdx].t <= ct){
+      spawnDrop(!!BEATMAP.spawns[spawnIdx].ch, spd, BEATMAP.spawns[spawnIdx]);
+      spawnIdx++;
+    }
+  } else {
+    const D = difficulty();
+    spawnT -= dt;
+    if(spawnT<=0){ spawnDrop(D.chorus, D.speed); spawnT = D.interval*(0.85+Math.random()*0.3); }
+  }
+
+  // objects
+  const pTop=player.y-player.h*0.5, pBot=player.y+player.h*0.5, pHalf=player.w*0.42;
+  for(let i=objs.length-1;i>=0;i--){
+    const o=objs[i];
+    if(o.warn>0){ o.warn-=dt; continue; }   // telegraph pause before it actually falls
+    o.y += o.vy*dt; o.x += o.vx*dt; o.rot += o.spin*dt;
+    if(o.x<o.r){o.x=o.r;o.vx*=-1;} if(o.x>W-o.r){o.x=W-o.r;o.vx*=-1;}
+    const dx=Math.abs(o.x-player.x);
+    // collision
+    if(!o.hit && o.y>pTop && o.y<pBot && dx < pHalf+o.r*0.7){
+      o.hit=true; objs.splice(i,1);
+      if(invuln<=0){ lives--; renderLives(); invuln=1.1; shake=0.4; sHit(); burst(o.x,o.y,'#ff2d55',18);
+        el('combo').textContent=''; score=Math.max(0,score-40);
+        if(lives<=0){ gameOver(); return; } }
+      continue;
+    }
+    // near miss (passed player's band, close but not a hit)
+    if(!o.scored && !o.hit && o.y>pBot && o.y<pBot+40 && dx < pHalf+o.r*2.1){
+      o.scored=true; nearMiss++; score+=60; sMiss(); burst(o.x,o.y,'#ffcf7a',8);
+      el('combo').textContent='near miss +60';
+      clearTimeout(window._ct); window._ct=setTimeout(()=>el('combo').textContent='',700);
+    }
+    if(o.y>H+40) objs.splice(i,1);
+  }
+  // survival score
+  score += dt*22;
+  el('score').textContent = Math.floor(score);
+
+  // particles
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=400*dt;p.life-=dt;if(p.life<=0)particles.splice(i,1);}
+}
+function burst(x,y,c,n){for(let i=0;i<n;i++){const a=Math.random()*6.28,s=60+Math.random()*180;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-60,life:0.5+Math.random()*0.4,c});}}
+
+/* ---------- render ---------- */
+function drawBackdrop(){
+  // the illustrated Micheltorena stairs; portrait plate on tall screens so a
+  // phone gets the whole staircase instead of a cropped stripe
+  const k = (H/W > 1.05) ? 'bgTall' : 'bgWide';
+  if(!cover(k) && !cover(k==='bgTall'?'bgWide':'bgTall')){
+    const g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#2a1246'); g.addColorStop(0.5,'#1a0d2e'); g.addColorStop(1,'#0c0618');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  }
+  // the reaper hangs in the top band — darken it so his silhouette separates
+  const t=ctx.createLinearGradient(0,0,0,H*0.34);
+  t.addColorStop(0,'rgba(8,4,16,.55)'); t.addColorStop(1,'rgba(8,4,16,0)');
+  ctx.fillStyle=t; ctx.fillRect(0,0,W,H*0.34);
+  const b=ctx.createLinearGradient(0,H*0.72,0,H);
+  b.addColorStop(0,'rgba(8,4,16,0)'); b.addColorStop(1,'rgba(8,4,16,.34)');
+  ctx.fillStyle=b; ctx.fillRect(0,H*0.72,W,H*0.28);
+}
+function drawReaper(){
+  const fl=reaper.flashT>0;
+  const h=Math.max(104,Math.min(210,H*0.19)) * (1+(reaper.wind>0?0.09:0));
+  const x=reaper.x, y=Math.max(H*0.09, h*0.56);   // keep the whole hood on screen
+  // he breathes: a slow hover plus a lurch forward on the wind-up
+  const bob=Math.sin(reaper.t*2.2)*h*0.02 + (reaper.wind>0?h*0.05:0);
+  const g=ctx.createRadialGradient(x,y+bob,0,x,y+bob,h*0.62);
+  g.addColorStop(0, fl?'rgba(255,45,85,.42)':'rgba(255,45,143,.30)');
+  g.addColorStop(1,'rgba(255,45,143,0)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y+bob,h*0.62,0,6.28); ctx.fill();
+  if(fl){ ctx.save(); ctx.globalAlpha=0.5; ctx.filter='blur(2px)'; }
+  if(!spr('reaper',x,y+bob,h,Math.sin(reaper.t*1.1)*0.05)){
+    ctx.save(); ctx.translate(x,y); ctx.fillStyle='#160a24'; ctx.strokeStyle='#ff4fa3'; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.ellipse(0,0,32,44,0,0,6.28); ctx.fill(); ctx.stroke(); ctx.restore();
+  }
+  if(fl) ctx.restore();
+}
+function drawObj(o){
+  if(o.warn>0){ // telegraph beam at the drop column
+    ctx.save(); ctx.globalAlpha=0.20+0.2*Math.sin(o.warn*40); ctx.fillStyle='#ff2d8f';
+    ctx.fillRect(o.x-3, 0, 6, H); ctx.globalAlpha=0.9; ctx.fillStyle='#ffcf7a';
+    ctx.beginPath();ctx.moveTo(o.x-7,10);ctx.lineTo(o.x+7,10);ctx.lineTo(o.x,22);ctx.closePath();ctx.fill(); ctx.restore(); return;
+  }
+  const tint = o.kind==='hourglass' ? 'rgba(255,207,122,' : o.kind==='barrel' ? 'rgba(157,139,255,' : 'rgba(255,45,143,';
+  const g=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r*2.1);
+  g.addColorStop(0,tint+'.46)'); g.addColorStop(1,tint+'0)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(o.x,o.y,o.r*2.1,0,6.28); ctx.fill();
+  if(spr(o.kind,o.x,o.y,o.r*3.4,o.rot)) return;
+  // procedural fallback if the art has not loaded yet
+  ctx.save(); ctx.translate(o.x,o.y); ctx.rotate(o.rot);
+  ctx.fillStyle='#22123a'; ctx.strokeStyle='#ff2d8f'; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.arc(0,0,o.r*0.8,0,6.28); ctx.fill(); ctx.stroke(); ctx.restore();
+}
+function drawPlayer(){
+  const blink = invuln>0 && Math.floor(invuln*14)%2===0;
+  if(blink) return;
+  const x=player.x, y=player.y, h=Math.max(76,Math.min(148,H*0.135));
+  const key = player.face<0 ? 'trulyL' : 'truly';
+  if(player.dashT>0){  // speed ghosts trailing the dash
+    ctx.save();
+    for(let i=1;i<=3;i++){ ctx.globalAlpha=0.30/i; spr(key, x - player.face*i*16, y, h); }
+    ctx.restore();
+  }
+  // contact glow so she never disappears against the dark stair treads
+  const g=ctx.createRadialGradient(x,y+h*0.42,0,x,y+h*0.42,h*0.42);
+  g.addColorStop(0,'rgba(255,79,163,.6)'); g.addColorStop(1,'rgba(255,79,163,0)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.ellipse(x,y+h*0.42,h*0.42,h*0.15,0,0,6.28); ctx.fill();
+  // slight run bounce, keyed off horizontal speed
+  const bounce = Math.abs(player.vx)>8 ? Math.abs(Math.sin(elapsed*13))*-h*0.035 : 0;
+  if(!spr(key,x,y+bounce,h)){
+    ctx.save(); ctx.translate(x,y); ctx.fillStyle='#ff4fa3';
+    ctx.beginPath(); ctx.moveTo(0,-h*0.2); ctx.lineTo(-h*0.22,h*0.4); ctx.lineTo(h*0.22,h*0.4); ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+}
+function render(){
+  ctx.save();
+  if(shake>0){ ctx.translate((Math.random()-0.5)*10*shake*2.5,(Math.random()-0.5)*10*shake*2.5); }
+  drawBackdrop();
+  drawReaper();
+  for(const o of objs) drawObj(o);
+  drawPlayer();
+  for(const p of particles){ ctx.globalAlpha=Math.max(0,p.life); ctx.fillStyle=p.c; ctx.fillRect(p.x-2,p.y-2,4,4); ctx.globalAlpha=1; }
+  ctx.restore();
+}
+
+/* ---------- loop ---------- */
+function frame(now){
+  if(state==='play'){ const dt=Math.min(0.05,(now-last)/1000); last=now; update(dt); }
+  render();
+  requestAnimationFrame(frame);
+}
+reset(); render(); requestAnimationFrame(frame);
+</script>
+</body>
+</html>

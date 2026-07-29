@@ -1,0 +1,639 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Truly's Pinball — Dear Joshua Edition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Yellowtail&display=swap" rel="stylesheet">
+<style>
+:root{ --asphalt:#14120F; --asphalt2:#1E1B16; --bone:#EDE4D3; --gold:#C9A227; --lipstick:#D91E36; --neon:#B7F542; }
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--asphalt);color:var(--bone);
+  font-family:Anton,Impact,sans-serif;touch-action:none;overscroll-behavior:none;user-select:none;-webkit-user-select:none}
+#stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+canvas{display:block;touch-action:none;box-shadow:0 0 0 3px var(--gold),0 0 60px rgba(201,162,39,.28),0 24px 80px rgba(0,0,0,.9)}
+.script{font-family:Yellowtail,cursive;text-transform:none;letter-spacing:0}
+.panel{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.1rem;
+  padding:calc(env(safe-area-inset-top) + 1.4rem) 1.4rem calc(env(safe-area-inset-bottom) + 1.4rem);text-align:center;z-index:20;
+  background:radial-gradient(ellipse at 50% 40%,rgba(20,18,15,.86),rgba(20,18,15,.97))}
+.panel.hide{display:none}
+h1{font-size:clamp(2.3rem,9vw,4.2rem);letter-spacing:.06em;line-height:.94;color:var(--bone)}
+h1 span{display:block;font-size:.42em;color:var(--gold);margin-top:.25em}
+.rules{max-width:23rem;font-family:system-ui,sans-serif;font-size:.82rem;line-height:1.75;color:rgba(237,228,211,.72);letter-spacing:.02em}
+.rules b{color:var(--neon);font-weight:600}
+.btn{font-family:Anton,sans-serif;font-size:1.05rem;letter-spacing:.13em;color:var(--asphalt);background:var(--neon);border:0;
+  padding:.85rem 2.1rem;cursor:pointer;transform:skewX(-9deg);box-shadow:5px 5px 0 var(--lipstick);transition:transform .12s,box-shadow .12s}
+.btn:active{transform:skewX(-9deg) translate(3px,3px);box-shadow:2px 2px 0 var(--lipstick)}
+.btn.ghost{background:transparent;color:var(--bone);border:2px solid var(--gold);box-shadow:5px 5px 0 rgba(201,162,39,.35)}
+.tiny{font-family:system-ui,sans-serif;font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(237,228,211,.4)}
+#glass{width:min(58vw,232px);aspect-ratio:744/924;object-fit:cover;border:2px solid var(--gold);filter:saturate(.94)}
+#recap{display:flex;flex-direction:column;gap:.3rem;font-family:system-ui,sans-serif;font-size:.76rem;min-width:min(84vw,20rem)}
+#recap div{display:flex;justify-content:space-between;gap:1rem;border-bottom:1px dashed rgba(201,162,39,.22);padding:.22rem 0}
+#recap .done{color:var(--gold)} #recap .miss{color:rgba(237,228,211,.34)}
+.cta{display:flex;flex-direction:column;gap:.55rem;align-items:center}.cta a{color:var(--bone);text-decoration:none}
+#toast{position:fixed;left:50%;top:15%;transform:translateX(-50%);z-index:15;font-size:clamp(1rem,4.4vw,1.7rem);letter-spacing:.05em;
+  color:var(--bone);text-shadow:0 2px 14px rgba(0,0,0,.95);opacity:0;pointer-events:none;white-space:nowrap;transition:opacity .25s;text-align:center}
+#toast.on{opacity:1}
+</style>
+
+<div id="stage"><canvas id="cv"></canvas></div>
+<div id="toast"></div>
+
+<div class="panel" id="title">
+  <img id="glass" src="/pinball/backglass.jpg" alt="">
+  <h1>TRULY'S PINBALL<span class="script">dear joshua edition</span></h1>
+  <p class="rules">Six songs, six features. Play a track to bank it.<br>
+    <b>← →</b> or <b>Z /</b> flip · hold <b>space</b> to launch.<br>
+    On a phone: hold either side to flip, tap the lane to launch.</p>
+  <button class="btn" id="start">Play It Out</button>
+  <p class="tiny">trulys.world · dear joshua era</p>
+</div>
+
+<div class="panel hide" id="over">
+  <h1 id="overTitle">Last Call at the Chateau</h1>
+  <div id="recap"></div>
+  <p class="tiny" id="finalScore"></p>
+  <div class="cta">
+    <p class="script" style="font-size:1.5rem;color:var(--gold)">Shadows — out now</p>
+    <p class="tiny">Dear Joshua — 8.21</p>
+    <!-- HANDOFF: point href at the live pre-save link when it exists -->
+    <a href="#presave"><button class="btn">Pre-Save the EP</button></a>
+    <button class="btn ghost" id="again">Play Again</button>
+  </div>
+  <p class="tiny">trulys.world · dear joshua era</p>
+</div>
+
+<script src="/pinball/matter.min.js"></script>
+<script type="module">
+/* ===========================================================================
+   TRULY'S PINBALL — Dear Joshua Edition — v2, built on Matter.js
+   ---------------------------------------------------------------------------
+   Physics is Matter.js (the engine real web pinball uses) rather than a hand-
+   rolled solver: pivot-constrained flippers driven toward a target angle by a
+   servo (strong, responsive, catchable), a forgiving table, five pop bumpers,
+   and a plunger lane that actually FEEDS the playfield instead of the drain.
+
+   The game layer — six song modes, the tracklist spine, scoring, HUD, FX, the
+   cat save, easter eggs — is preserved from v1.
+
+   HANDOFF seams: AUDIO_MANIFEST (synth fallback), #presave href, BEST→localStorage.
+=========================================================================== */
+const { Engine, World, Bodies, Body, Composite, Constraint, Events, Vector } = Matter;
+
+/* ---- table space (authored at 900x1600, scaled to the canvas) ---- */
+const TW=900, TH=1600, BALL_R=19;
+
+const TRACKS=[
+  {key:'dear_joshua',n:1,short:'DEAR JOSHUA'},
+  {key:'reaper',     n:2,short:'FEAR THE REAPER'},
+  {key:'forever',    n:3,short:'FOREVER'},
+  {key:'shadows',    n:4,short:'SHADOWS'},
+  {key:'boy',        n:5,short:'BOY'},
+  {key:'you_two',    n:6,short:'YOU TWO DESERVE EACH OTHER'},
+];
+const DRAIN_LINES=['read at 2:47am.','left on delivered.','the table won this round…','even legends drain.'];
+const BOY_LINES=['blocked.','seen.','“u up?” — no.','unsaved his number.','the receipts are filed.','archived, not deleted.'];
+const FOREVER_LINES=['again.','again.',"we've been here before.",'and again.','still here.'];
+const SCORE={bump:150,sling:70,orbit:2500,ramp:3200,scoop:5000,letter:1500,skill:12000,jackpot:25000,bank:40000,wizard:150000};
+const COL={asphalt:'#14120F',asphalt2:'#1E1B16',bone:'#EDE4D3',gold:'#C9A227',lipstick:'#D91E36',neon:'#B7F542'};
+const RM=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ======================= PHYSICS SETUP ================================== */
+const engine=Engine.create();
+engine.gravity.y=1;
+engine.gravity.scale=0.0019;          // tuned so a mid ball lives ~30–60s
+engine.positionIterations=10; engine.velocityIterations=10;
+const world=engine.world;
+
+const wallStyle={ isStatic:true, restitution:.28, friction:.02, label:'wall' };
+function wall(x1,y1,x2,y2,thick=16){
+  const cx=(x1+x2)/2, cy=(y1+y2)/2, len=Math.hypot(x2-x1,y2-y1), ang=Math.atan2(y2-y1,x2-x1);
+  const b=Bodies.rectangle(cx,cy,len,thick,wallStyle); Body.setAngle(b,ang); return b;
+}
+const PL=44, PR=712, LANE=724, LANE_R=858;    // playfield walls; plunger lane on the right
+const bodies=[];
+// outer shell
+bodies.push(
+  wall(PL,180,PL,1200),                        // left wall
+  wall(PR,300,PR,1150),                         // right playfield wall (below lane feed)
+  wall(PL,180,235,66), wall(235,66,560,66), wall(560,66,PR,300), // top arch
+  wall(LANE_R,300,LANE_R,1560),                 // plunger outer wall
+  wall(LANE,360,LANE,1560),                     // plunger inner wall (opens above 360)
+  wall(LANE,1560,LANE_R,1560),                  // lane floor (ball rests here)
+  wall(LANE,360,LANE_R,300,14)                  // cap over the lane top
+);
+// lower funnel: inlane/outlane guides (mirror about x=378 playfield centre)
+const CX=378;
+function pair(x1,y1,x2,y2,t){ bodies.push(wall(x1,y1,x2,y2,t), wall(2*CX-x1,y1,2*CX-x2,y2,t)); }
+// One smooth funnel wall each side, from the side wall down to just outside the
+// flipper pivot. NO side outlanes — the only way out is the centre gap between
+// the flipper tips. The old inlane/outlane channels both wedged the ball and
+// were the "always drains left" culprit; a clean funnel fixes both.
+pair(44,1150,232,1382,22);
+function bouncyWall(x1,y1,x2,y2,thick,rest,label){ const b=wall(x1,y1,x2,y2,thick); b.restitution=rest; b.label=label; b._pts=[{x:x1,y:y1},{x:x2,y:y2}]; return b; }
+// slingshots: inner bouncy faces just above the inboard side of each flipper
+const slingL=bouncyWall(300,1246,360,1356,16,1.18,'sling');
+const slingR=bouncyWall(2*CX-300,1246,2*CX-360,1356,16,1.18,'sling');
+bodies.push(slingL,slingR);
+Composite.add(world, bodies);
+
+/* ---- flippers: pivot-pinned bodies driven by a servo ----
+   The body is a rectangle whose LOCAL x-axis runs along its length; the pivot
+   end sits at local (-len/2,0). Orienting the body at `rest` and pinning that
+   local point to the world pivot gives a clean revolute joint. Left/right is
+   encoded purely in the angle (right flipper uses PI-offset) — no dir factor,
+   which is what kept the two flippers from mirroring. */
+const FLEN=126, FTHICK=28;
+function makeFlipper(px,py,rest,up){
+  const cx=px+FLEN/2*Math.cos(rest), cy=py+FLEN/2*Math.sin(rest);
+  const b=Bodies.rectangle(cx,cy,FLEN,FTHICK,
+    { restitution:.32, friction:.02, density:.025, label:'flipper', collisionFilter:{group:-1}, chamfer:{radius:FTHICK/2} });
+  Body.setAngle(b,rest);
+  const pin=Constraint.create({ pointA:{x:px,y:py}, bodyB:b, pointB:{x:-FLEN/2,y:0}, stiffness:1, length:0 });
+  Composite.add(world,[b,pin]);
+  return { body:b, px, py, rest, up, held:false, dead:false };
+}
+// pivots spaced + length tuned so the rest tips leave a ~40px (≈1 ball) centre
+// drain and the raised tips point up-and-in without crossing
+const fL=makeFlipper(240,1392, 0.36, -0.54);
+const fR=makeFlipper(2*CX-240,1392, Math.PI-0.36, Math.PI+0.54);
+const FLIPPERS=[fL,fR];
+Events.on(engine,'beforeUpdate',()=>{
+  for(const f of FLIPPERS){
+    const target=(f.held&&!f.dead)?f.up:f.rest;
+    let diff=target - f.body.angle;
+    // shortest-arc + clamp so it snaps hard but never spins
+    while(diff>Math.PI)diff-=2*Math.PI; while(diff<-Math.PI)diff+=2*Math.PI;
+    Body.setAngularVelocity(f.body, Math.max(-0.9,Math.min(0.9,diff*0.55)));
+  }
+});
+
+/* ---- pop bumpers (FIVE — a lit cluster mid-table) ---- */
+const BUMPERS=[
+  {x:378,y:560,r:46,art:'bump-cap',  id:'b0'},
+  {x:268,y:668,r:46,art:'bump-phone',id:'b1'},
+  {x:488,y:668,r:46,art:'bump-flag', id:'b2'},
+  {x:330,y:806,r:44,art:'bump-glasses',id:'b3'},
+  {x:452,y:806,r:44,art:'bump-dumbbell',id:'b4'},
+];
+for(const bp of BUMPERS){
+  bp.body=Bodies.circle(bp.x,bp.y,bp.r,{isStatic:true,restitution:1.35,friction:0,label:'bumper'});
+  bp.body.plugin={bp}; bp.lit=0;
+  Composite.add(world,bp.body);
+}
+
+/* ---- feature sensors (fire game events; captures teleport the ball) ---- */
+const SHOTS=[
+  {id:'ramp_him', x:298,y:452,r:40,art:'ramp-him', exit:{x:250,y:1120}, vel:{x:-1,y:9}, dwell:.4},
+  {id:'ramp_her', x:2*CX-298,y:452,r:40,art:'ramp-her', exit:{x:506,y:1120}, vel:{x:1,y:9}, dwell:.4},
+  {id:'scoop',    x:150,y:900,r:44,art:'scoop', exit:{x:196,y:812}, vel:{x:3,y:-13}, dwell:.9},
+  {id:'mailbox',  x:378,y:300,r:40,art:'mailbox', exit:{x:378,y:392}, vel:{x:0,y:10}, dwell:1.2},
+];
+for(const s of SHOTS){
+  s.body=Bodies.circle(s.x,s.y,s.r,{isStatic:true,isSensor:true,label:'shot'});
+  s.body.plugin={shot:s}; Composite.add(world,s.body);
+}
+const TRIG=[
+  {id:'orbit_l_in',x:96,y:940,r:44},{id:'orbit_l_top',x:250,y:120,r:52},
+  {id:'orbit_r_in',x:2*CX-96,y:940,r:44},{id:'orbit_r_top',x:2*CX-250,y:120,r:52},
+  {id:'skill',x:790,y:440,r:40},
+];
+for(const t of TRIG){
+  t.body=Bodies.circle(t.x,t.y,t.r,{isStatic:true,isSensor:true,label:'trig'});
+  t.body.plugin={trig:t}; Composite.add(world,t.body);
+}
+const EMBLEMS=[
+  {img:'reaper', x:110,y:452,r:50, on:()=>G.mode==='reaper'||G.orbitL>0},
+  {img:'forever',x:2*CX-110,y:452,r:50, on:()=>G.mode==='forever'||G.loopR>0},
+];
+const LETTERS='JOSHUA'.split('').map((ch,i)=>{
+  const x=196+i*72, y=182, b=Bodies.rectangle(x,y,54,26,{isStatic:true,isSensor:true,label:'letter'});
+  const o={ch,lit:false,x,y,body:b}; b.plugin={letter:o}; Composite.add(world,b); return o;
+});
+const DROP={x:378,y:352,w:120,h:18,up:false,hits:0};
+let dropBody=null;
+function raiseDrop(){ DROP.up=true; DROP.hits=0;
+  dropBody=Bodies.rectangle(DROP.x,DROP.y,DROP.w,DROP.h,{isStatic:true,restitution:.4,label:'drop'});
+  dropBody.plugin={drop:true}; Composite.add(world,dropBody); }
+function lowerDrop(){ DROP.up=false; if(dropBody){ Composite.remove(world,dropBody); dropBody=null; } }
+
+/* ---- the ball ---- */
+let balls=[];
+function spawnBall(x=790,y=1500){
+  const b=Bodies.circle(x,y,BALL_R,{restitution:.32,friction:.004,frictionAir:.0006,density:.02,label:'ball'});
+  b.plugin={trail:[]}; Composite.add(world,b); balls.push(b); return b;
+}
+function removeBall(b){ const i=balls.indexOf(b); if(i>=0)balls.splice(i,1); Composite.remove(world,b); }
+
+/* ======================= AUDIO ========================================== */
+/* HANDOFF: drop 30s teaser clips in; any null slot falls back to synth. */
+// Real EP masters — each song-mode plays its own track (loops, ducked under the
+// game sfx). A null slot falls back to the synth motif.
+const AUDIO_MANIFEST={
+  mode_fear_the_reaper:'/audio/02-fear-the-reaper.m4a',
+  mode_forever:'/audio/03-forever.mp3',
+  mode_shadows:'/audio/04-shadows.mp3',
+  mode_boy:'/audio/05-boy.mp3',
+  mode_you_two:'/audio/06-you-two-deserve-each-other.m4a',
+  mode_dear_joshua:'/audio/01-dear-joshua.mp3',
+  wizard:'/audio/01-dear-joshua.mp3',
+  ambient_table:null};
+const Audio_={ctx:null,muted:false,music:null,musicKey:null,
+  init(){ if(!this.ctx){ try{ this.ctx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } },
+  blip(f,d=.08,t='triangle',g=.06){ if(!this.ctx||this.muted)return;
+    const c=this.ctx,now=c.currentTime,o=c.createOscillator(),gn=c.createGain();
+    o.type=t;o.frequency.setValueAtTime(f,now);gn.gain.setValueAtTime(0,now);
+    gn.gain.linearRampToValueAtTime(g,now+.008);gn.gain.exponentialRampToValueAtTime(.0001,now+d);
+    o.connect(gn);gn.connect(c.destination);o.start(now);o.stop(now+d+.02); },
+  flip(){this.blip(174.6,.05,'square',.05)}, bump(){this.blip(349.2,.06,'triangle',.06)},
+  ramp(){this.blip(523.3,.12,'sine',.07)}, lock(){this.blip(261.6,.2,'sine',.08)},
+  drain(){this.blip(87.3,.5,'sine',.09)},
+  mode(){[349.2,415.3,523.3].forEach((f,i)=>setTimeout(()=>this.blip(f,.22,'sine',.08),i*90))},
+  jackpot(){[523.3,622.3,784,1046.5].forEach((f,i)=>setTimeout(()=>this.blip(f,.16,'triangle',.07),i*60))},
+  playMode(k){
+    const url=AUDIO_MANIFEST['mode_'+k]||AUDIO_MANIFEST[k];
+    if(!url||this.muted){ this.mode(); return; }
+    try{
+      if(!this.music){ this.music=new Audio(); this.music.loop=true; this.music.volume=0; this.music.preload='auto'; }
+      if(this.musicKey!==k){ this.music.src=url; this.musicKey=k; }
+      this.music.currentTime=0;
+      this.music.play().then(()=>this._fade(0.4,700)).catch(()=>this.mode());
+    }catch(e){ this.mode(); }
+  },
+  stopMusic(){ if(this.music&&this.musicKey!=null){ this._fade(0,550,()=>{ try{this.music.pause();}catch(e){} }); this.musicKey=null; } },
+  _fade(target,ms,done){ const m=this.music; if(!m)return; const s=m.volume,t0=performance.now();
+    const step=n=>{ const p=Math.min(1,(n-t0)/ms); try{m.volume=Math.max(0,Math.min(1,s+(target-s)*p));}catch(e){} if(p<1)requestAnimationFrame(step); else if(done)done(); };
+    requestAnimationFrame(step); },
+};
+
+/* ======================= GAME STATE ===================================== */
+let BEST=0;   // HANDOFF: localStorage.getItem('tw-pinball-best')
+const G={ phase:'title', score:0, ball:1, balls:3, mult:1, banked:new Set(),
+  mode:null, modeT:0, modeData:null, ballSave:0, reaperCheat:0, tilt:0, nudges:[],
+  bumpHits:0, orbitL:0, loopR:0, ramps:[], locks:0, letterIdx:0,
+  launched:false, plunge:0, plunging:false, shake:0, dim:0, flash:0, wizard:false,
+  skill:false, hitEaster:false };
+let particles=[], pPool=[], toastT=0;
+
+const $=id=>document.getElementById(id);
+const cv=$('cv'), ctx=cv.getContext('2d',{alpha:false});
+const IMG={};
+['playfield.jpg','cat.png','bump-cap.png','bump-phone.png','bump-flag.png','bump-glasses.png','bump-dumbbell.png',
+ 'scoop.png','mailbox.png','ramp-him.png','ramp-her.png','reaper.png','forever.png'].forEach(f=>{
+  const i=new Image(); i.src='/pinball/'+f; IMG[f.split('.')[0]]=i;
+});
+
+function toast(m,ms=1600){ const t=$('toast'); t.textContent=m; t.classList.add('on'); toastT=ms/1000; }
+function spark(x,y,n,c,speed=260){ if(RM)n=Math.min(n,4);
+  for(let i=0;i<n;i++){ const p=pPool.pop()||{}; const a=Math.random()*Math.PI*2,s=speed*(.35+Math.random()*.65);
+    p.x=x;p.y=y;p.vx=Math.cos(a)*s;p.vy=Math.sin(a)*s;p.life=.5+Math.random()*.5;p.max=p.life;p.c=c;p.r=1.5+Math.random()*2.5;
+    particles.push(p); } }
+function addScore(n){ const before=G.score;
+  G.score+=Math.round(n*G.mult*(G.mode==='reaper'?2:1));
+  if(before<82100&&G.score>=82100&&!G.hitEaster){ G.hitEaster=true;G.flash=1;toast('8.21.');spark(TW/2,TH/2,40,'gold',420); } }
+
+/* ---- modes ---- */
+const MODE_TIME={reaper:60,forever:45,boy:45,you_two:0,shadows:0,dear_joshua:0,wizard:90};
+function startMode(key){
+  if(G.mode||G.banked.has(key))return;
+  G.mode=key; G.modeT=MODE_TIME[key]||0; G.dim=0;
+  G.modeData={mult:1,sweep:[],jack:0,drops:0,sent:false,pair:0};
+  Audio_.playMode(key);
+  const t=TRACKS.find(x=>x.key===key); toast(t?t.short:key,1900);
+  if(key==='shadows'){ G.dim=1; addBall(300,560,4,-2); addBall(456,560,-4,-2); }
+  if(key==='you_two'){ addBall(378,560,3,-3); }
+  if(key==='wizard'){ G.wizard=true; G.dim=.5; for(let i=0;i<4;i++)addBall(220+i*110,520,(i-1.5)*3,-2); }
+}
+function addBall(x,y,vx,vy){ const b=spawnBall(x,y); Body.setVelocity(b,{x:vx,y:vy}); G.launched=true; }
+function endMode(won){
+  const key=G.mode; if(!key)return; G.mode=null; G.dim=0;
+  Audio_.stopMusic();
+  if(won){ G.banked.add(key); addScore(SCORE.bank);
+    const t=TRACKS.find(x=>x.key===key);
+    if(key==='reaper'){ G.reaperCheat++; toast('banked · one cheat owed to you',2000); }
+    else if(key==='dear_joshua') toast('locking in, then moving on.',2200);
+    else if(key==='you_two') toast('you two deserve each other. sincerely.',2200);
+    else toast((t?t.short:key)+' — banked',1800);
+    Audio_.jackpot();
+    if(G.banked.size===6&&!G.wizard) setTimeout(()=>startMode('wizard'),1800);
+  }
+  G.modeData=null;
+}
+
+/* ---- feature handlers ---- */
+function onBump(bp,b){
+  addScore(G.mode==='boy'?SCORE.bump*10:SCORE.bump);
+  Audio_.bump(); spark(bp.x,bp.y,6,'neon'); bp.lit=1; G.bumpHits++;
+  // a little extra pop outward so bumpers feel alive
+  const d=Vector.normalise(Vector.sub(b.position,bp.body.position));
+  Body.setVelocity(b,{x:b.velocity.x+d.x*6,y:b.velocity.y+d.y*6});
+  if(G.mode==='boy'){ const dd=G.modeData, now=performance.now()/1000;
+    dd.sweep=dd.sweep.filter(s=>now-s.t<3);
+    if(!dd.sweep.some(s=>s.id===bp.id))dd.sweep.push({id:bp.id,t:now});
+    toast(BOY_LINES[Math.floor(Math.random()*BOY_LINES.length)],900);
+    if(dd.sweep.length>=3){ dd.sweep=[]; addScore(15000); toast("clean sweep — she's ruthless",1500); }
+  } else if(G.bumpHits>=30&&!G.banked.has('boy')&&!G.mode){ startMode('boy'); }
+}
+function onTrig(t,b){
+  if(t.id==='skill'&&G.skill){ G.skill=false;
+    const now=new Date(), is247=now.getHours()%12===2&&now.getMinutes()===47;
+    addScore(is247?SCORE.skill*10:SCORE.skill); toast(is247?'2:47. of course.':'skill shot',1400);
+    spark(b.position.x,b.position.y,20,'gold'); }
+  if(t.id==='orbit_l_in') b.plugin.orbL=true;
+  if(t.id==='orbit_l_top'&&b.plugin.orbL){ b.plugin.orbL=false; addScore(SCORE.orbit); Audio_.ramp(); G.orbitL++;
+    spark(t.x,t.y,10,'gold');
+    if(G.orbitL>=3&&!G.banked.has('reaper')&&!G.mode){ G.orbitL=0; startMode('reaper'); }
+    else if(!G.mode) toast(`orbit ${Math.min(G.orbitL,3)}/3`,900); }
+  if(t.id==='orbit_r_in') b.plugin.orbR=true;
+  if(t.id==='orbit_r_top'&&b.plugin.orbR){ b.plugin.orbR=false; addScore(SCORE.orbit); Audio_.ramp(); spark(t.x,t.y,10,'neon');
+    if(G.mode==='forever'){ G.modeData.mult++; addScore(SCORE.orbit*G.modeData.mult);
+      toast(FOREVER_LINES[Math.min(G.modeData.mult-1,FOREVER_LINES.length-1)]+' ×'+G.modeData.mult,1100); }
+    else { G.loopR++; if(G.loopR>=4&&!G.banked.has('forever')&&!G.mode){ G.loopR=0; startMode('forever'); }
+      else toast(`loop ${Math.min(G.loopR,4)}/4`,900); } }
+}
+function captureBall(s,b){
+  if(b.plugin.held)return;
+  b.plugin.held={t:s.dwell,shot:s}; Body.setStatic(b,true); Audio_.lock(); spark(s.x,s.y,12,'gold');
+  const id=s.id;
+  if(id==='ramp_him'||id==='ramp_her'){ addScore(SCORE.ramp);
+    const side=id==='ramp_him'?'him':'her';
+    if(G.mode==='you_two'){ const d=G.modeData; if(balls.length>=2){ d.pair++; addScore(SCORE.jackpot);
+        toast(d.pair>=3?'crossed.':'both of them. again.',1200); if(d.pair>=3)endMode(true); }
+      else toast('need them both live',1000);
+    } else if(!G.banked.has('you_two')&&!G.mode){ const last=G.ramps[G.ramps.length-1];
+      if(last!==side){ G.ramps.push(side); toast(`${side} · ${G.ramps.length}/6`,900); } else toast('alternate them',900);
+      if(G.ramps.length>=6){ G.ramps=[]; startMode('you_two'); } } }
+  if(id==='scoop'){ addScore(SCORE.scoop);
+    if(G.mode==='shadows'){ G.modeData.jack++; addScore(SCORE.jackpot); toast('jackpot · shadows',1200);
+      Audio_.jackpot(); spark(s.x,s.y,26,'gold',380); if(G.modeData.jack>=4)endMode(true); }
+    else if(!G.banked.has('shadows')&&!G.mode){ G.locks++;
+      if(G.locks>=3){ G.locks=0; startMode('shadows'); } else toast(`ball ${G.locks} locked`,1200); } }
+  if(id==='mailbox'){ if(G.mode==='dear_joshua'&&DROP.hits>=3){ G.modeData.sent=true; addScore(SCORE.jackpot*2); endMode(true); }
+    else toast('sealed. not yet.',1200); }
+}
+function onLetter(o,b){ if(o.lit)return; o.lit=true; addScore(SCORE.letter); Audio_.ramp(); spark(o.x,o.y,8,'gold');
+  if(LETTERS.every(l=>l.lit)){ LETTERS.forEach(l=>l.lit=false); raiseDrop();
+    if(!G.banked.has('dear_joshua')&&!G.mode) startMode('dear_joshua'); } }
+function onDrop(b){ DROP.hits++; addScore(SCORE.letter); spark(DROP.x,DROP.y,10,'lipstick');
+  const L=['draft one…','draft two…','final draft.']; toast(L[Math.min(DROP.hits,3)-1],1400);
+  if(DROP.hits>=3) lowerDrop(); }
+
+/* ---- collisions ---- */
+Events.on(engine,'collisionStart',ev=>{
+  for(const {bodyA,bodyB} of ev.pairs){
+    let ball=null, other=null;
+    if(bodyA.label==='ball'){ ball=bodyA; other=bodyB; } else if(bodyB.label==='ball'){ ball=bodyB; other=bodyA; }
+    if(!ball)continue;
+    const L=other.label;
+    if(L==='bumper') onBump(other.plugin.bp,ball);
+    else if(L==='sling'){ addScore(SCORE.sling); Audio_.blip(220,.05,'square',.04); spark(ball.position.x,ball.position.y,4,'lipstick'); }
+    else if(L==='shot') captureBall(other.plugin.shot,ball);
+    else if(L==='trig') onTrig(other.plugin.trig,ball);
+    else if(L==='letter'){ onLetter(other.plugin.letter,ball); Body.setVelocity(ball,{x:ball.velocity.x,y:Math.abs(ball.velocity.y)+2}); }
+    else if(L==='drop') onDrop(ball);
+    else if(L==='flipper') Audio_.flip();
+  }
+});
+
+/* ---- tilt / nudge ---- */
+function nudge(dx){ if(G.tilt)return; const now=performance.now()/1000;
+  G.nudges=G.nudges.filter(t=>now-t<2); G.nudges.push(now);
+  for(const b of balls) Body.setVelocity(b,{x:b.velocity.x+dx*4,y:b.velocity.y-1.5});
+  G.shake=Math.min(1,G.shake+.35);
+  if(G.nudges.length>=3){ G.tilt=1; fL.dead=true; fR.dead=true; toast('she shook the table. of course she did.',2400); } }
+
+/* ======================= LIFECYCLE ====================================== */
+function newBall(){ const b=spawnBall(); G.launched=false; G.plunge=0; G.ballSave=6; G.skill=true; return b; }
+function drainBall(b){ removeBall(b);
+  if(balls.length>0){ if(balls.length===1&&G.dim>0&&G.mode==='shadows')G.dim=0; return; }
+  if(G.ballSave>0){ toast('ball save.'); newBall(); return; }
+  if(G.mode) endMode(false);
+  Audio_.drain(); G.ball++;
+  if(G.ball>G.balls){ gameOver(); return; }
+  toast(DRAIN_LINES[(G.ball-2)%DRAIN_LINES.length]);
+  G.tilt=0; fL.dead=false; fR.dead=false; newBall();
+}
+/* the cat: sometimes bats a right-outlane drain back. never a target, never harmed. */
+function handleDrain(b){
+  const rightOutlane=b.position.x>2*CX-190 && b.position.x<2*CX-60;
+  if(rightOutlane&&Math.random()<0.1){ Body.setPosition(b,{x:2*CX-100,y:1180}); Body.setVelocity(b,{x:-3,y:-12});
+    toast('the cat said not yet.',1600); spark(2*CX-90,1150,24,'gold',300); Audio_.jackpot(); return; }
+  if(G.mode==='reaper'&&G.reaperCheat>0&&balls.length===1){ G.reaperCheat--;
+    Body.setPosition(b,{x:378,y:900}); Body.setVelocity(b,{x:0,y:-4}); toast('not today.',1500); return; }
+  drainBall(b);
+}
+
+/* ======================= LOOP =========================================== */
+let last=performance.now(), acc=0, FIXED=1000/120;
+function frame(now){
+  requestAnimationFrame(frame);
+  let dt=now-last; last=now; if(dt>60)dt=60;
+  if(G.phase==='play'){ acc+=dt; let guard=0;
+    while(acc>=FIXED&&guard++<6){ step(FIXED); acc-=FIXED; } }
+  fx(dt/1000); render();
+}
+function step(ms){
+  // held balls tick down, then release at the habitrail exit
+  for(const b of balls){ if(b.plugin.held){ b.plugin.held.t-=ms/1000;
+    if(b.plugin.held.t<=0){ const s=b.plugin.held.shot; Body.setStatic(b,false);
+      Body.setPosition(b,s.exit); Body.setVelocity(b,{x:s.vel.x,y:s.vel.y}); b.plugin.held=null; } } }
+  Engine.update(engine, ms);
+  // trails + drain
+  for(const b of balls.slice()){ if(b.plugin.held)continue;
+    const tr=b.plugin.trail; tr.push(b.position.x,b.position.y); if(tr.length>16)tr.splice(0,2);
+    // scripted habitrail: a launched ball reaching the top of the lane is fed
+    // into the playfield moving down-left (reliable, like a real ball guide)
+    if(b.plugin.launched!==true && b.position.x>LANE && b.position.y<430 && b.velocity.y<3){
+      Body.setPosition(b,{x:632,y:236}); Body.setVelocity(b,{x:-7,y:6});
+      b.plugin.launched=true; G.launched=true; spark(660,190,10,'gold');
+    }
+    if(b.plugin.launched!==true && b.position.x<LANE-6){ b.plugin.launched=true; G.launched=true; }
+    if(b.position.y>TH+60) handleDrain(b);
+  }
+  // mode timers
+  if(G.ballSave>0)G.ballSave-=ms/1000;
+  if(G.mode&&MODE_TIME[G.mode]>0){ G.modeT-=ms/1000;
+    if(G.modeT<=0){ endMode(G.mode==='forever'||G.mode==='boy'||G.mode==='reaper'); } }
+  for(const bp of BUMPERS) if(bp.lit>0)bp.lit-=ms/1000*3;
+}
+function fx(dt){
+  for(let i=particles.length-1;i>=0;i--){ const p=particles[i]; p.life-=dt;
+    if(p.life<=0){ particles.splice(i,1); pPool.push(p); continue; }
+    p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=520*dt; p.vx*=.98; }
+  if(G.shake>0)G.shake=Math.max(0,G.shake-dt*2.2);
+  if(G.flash>0)G.flash=Math.max(0,G.flash-dt*2);
+  if(toastT>0){ toastT-=dt; if(toastT<=0)$('toast').classList.remove('on'); }
+  if(G.mode==='wizard'&&!RM&&Math.random()<.5)spark(Math.random()*TW,-10,1,'gold',60);
+}
+
+/* ======================= RENDER ========================================= */
+let CS=1;
+function resize(){ const pad=8, availW=innerWidth-pad*2, availH=innerHeight-pad*2;
+  CS=Math.min(availW/TW,availH/TH); const dpr=Math.min(devicePixelRatio||1,2);
+  cv.width=Math.round(TW*CS*dpr); cv.height=Math.round(TH*CS*dpr);
+  cv.style.width=Math.round(TW*CS)+'px'; cv.style.height=Math.round(TH*CS)+'px';
+  ctx.setTransform(dpr*CS,0,0,dpr*CS,0,0); }
+addEventListener('resize',resize);
+
+function disc(im,x,y,r){ if(im&&im.complete)ctx.drawImage(im,x-r,y-r,r*2,r*2); }
+function render(){
+  ctx.save();
+  if(G.shake>0&&!RM)ctx.translate((Math.random()-.5)*14*G.shake,(Math.random()-.5)*14*G.shake);
+  ctx.fillStyle=COL.asphalt; ctx.fillRect(-20,-20,TW+40,TH+40);
+  if(IMG.playfield.complete)ctx.drawImage(IMG.playfield,0,0,TW,TH);
+  if(G.dim>0){ ctx.fillStyle=`rgba(10,8,5,${.88*G.dim})`; ctx.fillRect(0,0,TW,TH);
+    if(!RM){ const t=performance.now()/1000;
+      const ang=Math.PI/2+Math.sin(t*.6)*.5, gx=TW/2+Math.cos(ang)*900, gy=140+Math.sin(ang)*900;
+      const beam=ctx.createRadialGradient(TW/2,140,40,TW/2,140,1100);
+      beam.addColorStop(0,`rgba(201,162,39,${.10*G.dim})`); beam.addColorStop(1,'rgba(201,162,39,0)');
+      ctx.save();ctx.globalCompositeOperation='screen';ctx.fillStyle=beam;
+      ctx.beginPath();ctx.moveTo(TW/2,140);ctx.lineTo(gx-260,gy);ctx.lineTo(gx+260,gy);ctx.closePath();ctx.fill();ctx.restore();
+      const pr=140+30*Math.sin(t*2.2), halo=ctx.createRadialGradient(150,900,10,150,900,pr);
+      halo.addColorStop(0,`rgba(201,162,39,${.22*G.dim})`); halo.addColorStop(1,'rgba(201,162,39,0)');
+      ctx.fillStyle=halo; ctx.fillRect(150-pr,900-pr,pr*2,pr*2); } }
+
+  drawLanes(); drawEmblems(); drawShots(); drawLetters(); drawDrop();
+  drawBumpers(); drawSlings(); drawFlippers(); drawBalls(); drawParticles();
+  drawCat(); drawHud();
+
+  if(G.dim>0){ const v=ctx.createRadialGradient(TW/2,TH/2,TH*.24,TW/2,TH/2,TH*.62);
+    v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,`rgba(5,3,2,${.7*G.dim})`); ctx.fillStyle=v; ctx.fillRect(0,0,TW,TH); }
+  if(G.flash>0){ ctx.fillStyle=`rgba(201,162,39,${G.flash*.5})`; ctx.fillRect(0,0,TW,TH); }
+  ctx.restore();
+}
+function seg(a,b,color,w,glow=0){ ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);
+  ctx.strokeStyle=color;ctx.lineWidth=w;ctx.lineCap='round'; if(glow){ctx.shadowColor=color;ctx.shadowBlur=glow;}
+  ctx.stroke();ctx.shadowBlur=0; }
+function drawLanes(){
+  ctx.strokeStyle='rgba(201,162,39,.30)';ctx.lineWidth=4;
+  ctx.beginPath();ctx.arc(TW/2,720,352,Math.PI*1.05,Math.PI*1.95);ctx.stroke();
+  ctx.font='13px system-ui,sans-serif';ctx.fillStyle='rgba(237,228,211,.42)';ctx.textAlign='center';
+  ctx.save();ctx.translate(112,1268);ctx.rotate(-.4);ctx.fillText('read at 2:47am',0,0);ctx.restore();
+  ctx.save();ctx.translate(2*CX-112,1268);ctx.rotate(.4);ctx.fillText('left on delivered',0,0);ctx.restore();
+}
+function drawEmblems(){ const pulse=.5+.5*Math.sin(performance.now()/420);
+  for(const e of EMBLEMS){ const im=IMG[e.img]; if(!im||!im.complete)continue;
+    if(e.on()){ ctx.beginPath();ctx.arc(e.x,e.y,e.r+6,0,7);ctx.fillStyle=`rgba(183,245,66,${.08+.14*pulse})`;ctx.fill(); }
+    ctx.save(); if(!e.on())ctx.globalAlpha=.82; disc(im,e.x,e.y,e.r); ctx.restore(); } }
+function drawShots(){ const pulse=.55+.45*Math.sin(performance.now()/380);
+  for(const s of SHOTS){
+    const active=(s.id==='scoop'&&(G.mode==='shadows'||G.locks>0))||
+                 (s.id==='mailbox'&&DROP.up&&G.mode==='dear_joshua')||
+                 (s.id==='ramp_him'&&G.ramps[G.ramps.length-1]!=='him'&&!G.banked.has('you_two'))||
+                 (s.id==='ramp_her'&&G.ramps[G.ramps.length-1]!=='her'&&!G.banked.has('you_two'));
+    const R=s.r+14;
+    if(active){ ctx.beginPath();ctx.arc(s.x,s.y,R+6,0,7);ctx.fillStyle=`rgba(201,162,39,${.10+.16*pulse})`;ctx.fill(); }
+    disc(IMG[s.art],s.x,s.y,R);
+    if(active){ ctx.beginPath();ctx.arc(s.x,s.y,R,0,7);ctx.strokeStyle=COL.gold;ctx.lineWidth=3;
+      ctx.shadowColor=COL.gold;ctx.shadowBlur=24*pulse;ctx.stroke();ctx.shadowBlur=0; }
+    if(s.id==='scoop'&&G.locks>0&&!G.mode) for(let i=0;i<G.locks;i++){
+      ctx.beginPath();ctx.arc(s.x-12+i*12,s.y+R+8,3.5,0,7);ctx.fillStyle=COL.gold;ctx.fill(); }
+  } }
+function drawLetters(){ ctx.textAlign='center';ctx.textBaseline='middle';
+  for(const l of LETTERS){ ctx.beginPath();ctx.roundRect(l.x-25,l.y-14,50,28,5);
+    ctx.fillStyle=l.lit?'rgba(201,162,39,.9)':'rgba(30,27,22,.9)';ctx.fill();
+    ctx.strokeStyle=l.lit?COL.bone:'rgba(201,162,39,.5)';ctx.lineWidth=2;ctx.stroke();
+    ctx.font='19px Anton,sans-serif';ctx.fillStyle=l.lit?COL.asphalt:'rgba(237,228,211,.6)';ctx.fillText(l.ch,l.x,l.y+1); }
+  ctx.textBaseline='alphabetic'; }
+function drawDrop(){ if(!DROP.up)return; ctx.fillStyle=COL.lipstick;
+  ctx.fillRect(DROP.x-DROP.w/2,DROP.y-DROP.h/2,DROP.w,DROP.h);
+  ctx.strokeStyle=COL.bone;ctx.lineWidth=2;ctx.strokeRect(DROP.x-DROP.w/2,DROP.y-DROP.h/2,DROP.w,DROP.h); }
+function drawBumpers(){ for(const bp of BUMPERS){ const lit=Math.max(0,bp.lit);
+    ctx.beginPath();ctx.arc(bp.x,bp.y,bp.r+7+lit*6,0,7);ctx.fillStyle=`rgba(183,245,66,${.10+lit*.42})`;ctx.fill();
+    disc(IMG[bp.art],bp.x,bp.y,bp.r);
+    ctx.beginPath();ctx.arc(bp.x,bp.y,bp.r,0,7);ctx.strokeStyle=lit>.1?COL.neon:'rgba(201,162,39,.65)';ctx.lineWidth=3;ctx.stroke(); } }
+function drawSlings(){ for(const s of [slingL,slingR]){ seg(s._pts[0],s._pts[1], s.glow>.1?COL.lipstick:'rgba(217,30,54,.7)', 11, s.glow>.1?16:0); } }
+function drawFlippers(){ for(const f of FLIPPERS){ const b=f.body;
+  const a={x:f.px,y:f.py}, e={x:f.px+FLEN*Math.cos(b.angle),y:f.py+FLEN*Math.sin(b.angle)};
+  seg(a,e,f.dead?'rgba(237,228,211,.25)':COL.neon,FTHICK,f.dead?0:14);
+  ctx.beginPath();ctx.arc(f.px,f.py,9,0,7);ctx.fillStyle=COL.gold;ctx.fill(); } }
+function drawBalls(){ for(const b of balls){ const tr=b.plugin.trail||[];
+  for(let i=0;i<tr.length;i+=2){ const a=(i/tr.length)*.22; ctx.beginPath();ctx.arc(tr[i],tr[i+1],BALL_R*.7,0,7);
+    ctx.fillStyle=`rgba(237,228,211,${a})`;ctx.fill(); }
+  const g=ctx.createRadialGradient(b.position.x-5,b.position.y-5,1,b.position.x,b.position.y,BALL_R);
+  g.addColorStop(0,'#fff');g.addColorStop(.45,COL.bone);g.addColorStop(1,'#6a6459');
+  ctx.beginPath();ctx.arc(b.position.x,b.position.y,BALL_R,0,7);ctx.fillStyle=g;ctx.fill();
+  if(G.dim>0){ ctx.strokeStyle=COL.gold;ctx.lineWidth=2;ctx.stroke(); } } }
+function drawParticles(){ for(const p of particles){ const a=p.life/p.max; ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,7);
+  ctx.fillStyle=p.c==='gold'?`rgba(201,162,39,${a})`:p.c==='neon'?`rgba(183,245,66,${a})`:`rgba(217,30,54,${a})`;ctx.fill(); } }
+function drawCat(){ if(IMG.cat&&IMG.cat.complete)ctx.drawImage(IMG.cat,2*CX-96,1090,76,100); }
+function drawHud(){
+  ctx.fillStyle='rgba(20,18,15,.82)';ctx.fillRect(0,0,TW,58);ctx.fillRect(0,1408,TW,TH-1408);
+  ctx.strokeStyle='rgba(201,162,39,.4)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(0,58);ctx.lineTo(TW,58);ctx.moveTo(0,1408);ctx.lineTo(TW,1408);ctx.stroke();
+  ctx.textAlign='left';ctx.font='40px Anton,sans-serif';ctx.fillStyle=COL.gold;ctx.fillText(G.score.toLocaleString(),52,44);
+  ctx.font='13px system-ui,sans-serif';ctx.fillStyle='rgba(237,228,211,.5)';ctx.fillText(`ball ${Math.min(G.ball,G.balls)} of ${G.balls}`,300,44);
+  for(let i=0;i<G.balls;i++){ ctx.beginPath();ctx.ellipse(700-i*26,38,9,7,-.3,0,7);
+    ctx.fillStyle=i<(G.balls-G.ball+1)?COL.lipstick:'rgba(217,30,54,.22)';ctx.fill(); }
+  ctx.textAlign='left';
+  for(let i=0;i<TRACKS.length;i++){ const t=TRACKS[i],y=1442+i*26,done=G.banked.has(t.key),on=G.mode===t.key;
+    ctx.font='12px system-ui,sans-serif';ctx.fillStyle=done?COL.gold:on?COL.neon:'rgba(237,228,211,.3)';
+    ctx.fillText(`${done?'✓':t.n+'.'} ${t.short}`,54,y); }
+  if(G.mode&&MODE_TIME[G.mode]>0){ ctx.textAlign='right';ctx.font='30px Anton,sans-serif';ctx.fillStyle=COL.neon;
+    ctx.fillText(Math.ceil(G.modeT)+'s',706,1470);
+    if(G.mode==='forever'){ ctx.font='16px Anton,sans-serif';ctx.fillText('×'+G.modeData.mult,706,1496); } }
+  if(G.reaperCheat>0){ ctx.textAlign='right';ctx.font='12px system-ui,sans-serif';ctx.fillStyle=COL.gold;
+    ctx.fillText(`reaper cheat ×${G.reaperCheat}`,706,1520); }
+  if(G.tilt){ ctx.textAlign='center';ctx.font='30px Anton,sans-serif';ctx.fillStyle=COL.lipstick;ctx.fillText('TILT',TW/2,760); }
+  if(G.plunge>0){ ctx.fillStyle=COL.lipstick;ctx.fillRect(792,1500-G.plunge*180,22,G.plunge*180); }
+}
+
+/* ======================= INPUT ========================================== */
+const KEYS={ArrowLeft:'L',KeyZ:'L',ArrowRight:'R',Slash:'R'};
+addEventListener('keydown',e=>{
+  if(G.phase==='title')typeBuffer(e.key);
+  const k=KEYS[e.code];
+  if(k==='L'){fL.held=true;e.preventDefault();} if(k==='R'){fR.held=true;e.preventDefault();}
+  if(e.code==='Space'||e.code==='ArrowDown'){G.plunging=true;e.preventDefault();}
+  if(e.code==='ArrowUp'){nudge(0);e.preventDefault();}
+  if(e.code==='KeyA')nudge(-1); if(e.code==='KeyD')nudge(1);
+});
+addEventListener('keyup',e=>{ const k=KEYS[e.code];
+  if(k==='L')fL.held=false; if(k==='R')fR.held=false;
+  if(e.code==='Space'||e.code==='ArrowDown'){G.plunging=false;release();} });
+let buf='';
+function typeBuffer(ch){ if(!/^[a-z]$/i.test(ch))return; buf=(buf+ch.toLowerCase()).slice(-6);
+  if(buf==='joshua'){ buf=''; startGame(); LETTERS.forEach(l=>l.lit=true); raiseDrop();
+    toast('you came here for one reason.',2200); setTimeout(()=>startMode('dear_joshua'),400); } }
+function release(){ const b=balls.find(b=>b.position.x>LANE&&b.position.y>1300&&!b.plugin.launched);
+  if(!b)return; Body.setVelocity(b,{x:-1.4, y:-(20+G.plunge*16)}); G.plunge=0; Audio_.blip(130,.18,'sawtooth',.06); }
+// multi-touch: sides flip, lane launches
+const touches=new Map();
+cv.addEventListener('touchstart',e=>{ e.preventDefault();
+  for(const t of e.changedTouches){ const rect=cv.getBoundingClientRect(), fx=(t.clientX-rect.left)/rect.width;
+    if(fx>.82&&balls.some(b=>!b.plugin.launched)){ touches.set(t.identifier,'plunge'); G.plunging=true; }
+    else if(fx<.5){ touches.set(t.identifier,'L'); fL.held=true; } else { touches.set(t.identifier,'R'); fR.held=true; } }
+},{passive:false});
+cv.addEventListener('touchend',e=>{ e.preventDefault();
+  for(const t of e.changedTouches){ const kind=touches.get(t.identifier); touches.delete(t.identifier);
+    if(kind==='L'&&![...touches.values()].includes('L'))fL.held=false;
+    if(kind==='R'&&![...touches.values()].includes('R'))fR.held=false;
+    if(kind==='plunge'){ G.plunge=.9; G.plunging=false; release(); } }
+},{passive:false});
+cv.addEventListener('touchcancel',e=>{ for(const t of e.changedTouches)touches.delete(t.identifier);
+  if(![...touches.values()].includes('L'))fL.held=false; if(![...touches.values()].includes('R'))fR.held=false; },{passive:false});
+let lastTap=0,lastTapX=0;
+cv.addEventListener('touchstart',e=>{ const now=performance.now(),t=e.changedTouches[0],rect=cv.getBoundingClientRect(),fx=(t.clientX-rect.left)/rect.width;
+  if(now-lastTap<300&&Math.abs(fx-lastTapX)<.2)nudge(fx<.5?-1:1); lastTap=now;lastTapX=fx; },{passive:true});
+setInterval(()=>{ if(G.plunging)G.plunge=Math.min(1,G.plunge+.05); },16);
+
+/* ======================= FLOW =========================================== */
+function resetGame(){
+  for(const b of balls.slice())Composite.remove(world,b); balls.length=0;
+  Object.assign(G,{score:0,ball:1,mult:1,mode:null,modeT:0,modeData:null,ballSave:0,reaperCheat:0,tilt:0,nudges:[],
+    bumpHits:0,orbitL:0,loopR:0,ramps:[],locks:0,launched:false,plunge:0,plunging:false,shake:0,dim:0,flash:0,wizard:false,skill:false,hitEaster:false});
+  G.banked=new Set(); LETTERS.forEach(l=>l.lit=false); lowerDrop(); fL.dead=false; fR.dead=false; particles.length=0;
+}
+function startGame(){ Audio_.init(); resetGame(); newBall(); G.phase='play';
+  $('title').classList.add('hide'); $('over').classList.add('hide'); }
+function gameOver(){ G.phase='over'; if(G.score>BEST)BEST=G.score;   // HANDOFF: localStorage.setItem
+  const recap=$('recap'); recap.innerHTML='';
+  for(const t of TRACKS){ const d=document.createElement('div'), done=G.banked.has(t.key);
+    d.className=done?'done':'miss'; d.innerHTML=`<span>${t.n}. ${t.short}</span><span>${done?'✓':'—'}</span>`; recap.appendChild(d); }
+  $('overTitle').textContent=G.wizard&&G.banked.size===6?'The Letter, Sent':'Last Call at the Chateau';
+  $('finalScore').textContent=`final ${G.score.toLocaleString()} · best ${BEST.toLocaleString()}`;
+  $('over').classList.remove('hide'); }
+$('start').addEventListener('click',startGame); $('again').addEventListener('click',startGame);
+
+window.__dbg={G,balls,FLIPPERS,startMode,TRACKS,LETTERS,DROP,newBall,spawnBall,Body,release,CX};
+resize(); requestAnimationFrame(frame);
+</script>

@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>SING — Truly Young Karaoke — Dear Joshua</title>
+<meta property="og:title" content="SING — Dear Joshua Karaoke">
+<meta property="og:image" content="https://trulys.world/karaoke/titlecard.jpg">
+<meta name="theme-color" content="#0d0b0e">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Griffy — the site's one unified display/body face, so the karaoke game matches Truly's World -->
+<link href="https://fonts.googleapis.com/css2?family=Griffy&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0d0b0e;           /* matte black wall */
+  --deck:#ff5fa2;          /* pink deck */
+  --deck-hot:#ff2d87;      /* hot pink */
+  --deck-dim:#8f2a56;      /* bruised pink */
+  --bone:#f4e9ee;          /* off-white */
+  --cheetah:#e8b23c;       /* cheetah gold */
+  --web:#2a2230;           /* web gray-violet */
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  background:var(--ink);
+  color:var(--bone);
+  font-family:'Griffy','Georgia',cursive;
+  overflow-x:hidden;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255,45,135,.14), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 50% 110%, rgba(255,95,162,.08), transparent 60%);
+  min-height:100vh;
+}
+/* cheetah print strip */
+.cheetah-strip{
+  height:14px;width:100%;
+  background:
+    radial-gradient(circle 5px at 12px 7px, var(--ink) 3px, transparent 4px),
+    radial-gradient(circle 4px at 34px 4px, var(--ink) 2.5px, transparent 3.5px),
+    radial-gradient(circle 5px at 55px 9px, var(--ink) 3px, transparent 4px),
+    radial-gradient(circle 4px at 78px 5px, var(--ink) 2.5px, transparent 3.5px),
+    var(--deck-hot);
+  background-size:90px 14px;
+  position:fixed;left:0;z-index:50;
+}
+.cheetah-strip.top{top:0}
+.cheetah-strip.bottom{bottom:0}
+
+.screen{display:none;min-height:100vh;padding:54px 20px 60px;max-width:960px;margin:0 auto}
+.screen.active{display:block}
+
+/* ---------- HOME ---------- */
+.hero{text-align:center;padding:34px 0 10px;position:relative}
+.spider{font-size:34px;filter:drop-shadow(0 0 12px rgba(255,45,135,.8));display:inline-block;animation:dangle 4s ease-in-out infinite}
+@keyframes dangle{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(10px) rotate(4deg)}}
+.spider-thread{width:1px;height:44px;background:linear-gradient(var(--deck-hot),transparent);margin:0 auto}
+h1.title{
+  font-family:'Griffy','Georgia',cursive;
+  font-size:clamp(52px,11vw,110px);
+  line-height:.9;
+  color:var(--deck-hot);
+  text-shadow:0 0 30px rgba(255,45,135,.55), 3px 3px 0 var(--web);
+  letter-spacing:.01em;
+}
+h1.title .lt{color:var(--bone);text-shadow:0 0 24px rgba(244,233,238,.35), 3px 3px 0 var(--web)}
+.sub{color:var(--deck);letter-spacing:.34em;text-transform:uppercase;font-size:12px;font-weight:600;margin-top:14px}
+.sub b{color:var(--cheetah)}
+
+.song-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:38px}
+.song-card{
+  background:linear-gradient(160deg, #17121b, #0f0c12);
+  border:1px solid var(--web);
+  border-radius:14px;
+  padding:20px 18px 16px;
+  cursor:pointer;
+  position:relative;
+  transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+  text-align:left;
+}
+.song-card:hover:not(.empty){transform:translateY(-3px);border-color:var(--deck-hot);box-shadow:0 10px 30px rgba(255,45,135,.22)}
+.song-card .num{font-family:'Griffy','Georgia',cursive;font-size:30px;color:var(--deck-dim);line-height:1}
+.song-card.ready .num{color:var(--deck-hot)}
+.song-card .sname{font-size:18px;font-weight:700;margin-top:8px;letter-spacing:.02em}
+.song-card .meta{font-size:11px;letter-spacing:.18em;text-transform:uppercase;margin-top:8px;color:#8a7f92}
+.song-card.ready .meta{color:var(--deck)}
+.song-card.empty{opacity:.55;cursor:default;border-style:dashed}
+.song-card .hi{position:absolute;top:14px;right:14px;font-size:11px;letter-spacing:.14em;color:var(--cheetah);font-weight:700}
+
+.toolbar{display:flex;justify-content:center;gap:12px;margin-top:34px;flex-wrap:wrap}
+.btn{
+  font-family:'Griffy','Georgia',cursive;
+  background:var(--deck-hot);color:#14060d;
+  border:none;border-radius:999px;
+  padding:13px 26px;font-size:14px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  cursor:pointer;transition:transform .15s ease, box-shadow .15s ease;
+}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(255,45,135,.4)}
+.btn.ghost{background:transparent;color:var(--deck);border:1px solid var(--deck-dim)}
+.btn.gold{background:var(--cheetah);color:#1a1206}
+.btn.small{padding:9px 18px;font-size:12px}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* ---------- SETUP ---------- */
+.panel{background:#141018;border:1px solid var(--web);border-radius:16px;padding:26px 24px;margin-top:22px}
+.panel h2{font-family:'Griffy','Georgia',cursive;font-size:34px;color:var(--deck);font-weight:400;margin-bottom:4px}
+.panel .hint{font-size:13px;color:#9a8fa3;line-height:1.6;margin-bottom:16px}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--deck);margin-bottom:7px;font-weight:600}
+.field input[type=text], .field textarea{
+  width:100%;background:#0d0a10;border:1px solid var(--web);border-radius:10px;
+  color:var(--bone);padding:12px 14px;font-size:15px;font-family:inherit;
+}
+.field textarea{min-height:180px;resize:vertical;line-height:1.7}
+.field input:focus,.field textarea:focus{outline:2px solid var(--deck-hot);outline-offset:1px;border-color:transparent}
+.filebtn{display:inline-block}
+.filebtn input{display:none}
+.status-line{font-size:13px;color:var(--cheetah);margin-top:8px;min-height:18px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* ---------- SYNC ---------- */
+.sync-current{
+  background:#0d0a10;border:1px solid var(--deck-dim);border-radius:14px;
+  padding:26px 20px;text-align:center;margin:18px 0;
+}
+.sync-current .up-next{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--deck);margin-bottom:10px}
+.sync-current .line-txt{font-size:24px;font-weight:700;line-height:1.4;min-height:34px}
+.sync-current .after{font-size:15px;color:#8a7f92;margin-top:10px;min-height:22px}
+.tapbtn{
+  width:100%;padding:26px;font-size:20px;border-radius:16px;
+  background:var(--deck-hot);color:#14060d;border:none;font-weight:800;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;
+  box-shadow:0 6px 0 var(--deck-dim);
+}
+.tapbtn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--deck-dim)}
+.sync-progress{font-size:13px;color:#9a8fa3;text-align:center;margin-top:14px}
+.timecode{font-variant-numeric:tabular-nums;color:var(--cheetah);font-weight:700}
+
+/* ---------- PLAY ---------- */
+#play{display:none;flex-direction:column;justify-content:space-between;padding-top:64px}
+#play.active{display:flex}
+.play-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.play-song{font-family:'Griffy','Georgia',cursive;font-size:26px;color:var(--deck)}
+.scorebox{text-align:right}
+.score-num{font-family:'Griffy','Georgia',cursive;font-size:40px;color:var(--deck-hot);line-height:1;font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(255,45,135,.6)}
+.combo{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--cheetah);font-weight:700;min-height:16px}
+.lyric-stage{flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;padding:30px 6px;min-height:44vh}
+.prev-line{font-size:17px;color:#6d6376;margin-bottom:18px;min-height:24px;transition:opacity .3s}
+.cur-line{
+  font-size:clamp(26px,5.4vw,44px);font-weight:800;line-height:1.3;min-height:60px;
+  background:linear-gradient(90deg, var(--deck-hot) var(--fill,0%), var(--bone) var(--fill,0%));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  transition:none;
+}
+.next-line{font-size:19px;color:#9a8fa3;margin-top:20px;min-height:26px}
+.mic-meter{height:6px;border-radius:3px;background:var(--web);overflow:hidden;margin-top:18px}
+.mic-meter i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--deck),var(--deck-hot));transition:width .08s linear}
+.play-foot{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.progress{flex:1;height:6px;background:var(--web);border-radius:3px;overflow:hidden}
+.progress i{display:block;height:100%;width:0%;background:var(--deck-hot)}
+.micnote{font-size:11px;color:#8a7f92;letter-spacing:.1em;text-transform:uppercase}
+
+/* ---------- RESULTS ---------- */
+.results-wrap{text-align:center;padding-top:40px}
+.rank-label{font-size:12px;letter-spacing:.34em;text-transform:uppercase;color:var(--deck)}
+.rank{font-family:'Griffy','Georgia',cursive;font-size:clamp(60px,14vw,120px);color:var(--deck-hot);text-shadow:0 0 40px rgba(255,45,135,.6),4px 4px 0 var(--web);line-height:1;margin:14px 0}
+.final-score{font-size:22px;font-weight:700}
+.final-score span{color:var(--cheetah);font-variant-numeric:tabular-nums}
+.stat-row{display:flex;justify-content:center;gap:30px;margin:26px 0;flex-wrap:wrap}
+.stat .v{font-family:'Griffy','Georgia',cursive;font-size:34px;color:var(--deck)}
+.stat .k{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#8a7f92;margin-top:4px}
+
+.back-link{position:fixed;top:26px;left:20px;z-index:60;background:rgba(13,11,14,.8);backdrop-filter:blur(6px)}
+.web-corner{position:fixed;top:14px;right:0;width:120px;opacity:.35;pointer-events:none;z-index:1}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ---- ARCADE JUICE ---- */
+.arcade-cue{text-align:center;font-size:12px;letter-spacing:.22em;color:var(--deck);opacity:.75;margin:18px 0 4px;font-weight:700}
+#countdown{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 45%, rgba(255,45,135,.16), rgba(6,4,8,.94) 62%);backdrop-filter:blur(3px)}
+#countdown.on{display:flex}
+#countdown .cd-num{font-family:'Griffy','Georgia',cursive;font-size:clamp(120px,30vw,300px);color:var(--deck-hot);text-shadow:0 0 60px rgba(255,45,135,.85),6px 6px 0 var(--web);animation:cdpop .6s ease-out}
+@keyframes cdpop{0%{transform:scale(.3);opacity:0}28%{transform:scale(1.18);opacity:1}70%{transform:scale(1)}100%{transform:scale(.82);opacity:0}}
+.score-num.bump{animation:scorebump .28s ease-out}
+@keyframes scorebump{0%{transform:scale(1)}40%{transform:scale(1.35);color:#fff}100%{transform:scale(1)}}
+.combo.flash{animation:comboflash .42s ease-out}
+@keyframes comboflash{0%{transform:scale(.6);opacity:.2}50%{transform:scale(1.28);opacity:1;color:#fff}100%{transform:scale(1);opacity:1}}
+.cur-line.hit{animation:linehit .45s ease-out}
+@keyframes linehit{0%{transform:scale(1)}40%{transform:scale(1.05);filter:drop-shadow(0 0 22px rgba(255,45,135,.85))}100%{transform:scale(1);filter:none}}
+.score-pop{position:fixed;z-index:70;font-family:'Griffy','Georgia',cursive;font-size:32px;color:var(--deck-hot);text-shadow:0 0 16px rgba(255,45,135,.75);pointer-events:none;animation:pop .72s ease-out forwards}
+@keyframes pop{0%{transform:translateY(0) scale(.7);opacity:0}25%{opacity:1;transform:translateY(-10px) scale(1.12)}100%{transform:translateY(-64px) scale(1);opacity:0}}
+
+/* ================= KARAOKE ROOM + CRT TV (home) ================= */
+#home{padding:0;max-width:none;margin:0}
+.ktv-room{
+  position:relative;min-height:100dvh;width:100%;
+  display:flex;align-items:center;justify-content:center;
+  padding:calc(env(safe-area-inset-top,0px) + 46px) 12px calc(env(safe-area-inset-bottom,0px) + 26px);
+  background:#0b0710 center/cover no-repeat;
+  background-image:url('/karaoke/room.jpg');
+}
+@media (orientation:portrait){
+  .ktv-room{background-image:url('/karaoke/room-v.jpg')}
+  .crt-screen{aspect-ratio:4/4.3}   /* taller tube on phones so all 6 tracks fit without scrolling */
+}
+.ktv-room::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 82% 66% at 50% 45%, rgba(6,3,10,.05), rgba(6,3,10,.55) 70%, rgba(6,3,10,.92) 100%);}
+
+.crt-wrap{position:relative;z-index:2;width:min(95vw,560px);display:flex;flex-direction:column;align-items:center}
+.crt{
+  position:relative;width:100%;
+  background:linear-gradient(158deg,#322b38 0%,#1d1922 44%,#100d14 100%);
+  border-radius:24px/20px;padding:5% 5% 8.4%;
+  box-shadow:0 2px 0 rgba(255,255,255,.05) inset, 0 -12px 26px rgba(0,0,0,.5) inset,
+    0 26px 64px rgba(0,0,0,.62), 0 0 0 2px #070509, 0 0 46px rgba(255,45,135,.14);
+}
+.crt-screen{
+  position:relative;aspect-ratio:4/3.35;border-radius:11%/15%;overflow:hidden;
+  background:radial-gradient(ellipse 122% 122% at 50% 40%, #1c0a17 0%, #0b0512 66%, #050208 100%);
+  box-shadow:0 0 0 6px #05030a, 0 0 0 10px #18141d, 0 0 34px rgba(255,45,135,.20) inset;
+}
+.crt-inner{position:absolute;inset:0;display:flex;flex-direction:column;padding:4.5% 6% 4%;z-index:2}
+.crt-head{text-align:center;color:var(--deck-hot);font-size:clamp(11px,3vw,15px);
+  letter-spacing:.1em;text-transform:uppercase;text-shadow:0 0 10px rgba(255,45,135,.85);
+  padding-bottom:3%;margin-bottom:1.5%;border-bottom:1px solid rgba(255,95,162,.3)}
+.crt-list{flex:1;display:flex;flex-direction:column;justify-content:center;gap:1.4%;overflow-y:auto;scrollbar-width:none}
+.crt-list::-webkit-scrollbar{display:none}
+.crt-row{display:flex;align-items:center;gap:3%;cursor:pointer;padding:1.7% 3.5%;border-radius:7px;
+  color:var(--bone);border:1px solid transparent;transition:background .14s,transform .12s,border-color .14s}
+.crt-row .rn{font-size:clamp(14px,3.7vw,20px);color:var(--deck-hot);min-width:1.7em;text-shadow:0 0 8px rgba(255,45,135,.6)}
+.crt-row .rt{flex:1;font-size:clamp(14px,3.7vw,20px);line-height:1.05}
+.crt-row .rs{font-size:clamp(8px,2.2vw,11px);letter-spacing:.1em;text-transform:uppercase;color:var(--cheetah);white-space:nowrap}
+.crt-row.ready:hover,.crt-row.sel{background:linear-gradient(90deg,rgba(255,45,135,.34),rgba(255,45,135,.06));
+  border-color:rgba(255,95,162,.55);transform:translateX(3px)}
+.crt-row.ready:hover .rt,.crt-row.sel .rt{color:#fff}
+.crt-row.ready:hover .rn::before,.crt-row.sel .rn::before{content:"\25B8 "}
+.crt-row.empty{opacity:.45;cursor:default}
+.crt-row.empty .rs{color:#8a7f92}
+.crt-foot{text-align:center;color:var(--deck);font-size:clamp(8px,2.2vw,11px);letter-spacing:.14em;
+  text-transform:uppercase;opacity:.85;padding-top:3%;margin-top:1.5%;border-top:1px solid rgba(255,95,162,.3)}
+/* glass FX */
+.crt-scan{position:absolute;inset:0;pointer-events:none;z-index:3;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.20) 0 1px,transparent 1px 3px);opacity:.5}
+.crt-vig{position:absolute;inset:0;pointer-events:none;z-index:3;border-radius:inherit;
+  box-shadow:0 0 54px rgba(0,0,0,.72) inset;background:radial-gradient(ellipse 132% 130% at 50% 44%,transparent 56%,rgba(0,0,0,.5) 100%)}
+.crt-glare{position:absolute;top:-28%;left:-18%;width:66%;height:120%;pointer-events:none;z-index:4;
+  background:linear-gradient(122deg,rgba(255,255,255,.13),transparent 58%);transform:rotate(11deg);filter:blur(7px)}
+.crt-screen.tune{animation:tune .5s ease-out}
+@keyframes tune{0%{filter:brightness(3) contrast(2);transform:scale(.985)}18%{filter:brightness(1)}100%{filter:none;transform:scale(1)}}
+/* bezel details */
+.crt-brand{position:absolute;left:8%;bottom:2.2%;font-size:clamp(8px,2vw,11px);letter-spacing:.24em;color:#6a6472;text-shadow:0 1px 0 #000}
+.crt-led{position:absolute;right:8.5%;bottom:3%;width:8px;height:8px;border-radius:50%;
+  background:#ff3b6b;box-shadow:0 0 9px 2px rgba(255,45,107,.85);animation:ledpulse 2.6s ease-in-out infinite}
+@keyframes ledpulse{0%,100%{opacity:.5}50%{opacity:1}}
+.crt-knobs{position:absolute;right:16%;bottom:1.7%;display:flex;gap:7px}
+.crt-knobs i{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3d3644,#141118);box-shadow:0 1px 2px #000,0 0 0 1px #070509}
+.crt-stand{width:20%;height:11px;background:linear-gradient(#1c1822,#0d0b10);border-radius:0 0 7px 7px}
+.crt-stand::after{content:"";display:block;width:170%;height:8px;margin:5px 0 0 -35%;border-radius:6px;
+  background:linear-gradient(#221d27,#0c0a10);box-shadow:0 9px 20px rgba(0,0,0,.55)}
+</style>
+</head>
+<body>
+<div class="cheetah-strip top"></div>
+<div class="cheetah-strip bottom"></div>
+<svg class="web-corner" viewBox="0 0 120 120" fill="none" stroke="#ff5fa2" stroke-width="1">
+  <path d="M120 0 L60 60 M120 0 L90 75 M120 0 L45 45 M120 0 L75 90 M120 30 Q95 35 85 55 M120 60 Q100 65 95 80 M90 0 Q85 25 65 35 M60 0 Q65 20 80 25"/>
+</svg>
+
+<div id="backdrop" style="position:fixed;inset:0;z-index:-1;background-size:cover;background-position:center;opacity:0;transition:opacity .6s"></div>
+<div style="position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(13,11,14,.82),rgba(13,11,14,.68) 40%,rgba(13,11,14,.88));pointer-events:none"></div>
+
+<!-- HOME -->
+<section id="home" class="screen active">
+  <!-- you're sat down in the 2000s karaoke box; the song menu lives on the tube TV -->
+  <div class="ktv-room">
+    <div class="crt-wrap">
+      <div class="crt">
+        <div class="crt-screen" id="crtScreen">
+          <div class="crt-inner">
+            <div class="crt-head">&#9733; Truly Young &middot; Karaoke &middot; CH&#8209;3 &#9733;</div>
+            <div id="songGrid" class="crt-list"></div>
+            <div class="crt-foot">&#9650;&#9660; pick a track &middot; grab the mic &middot; sing it loud</div>
+          </div>
+          <div class="crt-glare"></div>
+          <div class="crt-vig"></div>
+          <div class="crt-scan"></div>
+        </div>
+        <div class="crt-brand">SONIC&#9733;2000</div>
+        <div class="crt-knobs"><i></i><i></i></div>
+        <div class="crt-led"></div>
+      </div>
+      <div class="crt-stand"></div>
+    </div>
+  </div>
+  <!-- hidden shims: applyVisuals() still references these; the CRT is the new hero -->
+  <img id="heroCard" alt="" style="display:none">
+  <div id="cssTitle" style="display:none"></div>
+  <!-- operator tools — hidden from fans; open /sing.html?admin to author/tap-sync -->
+  <div class="toolbar" id="adminBar" style="display:none">
+    <button class="btn ghost small" id="setupToggle">⚙ Setup Songs</button>
+    <button class="btn ghost small" id="visualsToggle">✦ Visuals</button>
+    <button class="btn ghost small" id="exportBtn">Export Config</button>
+    <label class="btn ghost small filebtn">Import Config<input type="file" id="importFile" accept=".json"></label>
+  </div>
+  <div class="panel" id="visualsPanel" style="display:none">
+    <h2>Visuals</h2>
+    <p class="hint">Paste Higgsfield CDN image URLs. These ship with the exported config.</p>
+    <div class="field"><label>Stage Backdrop (16:9, sits behind everything)</label><input type="text" id="vBackdrop" placeholder="https://cdn.higgsfield.ai/..."></div>
+    <div class="field"><label>Title Card (replaces the text logo on home)</label><input type="text" id="vTitle" placeholder="https://cdn.higgsfield.ai/..."></div>
+    <div class="field"><label>Favicon / Spider Emblem (1:1)</label><input type="text" id="vFavicon" placeholder="https://cdn.higgsfield.ai/..."></div>
+    <button class="btn gold small" id="vApply">Apply Visuals</button>
+  </div>
+  <p style="text-align:center;font-size:11px;color:#6d6376;margin-top:18px;letter-spacing:.08em">
+    THE EP <b style="color:var(--deck)">DEAR JOSHUA</b> — 8.21.26 · TRULYS.WORLD
+  </p>
+</section>
+
+<!-- SETUP -->
+<section id="setup" class="screen">
+  <button class="btn ghost small back-link" onclick="go('home')">← Back</button>
+  <div class="panel">
+    <h2 id="setupTitle">Song Setup</h2>
+    <p class="hint">Load the track, paste the lyrics (one line per row), then tap-sync the timing. When all 6 are loaded, hit <b>Export Config</b> on the home screen — that JSON + your hosted MP3 URLs is what ships to trulys.world.</p>
+    <div class="field">
+      <label>Song Title</label>
+      <input type="text" id="inpTitle" placeholder="e.g. Shadows">
+    </div>
+    <div class="field">
+      <label>Audio</label>
+      <div class="row">
+        <label class="btn small gold filebtn">Upload MP3<input type="file" id="inpAudio" accept="audio/*"></label>
+        <span style="color:#6d6376;font-size:13px">or</span>
+        <input type="text" id="inpUrl" placeholder="https://trulys.world/audio/shadows.mp3" style="flex:1;min-width:220px;background:#0d0a10;border:1px solid var(--web);border-radius:10px;color:var(--bone);padding:11px 14px;font-size:14px">
+      </div>
+      <div class="status-line" id="audioStatus"></div>
+    </div>
+    <div class="field">
+      <label>Lyrics — one line per row</label>
+      <textarea id="inpLyrics" placeholder="I've been running with the shadows&#10;They know my name..."></textarea>
+    </div>
+    <div class="row">
+      <button class="btn" id="startSync">▶ Tap-Sync Timing</button>
+      <button class="btn ghost" id="saveSong">Save Song</button>
+      <span class="status-line" id="syncStatus" style="margin-top:0"></span>
+    </div>
+  </div>
+</section>
+
+<!-- SYNC -->
+<section id="sync" class="screen">
+  <button class="btn ghost small back-link" id="syncBack">← Cancel</button>
+  <div class="panel" style="margin-top:40px">
+    <h2>Tap-Sync</h2>
+    <p class="hint">The track is playing. The moment each line <b>starts being sung</b>, hit the button (or press <b>SPACE</b>). Timestamps lock in as you go.</p>
+    <div class="sync-current">
+      <div class="up-next">Tap when this line starts</div>
+      <div class="line-txt" id="syncLine">—</div>
+      <div class="after" id="syncNextLine"></div>
+    </div>
+    <button class="tapbtn" id="tapNow">TAP — LINE STARTS NOW</button>
+    <div class="sync-progress">
+      Line <span id="syncIdx" class="timecode">1</span> / <span id="syncTotal" class="timecode">0</span>
+      &nbsp;·&nbsp; <span id="syncClock" class="timecode">0:00</span>
+    </div>
+    <div class="row" style="justify-content:center;margin-top:16px">
+      <button class="btn ghost small" id="syncUndo">↩ Undo Last</button>
+      <button class="btn gold small" id="syncFinish">✓ Finish & Save</button>
+    </div>
+  </div>
+</section>
+
+<!-- PLAY -->
+<section id="play" class="screen">
+  <button class="btn ghost small back-link" id="quitPlay">✕ Quit</button>
+  <div class="play-head">
+    <div class="play-song" id="playTitle">—</div>
+    <div class="scorebox">
+      <div class="score-num" id="scoreNum">0</div>
+      <div class="combo" id="comboTxt"></div>
+    </div>
+  </div>
+  <div class="lyric-stage">
+    <div class="prev-line" id="prevLine"></div>
+    <div class="cur-line" id="curLine">Get ready…</div>
+    <div class="next-line" id="nextLine"></div>
+    <div class="mic-meter"><i id="micBar"></i></div>
+  </div>
+  <div class="play-foot">
+    <div class="progress"><i id="songProg"></i></div>
+    <div class="micnote" id="micNote">mic off · lyric mode</div>
+  </div>
+</section>
+
+<!-- RESULTS -->
+<section id="results" class="screen">
+  <div class="results-wrap">
+    <div class="spider" style="font-size:44px">🕷️</div>
+    <div class="rank-label">Your Rank</div>
+    <div class="rank" id="rankTxt">ICON</div>
+    <div class="final-score">FINAL SCORE — <span id="finalScore">0</span></div>
+    <div class="stat-row">
+      <div class="stat"><div class="v" id="statLines">0</div><div class="k">Lines Hit</div></div>
+      <div class="stat"><div class="v" id="statCombo">0</div><div class="k">Best Combo</div></div>
+      <div class="stat"><div class="v" id="statAcc">0%</div><div class="k">Accuracy</div></div>
+    </div>
+    <div class="toolbar">
+      <button class="btn" id="replayBtn">↻ Run It Back</button>
+      <button class="btn ghost" onclick="go('home')">Song Select</button>
+    </div>
+  </div>
+</section>
+
+<!-- ARCADE COUNTDOWN OVERLAY -->
+<div id="countdown"><div class="cd-num" id="cdNum">3</div></div>
+
+<script>
+/* ================= STATE ================= */
+const TRACK_COUNT = 6;
+const DEFAULT_TITLES = ["Shadows","You Two Deserve Each Other","Track 3","Track 4","Track 5","Track 6"];
+let songs = Array.from({length:TRACK_COUNT},(_,i)=>({
+  title: DEFAULT_TITLES[i],
+  audioUrl: null,      // remote URL (survives export)
+  objectUrl: null,     // local upload (session only)
+  lyrics: []           // [{t:seconds, text}]
+}));
+let editIdx = 0;
+let audio = new Audio();
+audio.preload = "auto";
+let visuals = { backdropUrl:"", titleCardUrl:"", faviconUrl:"" };
+
+function applyVisuals(){
+  const bd = document.getElementById("backdrop");
+  if(visuals.backdropUrl){ bd.style.backgroundImage = "url('"+visuals.backdropUrl+"')"; bd.style.opacity = "1"; }
+  else { bd.style.backgroundImage = "none"; bd.style.opacity = "0"; }
+  // home hero is now the CRT TV — keep the old titlecard/text logo hidden
+  const hero = document.getElementById("heroCard");
+  if(hero) hero.style.display = "none";
+  const ct = document.getElementById("cssTitle");
+  if(ct) ct.style.display = "none";
+  if(visuals.faviconUrl){
+    let l = document.querySelector("link[rel=icon]");
+    if(!l){ l = document.createElement("link"); l.rel = "icon"; document.head.appendChild(l); }
+    l.href = visuals.faviconUrl;
+  }
+}
+
+/* Try to auto-load a shipped config when hosted on trulys.world */
+fetch("/karaoke-config.json").then(r=>r.ok?r.json():null).then(cfg=>{
+  if(cfg && Array.isArray(cfg.songs)){ songs = cfg.songs.map(s=>({title:s.title,audioUrl:s.audioUrl||null,objectUrl:null,lyrics:s.lyrics||[]})); renderGrid(); }
+  if(cfg && cfg.visuals){ visuals = Object.assign(visuals, cfg.visuals); applyVisuals(); }
+}).catch(()=>{});
+
+/* ================= NAV ================= */
+function go(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  window.scrollTo(0,0);
+}
+
+/* ================= HOME GRID ================= */
+const grid = document.getElementById("songGrid");
+function songReady(s){ return (s.audioUrl||s.objectUrl) && s.lyrics.length>0; }
+function renderGrid(){
+  grid.innerHTML = "";
+  songs.forEach((s,i)=>{
+    const ready = songReady(s);
+    const d = document.createElement("div");
+    d.className = "crt-row " + (ready ? "ready" : "empty");
+    d.innerHTML = `<span class="rn">${String(i+1).padStart(2,"0")}</span>`
+      + `<span class="rt">${esc(s.title)}</span>`
+      + `<span class="rs">${ready ? "▶ READY" : ((s.audioUrl||s.objectUrl) ? "SYNC" : "SOON")}</span>`;
+    d.onclick = ()=>{
+      if(ADMIN && (setupMode || !ready)){ openSetup(i); }
+      else if(ready){ tuneIn(()=>startPlay(i)); }
+      // non-admin + not ready: do nothing (all shipped tracks are ready)
+    };
+    grid.appendChild(d);
+  });
+}
+// change-the-channel flash, then the song takes over full screen
+function tuneIn(cb){
+  const sc = document.getElementById("crtScreen");
+  if(sc){ sc.classList.remove("tune"); void sc.offsetWidth; sc.classList.add("tune"); }
+  setTimeout(cb, 250);
+}
+function esc(t){ const d=document.createElement("div"); d.textContent=t; return d.innerHTML; }
+
+// Operator/authoring tools are hidden unless the URL carries ?admin — fans get
+// a pure arcade flow (tap a track → it plays), never the upload/setup screens.
+const ADMIN = /[?&]admin\b/.test(location.search);
+if(ADMIN){ const bar=document.getElementById("adminBar"); if(bar) bar.style.display="flex"; }
+let setupMode = false;
+document.getElementById("setupToggle").onclick = (e)=>{
+  setupMode = !setupMode;
+  e.target.textContent = setupMode ? "⚙ Setup Mode: ON — tap a slot" : "⚙ Setup Songs";
+  e.target.style.borderColor = setupMode ? "var(--cheetah)" : "";
+};
+
+/* ================= SETUP ================= */
+function openSetup(i){
+  editIdx = i;
+  document.getElementById("setupTitle").textContent = "Song " + String(i+1).padStart(2,"0") + " Setup";
+  document.getElementById("inpTitle").value = songs[i].title;
+  document.getElementById("inpUrl").value = songs[i].audioUrl || "";
+  document.getElementById("inpLyrics").value = songs[i].lyrics.map(l=>l.text).join("\n");
+  document.getElementById("audioStatus").textContent = (songs[i].objectUrl ? "MP3 loaded (this session)" : (songs[i].audioUrl ? "Using hosted URL" : ""));
+  document.getElementById("syncStatus").textContent = songs[i].lyrics.length && songs[i].lyrics[0].t!=null ? songs[i].lyrics.length+" lines synced ✓" : "";
+  go("setup");
+}
+document.getElementById("inpAudio").addEventListener("change", e=>{
+  const f = e.target.files[0]; if(!f) return;
+  if(songs[editIdx].objectUrl) URL.revokeObjectURL(songs[editIdx].objectUrl);
+  songs[editIdx].objectUrl = URL.createObjectURL(f);
+  document.getElementById("audioStatus").textContent = "Loaded: " + f.name + " ✓";
+});
+document.getElementById("saveSong").onclick = ()=>{ commitSetupFields(); renderGrid(); go("home"); };
+function commitSetupFields(){
+  const s = songs[editIdx];
+  s.title = document.getElementById("inpTitle").value.trim() || s.title;
+  const url = document.getElementById("inpUrl").value.trim();
+  s.audioUrl = url || s.audioUrl;
+  const lines = document.getElementById("inpLyrics").value.split("\n").map(x=>x.trim()).filter(Boolean);
+  // preserve existing timestamps if text count matches, else reset timings
+  if(lines.length === s.lyrics.length && s.lyrics.every(l=>l.t!=null)){
+    s.lyrics = s.lyrics.map((l,i)=>({t:l.t, text:lines[i]}));
+  } else {
+    s.lyrics = lines.map(text=>({t:null, text}));
+  }
+}
+
+/* ================= TAP-SYNC ================= */
+let syncI = 0, syncTimes = [];
+document.getElementById("startSync").onclick = ()=>{
+  commitSetupFields();
+  const s = songs[editIdx];
+  const src = s.objectUrl || s.audioUrl;
+  if(!src){ document.getElementById("syncStatus").textContent = "Load audio first."; return; }
+  if(!s.lyrics.length){ document.getElementById("syncStatus").textContent = "Paste lyrics first."; return; }
+  syncI = 0; syncTimes = [];
+  document.getElementById("syncTotal").textContent = s.lyrics.length;
+  audio.src = src; audio.currentTime = 0;
+  audio.play().then(()=>{ go("sync"); syncTick(); updateSyncUI(); })
+    .catch(()=>{ document.getElementById("syncStatus").textContent = "Couldn't play audio — check the file/URL."; });
+};
+function updateSyncUI(){
+  const s = songs[editIdx];
+  document.getElementById("syncIdx").textContent = Math.min(syncI+1, s.lyrics.length);
+  document.getElementById("syncLine").textContent = s.lyrics[syncI] ? s.lyrics[syncI].text : "— all lines tapped —";
+  document.getElementById("syncNextLine").textContent = s.lyrics[syncI+1] ? "next: " + s.lyrics[syncI+1].text : "";
+}
+function syncTick(){
+  if(!document.getElementById("sync").classList.contains("active")) return;
+  document.getElementById("syncClock").textContent = fmt(audio.currentTime);
+  requestAnimationFrame(syncTick);
+}
+function doTap(){
+  const s = songs[editIdx];
+  if(syncI >= s.lyrics.length) return;
+  syncTimes.push(audio.currentTime);
+  syncI++;
+  updateSyncUI();
+  if(syncI >= s.lyrics.length){ finishSync(); }
+}
+document.getElementById("tapNow").onclick = doTap;
+document.addEventListener("keydown", e=>{
+  if(e.code==="Space" && document.getElementById("sync").classList.contains("active")){ e.preventDefault(); doTap(); }
+});
+document.getElementById("syncUndo").onclick = ()=>{ if(syncI>0){ syncI--; syncTimes.pop(); updateSyncUI(); } };
+document.getElementById("syncFinish").onclick = finishSync;
+document.getElementById("syncBack").onclick = ()=>{ audio.pause(); go("setup"); };
+function finishSync(){
+  const s = songs[editIdx];
+  audio.pause();
+  s.lyrics = s.lyrics.map((l,i)=>({t: (syncTimes[i]!=null ? syncTimes[i] : l.t), text:l.text}));
+  document.getElementById("syncStatus").textContent = syncTimes.length + " lines synced ✓";
+  renderGrid();
+  go("setup");
+}
+function fmt(t){ t=Math.max(0,t|0); return Math.floor(t/60)+":"+String(t%60).padStart(2,"0"); }
+
+/* ================= VISUALS PANEL ================= */
+document.getElementById("visualsToggle").onclick = ()=>{
+  const p = document.getElementById("visualsPanel");
+  const show = p.style.display === "none";
+  p.style.display = show ? "block" : "none";
+  if(show){
+    document.getElementById("vBackdrop").value = visuals.backdropUrl || "";
+    document.getElementById("vTitle").value = visuals.titleCardUrl || "";
+    document.getElementById("vFavicon").value = visuals.faviconUrl || "";
+  }
+};
+document.getElementById("vApply").onclick = ()=>{
+  visuals.backdropUrl = document.getElementById("vBackdrop").value.trim();
+  visuals.titleCardUrl = document.getElementById("vTitle").value.trim();
+  visuals.faviconUrl = document.getElementById("vFavicon").value.trim();
+  applyVisuals();
+  document.getElementById("visualsPanel").style.display = "none";
+};
+
+/* ================= EXPORT / IMPORT ================= */
+document.getElementById("exportBtn").onclick = ()=>{
+  const cfg = { artist:"Truly Young", ep:"Dear Joshua", visuals,
+    songs: songs.map(s=>({title:s.title, audioUrl:s.audioUrl, lyrics:s.lyrics})) };
+  const blob = new Blob([JSON.stringify(cfg,null,2)],{type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "karaoke-config.json"; a.click();
+  URL.revokeObjectURL(a.href);
+};
+document.getElementById("importFile").addEventListener("change", e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ()=>{ try{
+    const cfg = JSON.parse(r.result);
+    if(cfg.songs){ songs = cfg.songs.map(s=>({title:s.title,audioUrl:s.audioUrl||null,objectUrl:null,lyrics:s.lyrics||[]})); renderGrid(); }
+    if(cfg.visuals){ visuals = Object.assign(visuals, cfg.visuals); applyVisuals(); }
+  }catch(err){ alert("Couldn't read that config file."); } };
+  r.readAsText(f);
+});
+
+/* ================= MIC ================= */
+let micCtx=null, analyser=null, micData=null, micOn=false;
+async function initMic(){
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
+    micCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const src = micCtx.createMediaStreamSource(stream);
+    analyser = micCtx.createAnalyser();
+    analyser.fftSize = 1024;
+    src.connect(analyser);
+    micData = new Uint8Array(analyser.fftSize);
+    micOn = true;
+    document.getElementById("micNote").textContent = "🎤 mic live · sing to score";
+  }catch(e){
+    micOn = false;
+    document.getElementById("micNote").textContent = "mic off · practice mode (no score)";
+  }
+}
+function micLevel(){
+  if(!micOn) return 0;
+  analyser.getByteTimeDomainData(micData);
+  let sum=0;
+  for(let i=0;i<micData.length;i++){ const v=(micData[i]-128)/128; sum+=v*v; }
+  return Math.sqrt(sum/micData.length); // RMS 0..~1
+}
+
+/* ================= PLAY ================= */
+let playIdx=0, score=0, combo=0, bestCombo=0, linesHit=0, lineVoiced=false, curI=-1, rafId=null;
+// Per-line coverage: how many frames of the line window you actually voiced.
+// Scoring is based on this fraction, not a single-frame blip.
+let lineVoicedFrames=0, lineTotalFrames=0;
+const MIC_THRESHOLD = 0.045;
+const LINE_HIT_COVERAGE = 0.30; // must sing through ≥30% of the line to land it
+
+let wakeLock=null;
+async function requestWake(){ try{ if('wakeLock' in navigator){ wakeLock=await navigator.wakeLock.request('screen'); } }catch(e){} }
+function releaseWake(){ try{ if(wakeLock){ wakeLock.release(); wakeLock=null; } }catch(e){} }
+async function startPlay(i){
+  playIdx = i;
+  const s = songs[i];
+  const src = s.objectUrl || s.audioUrl;
+  if(!src) return;
+  score=0; combo=0; bestCombo=0; linesHit=0; curI=-1; lineVoiced=false;
+  lineVoicedFrames=0; lineTotalFrames=0;
+  document.getElementById("playTitle").textContent = s.title;
+  document.getElementById("scoreNum").textContent = "0";
+  document.getElementById("comboTxt").textContent = "";
+  document.getElementById("prevLine").textContent = "";
+  document.getElementById("curLine").textContent = "Get ready…";
+  document.getElementById("curLine").style.setProperty("--fill","0%");
+  document.getElementById("nextLine").textContent = s.lyrics[0] ? s.lyrics[0].text : "";
+  go("play");
+  requestWake();
+  await initMic();
+  // Kick off buffering now, then run the 3·2·1 countdown — by the time it
+  // ends the track is loaded, so playback starts instantly (no "loading").
+  audio.src = src; audio.currentTime = 0; audio.load();
+  audio.onended = endPlay;
+  await runCountdown();
+  audio.play().catch(()=>{ document.getElementById("curLine").textContent = "Audio failed to load."; });
+  loop();
+}
+function runCountdown(){
+  return new Promise(res=>{
+    const ov=document.getElementById("countdown"), n=document.getElementById("cdNum");
+    if(matchMedia("(prefers-reduced-motion:reduce)").matches){ res(); return; }
+    const seq=["3","2","1","SING!"]; let k=0;
+    ov.classList.add("on");
+    (function step(){
+      n.textContent=seq[k];
+      n.style.animation="none"; void n.offsetWidth; n.style.animation="";  // retrigger pop
+      k++;
+      if(k<seq.length){ setTimeout(step, 600); }
+      else { setTimeout(()=>{ ov.classList.remove("on"); res(); }, 480); }
+    })();
+  });
+}
+function lineWindow(s, i){
+  const start = s.lyrics[i].t ?? 0;
+  const end = (i+1 < s.lyrics.length && s.lyrics[i+1].t!=null) ? s.lyrics[i+1].t : Math.min(start+6, audio.duration||start+6);
+  return [start, end];
+}
+function loop(){
+  if(!document.getElementById("play").classList.contains("active")) return;
+  const s = songs[playIdx];
+  const t = audio.currentTime;
+
+  // progress bar
+  if(audio.duration) document.getElementById("songProg").style.width = (t/audio.duration*100)+"%";
+
+  // find active line
+  let active = -1;
+  for(let i=0;i<s.lyrics.length;i++){
+    if(s.lyrics[i].t!=null && t >= s.lyrics[i].t) active = i; else if(s.lyrics[i].t!=null) break;
+  }
+  if(active !== curI){
+    // close out previous line
+    scoreLine();
+    curI = active; lineVoiced = false; lineVoicedFrames = 0; lineTotalFrames = 0;
+    document.getElementById("prevLine").textContent = curI>0 ? s.lyrics[curI-1].text : "";
+    document.getElementById("curLine").textContent = curI>=0 ? s.lyrics[curI].text : "…";
+    document.getElementById("nextLine").textContent = s.lyrics[curI+1] ? s.lyrics[curI+1].text : "";
+    document.getElementById("comboTxt").textContent = combo>1 ? combo+"x COMBO" : "";
+  }
+
+  // line fill + mic scoring
+  if(curI >= 0){
+    const [a,b] = lineWindow(s,curI);
+    const pct = Math.min(100, Math.max(0, (t-a)/(b-a)*100));
+    document.getElementById("curLine").style.setProperty("--fill", pct+"%");
+    const lvl = micLevel();
+    document.getElementById("micBar").style.width = Math.min(100,lvl*900)+"%";
+    // Accumulate coverage across the whole line window instead of latching on
+    // a single loud frame — a brief cough no longer scores a full line.
+    if(micOn){
+      lineTotalFrames++;
+      if(lvl > MIC_THRESHOLD){ lineVoiced = true; lineVoicedFrames++; }
+    }
+  }
+  rafId = requestAnimationFrame(loop);
+}
+/* Score the line we're leaving: mic-on = points scale with how much of the
+   line you actually sang (silence breaks the combo); mic-off = practice, no score. */
+function scoreLine(){
+  if(curI < 0 || !micOn) return;
+  const cov = lineTotalFrames > 0 ? lineVoicedFrames / lineTotalFrames : 0;
+  if(cov >= LINE_HIT_COVERAGE){
+    const quality = 0.5 + 0.5 * Math.min(1, cov / 0.8); // 50%→100% face value by coverage
+    const pts = Math.round((100 + combo*10) * quality);
+    linesHit++; combo++; bestCombo = Math.max(bestCombo, combo);
+    addScore(pts); juiceHit(pts);
+  } else {
+    combo = 0; // mumbled / silent → streak resets
+  }
+}
+function addScore(n){
+  score+=n;
+  const el=document.getElementById("scoreNum");
+  el.textContent = score.toLocaleString();
+  if(n>=100){ el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); }
+}
+/* Arcade feedback on a completed line: pop the score, flash the combo, glow the line. */
+function juiceHit(pts){
+  const combEl=document.getElementById("comboTxt");
+  if(combo>1){ combEl.classList.remove("flash"); void combEl.offsetWidth; combEl.classList.add("flash"); }
+  const cur=document.getElementById("curLine");
+  if(cur){ cur.classList.remove("hit"); void cur.offsetWidth; cur.classList.add("hit"); }
+  const box=document.querySelector(".scorebox");
+  if(box){
+    const r=box.getBoundingClientRect();
+    const p=document.createElement("div");
+    p.className="score-pop"; p.textContent="+"+pts;
+    p.style.left=(r.left+r.width/2-18)+"px"; p.style.top=(r.bottom+4)+"px";
+    document.body.appendChild(p); setTimeout(()=>p.remove(),720);
+  }
+}
+document.getElementById("quitPlay").onclick = ()=>{ audio.pause(); cancelAnimationFrame(rafId); releaseWake(); go("home"); };
+
+function endPlay(){
+  cancelAnimationFrame(rafId); releaseWake();
+  const s = songs[playIdx];
+  const total = s.lyrics.length || 1;
+  // close final line
+  scoreLine();
+  const acc = Math.round(linesHit/total*100);
+  // Mic-off is practice — you played, but ranks are earned with a mic.
+  const rank = !micOn ? "PRACTICE RUN"
+    : acc>=95 ? "DEAR JOSHUA" : acc>=80 ? "ICON" : acc>=60 ? "SHADOW" : acc>=35 ? "GHOUL" : "LURKER";
+  document.getElementById("rankTxt").textContent = rank;
+  document.getElementById("finalScore").textContent = score.toLocaleString();
+  document.getElementById("statLines").textContent = linesHit + "/" + total;
+  document.getElementById("statCombo").textContent = bestCombo + "x";
+  document.getElementById("statAcc").textContent = acc + "%";
+  go("results");
+}
+document.getElementById("replayBtn").onclick = ()=>startPlay(playIdx);
+
+renderGrid();
+</script>
+</body>
+</html>

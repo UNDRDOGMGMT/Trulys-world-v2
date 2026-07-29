@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>DEAR JOSHUA — type her letter</title>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Cutive+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#fbf3e6; --paper-sh:#f1e4cf;
+    --ink:#4a2a3a;             /* soft typewriter ink (plum-brown) */
+    --sung:#ff5fa8;           /* the highlight — what to type now */
+    --sung-soft:#ffd6e8;
+    --blush:#ffb3cf; --rose:#e77aa3; --cream:#fff4ea; --gold:#e7b96a;
+    --bone:#5a3a48;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;overflow:hidden;}
+  body{font-family:'Special Elite',monospace;color:var(--bone);background:#150a22;user-select:none;}
+  #stage{position:fixed;inset:0;overflow:hidden;}
+
+  /* neon-noir writing desk (matches the rest of the site) */
+  #desk{position:absolute;inset:0;z-index:0;background:#150a22 center/cover no-repeat;}
+  #desk::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 44%, transparent 40%, rgba(8,3,16,.6) 100%);} /* deep vignette */
+  .scan{position:absolute;inset:0;z-index:2;pointer-events:none;mix-blend-mode:overlay;opacity:.25;background:repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.4) 3px);}
+  .hearts-bg{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden;}
+  .fl{position:absolute;color:rgba(255,95,168,.55);animation:floatUp linear infinite;text-shadow:0 0 8px rgba(255,79,163,.6);}
+  @keyframes floatUp{from{transform:translateY(20px) rotate(0);opacity:0}10%{opacity:.7}to{transform:translateY(-90vh) rotate(40deg);opacity:0}}
+
+  /* ---- HUD ---- */
+  #hud{position:absolute;top:0;left:0;right:0;z-index:9;display:flex;align-items:flex-start;justify-content:space-between;
+    gap:12px;padding:calc(14px + env(safe-area-inset-top)) clamp(14px,4vw,40px) 10px;}
+  .title{font-size:clamp(15px,2.4vw,24px);letter-spacing:.14em;color:#fff;text-shadow:0 2px 10px rgba(180,60,110,.6);}
+  .title b{color:var(--blush);}
+  .stats{display:flex;gap:clamp(10px,2vw,24px);align-items:flex-start;font-family:'Cutive Mono',monospace;font-size:clamp(10px,1.4vw,13px);}
+  .stat{text-align:center;line-height:1.25;color:#fff;text-shadow:0 1px 6px rgba(150,40,90,.5);}
+  .stat span{display:block;font-size:.72em;letter-spacing:.2em;color:#ffd0e2;text-transform:uppercase;}
+  .ribbon{display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+  .ribbonlabel{font-size:.7em;letter-spacing:.2em;color:#ffd0e2;text-transform:uppercase;font-family:'Cutive Mono',monospace;}
+  .pips{display:flex;gap:3px;}
+  .pip{width:6px;height:12px;border-radius:2px;background:var(--rose);box-shadow:0 0 6px rgba(231,122,163,.6);transition:.2s;}
+  .pip.spent{background:rgba(255,255,255,.35);box-shadow:none;}
+
+  /* ---- the paper feeding UP out of the roller (first-person view) ---- */
+  #paperWrap{position:absolute;left:50%;bottom:50vh;transform:translateX(-50%);z-index:4;
+    width:min(480px,74vw);height:min(48vh,420px);overflow:hidden;
+    -webkit-mask:linear-gradient(180deg, transparent 0, #000 14%, #000 92%, transparent 100%);
+            mask:linear-gradient(180deg, transparent 0, #000 14%, #000 92%, transparent 100%);}
+  #paper{position:absolute;left:0;right:0;top:0;padding:0 clamp(20px,4vw,44px);
+    background:linear-gradient(180deg,var(--paper),var(--paper-sh));
+    box-shadow:0 8px 40px rgba(120,50,80,.28), 0 0 0 1px rgba(0,0,0,.04);
+    transition:transform .5s cubic-bezier(.25,1,.4,1);}
+  #paper::before{content:"";position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(180deg, transparent 0 33px, rgba(74,42,58,.05) 33px 34px);}
+  .lines{padding:22px 0;}
+  .ln{font-size:clamp(15px,2.15vw,20px);line-height:1.9;min-height:1.9em;white-space:pre-wrap;color:#b39aa6;transition:color .3s;}
+  .ln.done{color:var(--ink);opacity:.55;}
+  .ln.cur{color:var(--ink);}
+  .ch{transition:color .08s;}
+  .ch.pending{color:#c6adbb;}
+  .ch.sung{color:var(--sung);text-shadow:0 0 10px rgba(255,95,168,.5);}  /* what to type now */
+  .ch.ink{color:var(--ink);}                                            /* you typed it */
+  .ch.bad{background:#ff5a7a;color:#fff;border-radius:2px;}
+  .caret{border-left:2px solid var(--sung);margin-left:-1px;animation:blink .8s steps(1) infinite;}
+  @keyframes blink{50%{border-color:transparent}}
+  #paperWrap.shake{animation:shk .18s;}
+  @keyframes shk{0%,100%{transform:translateX(-50%)}25%{transform:translate(calc(-50% - 5px))}75%{transform:translate(calc(-50% + 5px))}}
+
+  /* ---- the pink typewriter, first-person POV (keys in the foreground) ---- */
+  #typewriter{position:absolute;left:50%;bottom:-1vh;transform:translateX(-50%);z-index:6;
+    width:min(960px,118vw);pointer-events:none;filter:drop-shadow(0 -6px 24px rgba(120,40,80,.35));}
+  #typewriter img{width:100%;display:block;}
+  #typewriter.tap{animation:tw .09s;}
+  @keyframes tw{50%{transform:translate(-50%,2px)}}
+
+  /* ---- overlays ---- */
+  .overlay{position:absolute;inset:0;z-index:14;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:26px;gap:16px;background:radial-gradient(ellipse at 50% 45%, rgba(90,20,60,.62), rgba(8,3,16,.92));backdrop-filter:blur(3px);}
+  .overlay.hide{display:none;}
+  .otitle{font-size:clamp(30px,7vw,64px);letter-spacing:.04em;line-height:1.02;color:#fff;text-shadow:0 3px 18px rgba(150,30,90,.7);}
+  .otitle.pink{color:#fff;}
+  .osub{font-family:'Cutive Mono',monospace;font-size:clamp(12px,1.7vw,15px);letter-spacing:.04em;color:#fff3f8;max-width:34ch;line-height:1.75;text-shadow:0 1px 6px rgba(120,30,70,.5);}
+  .keyhint{font-family:'Cutive Mono',monospace;font-size:12px;letter-spacing:.18em;color:#ffd7e6;text-transform:uppercase;}
+  .btn{font-family:'Special Elite',monospace;font-size:clamp(14px,2vw,18px);letter-spacing:.1em;color:#7a2a4a;
+    background:linear-gradient(180deg,#ffd0e2,#ffb3cf);border:none;border-radius:999px;padding:12px 30px;cursor:pointer;
+    box-shadow:0 6px 22px rgba(150,40,90,.4);transition:.15s;}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(150,40,90,.55);}
+  .oscore{display:flex;gap:26px;font-family:'Cutive Mono',monospace;margin-top:4px;}
+  .oscore div{color:#fff;}.oscore span{display:block;font-size:.7em;letter-spacing:.2em;color:#ffd0e2;text-transform:uppercase;}
+  #ghostInput{position:absolute;opacity:0;pointer-events:none;left:-9999px;}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="desk"></div>
+  <div class="hearts-bg" id="heartsbg"></div>
+  <div class="scan"></div>
+
+  <div id="hud">
+    <div class="title">DEAR <b>JOSHUA</b></div>
+    <div class="stats">
+      <div class="stat" id="accStat">100%<span>clean</span></div>
+      <div class="stat" id="wpmStat">0<span>wpm</span></div>
+      <div class="ribbon">
+        <div class="ribbonlabel">ribbon</div>
+        <div class="pips" id="pips"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="paperWrap">
+    <div id="paper"><div class="lines" id="lines"></div></div>
+  </div>
+  <div id="typewriter"><img src="/dj/typewriter-fpv.png" alt=""></div>
+
+  <!-- start -->
+  <div class="overlay" id="startOv">
+    <div class="otitle pink">DEAR JOSHUA</div>
+    <div class="osub">Her letter types itself as the song plays. Follow the <b style="color:#ff9ecb">pink highlight</b> and type each word as she sings it. Every real typo bleeds the ribbon — <b>32 mistakes and it runs out of ink</b>.</div>
+    <button class="btn" id="startBtn">▸ start the song</button>
+    <div class="keyhint">or press any key</div>
+  </div>
+
+  <!-- end -->
+  <div class="overlay hide" id="endOv">
+    <div class="otitle" id="endTitle">LETTER DELIVERED</div>
+    <div class="osub" id="endSub"></div>
+    <div class="oscore">
+      <div id="fAcc">100%<span>accuracy</span></div>
+      <div id="fWpm">0<span>wpm</span></div>
+      <div id="fErr">0<span>mistakes</span></div>
+    </div>
+    <button class="btn" id="retryBtn">▸ type it again</button>
+  </div>
+  <input id="ghostInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+</div>
+
+<script>
+/* ============================================================
+   DEAR JOSHUA — karaoke typewriter. Her lyrics scroll out of the
+   pink typewriter; a pink highlight sweeps each line IN TIME WITH
+   THE SONG so you know what to type. Type the highlighted word.
+   20/32 mistakes = out of ink.
+
+   The per-line timing (LINE_T) is estimated from the song length +
+   each line's length. Tune VOCAL_START / VOCAL_END below, or drop
+   in exact per-line seconds, to lock it to the vocal.
+   ============================================================ */
+
+const LINES = [
+  "autopilot turns you into silence",
+  "pick me up and spin me around",
+  "by my ankles, slam me to the ground",
+  "your subconscious, if I'm being honest",
+  "is something I worry about",
+  "easily influenced by doubt",
+  "babe I'm not the kind of girl you pay for",
+  "you bait and switched me with a call you later",
+  "at the grave site did you change your mind?",
+  "you say I'm your wife, put me back on ice",
+  "sentence date, I woulda ride or died",
+  "so I ask myself, how much did you lie?",
+  "not enough not enough not enough",
+  "brain cells left in your head",
+  "coulda been from the drugs",
+  "coulda been from the bleach left in your hair",
+  "made it up lovebomb",
+  "crawl back on your knees to me if you dare",
+  "my dear Joshua, take this personal",
+  "ultraviolence, misery unlicensed",
+  "push me till I'm out of your bounds",
+  "love you harder, I'm not allowed",
+  "so excited, trip to boyfriend island",
+  "one way ticket, you got a round trip",
+  "left me stranded just the way you like it",
+  "babe, I'm not the kind of girl you pay for",
+  "you bait and switched me with a call you later",
+  "at the grave site did you change your mind?",
+  "you say I'm your wife, put me back on ice",
+  "sentence date, I woulda ride or died",
+  "so I ask myself, how much did you lie?",
+  "not enough not enough not enough",
+  "brain cells left in your head",
+  "coulda been from the drugs",
+  "coulda been from the bleach left in your hair",
+  "made it up lovebomb",
+  "crawl back on your knees to me if you dare",
+  "my dear Joshua, take this personal.",
+];
+
+const MAX_ERRORS = 32;
+const PIP_COUNT = 20;
+const VOCAL_START = 6.0;    // seconds — when the first lyric is sung (tune me)
+const VOCAL_END   = 143.0;  // seconds — when the last lyric ends (tune me)
+const isTypeable = (ch) => /[a-z0-9]/i.test(ch);
+
+// estimate a start time for each line, weighted by its typeable length
+const LINE_T = (() => {
+  const w = LINES.map(l => Math.max(7, l.replace(/[^a-z0-9]/gi, "").length));
+  const tot = w.reduce((a, b) => a + b, 0);
+  let acc = 0; const t = [];
+  for (const wi of w) { t.push(VOCAL_START + (acc / tot) * (VOCAL_END - VOCAL_START)); acc += wi; }
+  t.push(VOCAL_END);   // sentinel
+  return t;
+})();
+
+let li = 0, ci = 0, errors = 0, correct = 0, started = false, ended = false, startT = 0, audio = null, raf = 0;
+
+const el = (id) => document.getElementById(id);
+const linesBox = el("lines"), paper = el("paper"), paperWrap = el("paperWrap"), pipsBox = el("pips");
+
+// ribbon pips (fixed 20, shows fraction of the larger budget)
+for (let i = 0; i < PIP_COUNT; i++) { const p = document.createElement("div"); p.className = "pip"; pipsBox.appendChild(p); }
+// floating hearts ambiance
+(function () {
+  const box = el("heartsbg");
+  for (let i = 0; i < 10; i++) {
+    const s = document.createElement("div"); s.className = "fl"; s.textContent = i % 2 ? "♥" : "✿";
+    s.style.left = Math.random() * 100 + "%"; s.style.bottom = "-20px";
+    s.style.fontSize = (12 + Math.random() * 18) + "px";
+    s.style.animationDuration = (9 + Math.random() * 8) + "s"; s.style.animationDelay = (-Math.random() * 12) + "s";
+    box.appendChild(s);
+  }
+})();
+
+// build the whole letter once; the active line gets per-char spans we restyle each frame
+const lineEls = [];
+function buildPaper() {
+  linesBox.innerHTML = "";
+  LINES.forEach((line, n) => {
+    const div = document.createElement("div"); div.className = "ln"; div.dataset.n = n;
+    div.textContent = line;   // every line shows its text; the active one is re-spanned
+    lineEls[n] = div; linesBox.appendChild(div);
+  });
+  setActiveSpans(0);
+}
+let spanLine = -1, spans = [];
+function setActiveSpans(n) {
+  if (spanLine === n) return;
+  // demote the previous active line to plain text
+  if (spanLine >= 0 && lineEls[spanLine]) lineEls[spanLine].textContent = LINES[spanLine];
+  spanLine = n; spans = [];
+  const div = lineEls[n]; div.innerHTML = "";
+  const line = LINES[n];
+  for (let k = 0; k < line.length; k++) {
+    const sp = document.createElement("span"); sp.className = "ch pending"; sp.textContent = line[k];
+    div.appendChild(sp); spans.push(sp);
+  }
+}
+
+// which line the song is on + how far through it (0..1)
+function songPos(t) {
+  if (t <= LINE_T[0]) return { n: 0, p: 0 };
+  for (let i = 0; i < LINES.length; i++) {
+    if (t < LINE_T[i + 1]) return { n: i, p: (t - LINE_T[i]) / Math.max(0.4, LINE_T[i + 1] - LINE_T[i]) };
+  }
+  return { n: LINES.length - 1, p: 1 };
+}
+
+function updateHud() {
+  const acc = correct + errors === 0 ? 100 : Math.round((correct / (correct + errors)) * 100);
+  el("accStat").firstChild.textContent = acc + "%";
+  const mins = started ? (performance.now() - startT) / 60000 : 0;
+  el("wpmStat").firstChild.textContent = mins > 0.02 ? Math.round((correct / 5) / mins) : 0;
+  const spent = Math.round((errors / MAX_ERRORS) * PIP_COUNT);
+  for (let i = 0; i < PIP_COUNT; i++) pipsBox.children[i].classList.toggle("spent", i < spent);
+  return acc;
+}
+
+/* ---- the karaoke + scroll loop (song is the clock) ---- */
+function loop() {
+  raf = requestAnimationFrame(loop);
+  if (!started || ended || !audio) return;
+  const t = audio.currentTime;
+  const { n, p } = songPos(t);
+
+  // the song moved to a new line → that's now the line you type
+  if (n !== li) { li = n; ci = 0; skipAuto(); }
+  setActiveSpans(li);
+
+  // scroll the paper so the active line sits in the lower-middle of the window,
+  // just above where it feeds into the roller (done lines above, next below)
+  const target = -(lineEls[li].offsetTop - paperWrap.clientHeight * 0.50);
+  paper.style.transform = `translateY(${target}px)`;
+
+  // mark line states
+  for (let m = 0; m < LINES.length; m++) {
+    if (m === li) continue;
+    lineEls[m].className = "ln " + (m < li ? "done" : "");
+  }
+  lineEls[li].className = "ln cur";
+
+  // per-char: typed=ink, sung=pink (type this), else pending
+  const line = LINES[li];
+  const sungChar = Math.round(p * line.length);
+  for (let k = 0; k < spans.length; k++) {
+    const c = k < ci ? "ink" : (k < sungChar ? "sung" : "pending");
+    if (spans[k].className !== "ch " + c && !spans[k].classList.contains("bad")) spans[k].className = "ch " + c;
+  }
+  updateHud();
+}
+
+function skipAuto() { const line = LINES[li]; while (ci < line.length && !isTypeable(line[ci])) ci++; }
+
+/* ---- SFX ---- */
+let actx = null;
+function ac() { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); return actx; }
+function clack() {
+  const c = ac(), t = c.currentTime, o = c.createOscillator(), g = c.createGain();
+  o.type = "square"; o.frequency.setValueAtTime(240 + Math.random() * 60, t); o.frequency.exponentialRampToValueAtTime(90, t + 0.03);
+  g.gain.setValueAtTime(0.08, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+  o.connect(g).connect(c.destination); o.start(t); o.stop(t + 0.06);
+}
+function ding() {
+  const c = ac(), t = c.currentTime, o = c.createOscillator(), g = c.createGain();
+  o.type = "sine"; o.frequency.setValueAtTime(1180, t); o.frequency.exponentialRampToValueAtTime(1560, t + 0.08);
+  g.gain.setValueAtTime(0.001, t); g.gain.exponentialRampToValueAtTime(0.14, t + 0.01); g.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+  o.connect(g).connect(c.destination); o.start(t); o.stop(t + 0.42);
+}
+function errBuzz() {
+  const c = ac(), t = c.currentTime, o = c.createOscillator(), g = c.createGain();
+  o.type = "sawtooth"; o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(70, t + 0.09);
+  g.gain.setValueAtTime(0.1, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+  o.connect(g).connect(c.destination); o.start(t); o.stop(t + 0.13);
+}
+function tapeStop() {
+  if (audio) { try { let v = audio.playbackRate; const id = setInterval(() => { v -= 0.12; if (v <= 0.1) { audio.pause(); clearInterval(id); } else audio.playbackRate = Math.max(0.1, v); }, 40); } catch (e) {} }
+  const c = ac(), t = c.currentTime, o = c.createOscillator(), g = c.createGain();
+  o.type = "sawtooth"; o.frequency.setValueAtTime(320, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.7);
+  g.gain.setValueAtTime(0.16, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+  o.connect(g).connect(c.destination); o.start(t); o.stop(t + 0.82);
+}
+
+/* ---- audio ---- */
+function startAudio() {
+  try {
+    audio = new Audio("/audio/01-dear-joshua.mp3");
+    audio.volume = 0.85; audio.play().catch(() => {});
+    audio.onended = () => { if (!ended) win(); };
+  } catch (e) {}
+}
+
+function begin() {
+  if (started) return;
+  started = true; startT = performance.now();
+  el("startOv").classList.add("hide");
+  skipAuto(); startAudio(); el("ghostInput").focus();
+}
+
+function handleChar(key) {
+  if (!started) { begin(); return; }
+  if (ended) return;
+  const line = LINES[li];
+  skipAuto();
+  if (ci >= line.length) return;   // finished this line; wait for the song to move on
+  const expect = line[ci];
+  if (key.toLowerCase() === expect.toLowerCase()) {
+    correct++; ci++; clack(); skipAuto();
+    if (ci >= line.length) ding();
+  } else {
+    errors++; errBuzz();
+    paperWrap.classList.remove("shake"); void paperWrap.offsetWidth; paperWrap.classList.add("shake");
+    const s = spans[ci]; if (s) { s.classList.add("bad"); setTimeout(() => s.classList.remove("bad"), 150); }
+    if (errors >= MAX_ERRORS) fail();
+  }
+  el("typewriter").classList.remove("tap"); void el("typewriter").offsetWidth; el("typewriter").classList.add("tap");
+  updateHud();
+}
+
+function endScreen(title, cls, sub) {
+  ended = true;
+  const acc = updateHud();
+  el("endTitle").textContent = title; el("endTitle").className = "otitle " + cls; el("endSub").innerHTML = sub;
+  el("fAcc").firstChild.textContent = acc + "%";
+  const mins = (performance.now() - startT) / 60000;
+  el("fWpm").firstChild.textContent = mins > 0.02 ? Math.round((correct / 5) / mins) : 0;
+  el("fErr").firstChild.textContent = errors;
+  el("endOv").classList.remove("hide");
+}
+function win() { if (ended) return; endScreen("LETTER DELIVERED", "pink", "She sang the whole thing and you kept up — clean enough to reach him."); }
+function fail() { if (ended) return; tapeStop(); endScreen("OUT OF INK", "pink", "The ribbon ran dry and the letter jammed. It never got sent."); }
+
+function reset() {
+  li = 0; ci = 0; errors = 0; correct = 0; started = false; ended = false; spanLine = -1;
+  if (audio) { try { audio.pause(); } catch (e) {} audio = null; }
+  el("endOv").classList.add("hide"); el("startOv").classList.remove("hide");
+  for (const p of pipsBox.children) p.classList.remove("spent");
+  el("accStat").firstChild.textContent = "100%"; el("wpmStat").firstChild.textContent = "0";
+  buildPaper(); paper.style.transform = "translateY(0)";
+}
+
+/* ---- input ---- */
+window.addEventListener("keydown", (e) => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (!ended && !started && (e.key.length === 1 || e.key === "Enter")) { begin(); if (e.key.length !== 1) return; }
+  if (e.key.length === 1) { e.preventDefault(); handleChar(e.key); }
+});
+el("startBtn").addEventListener("click", () => begin());
+el("retryBtn").addEventListener("click", () => reset());
+el("ghostInput").addEventListener("input", (e) => { const v = e.target.value; if (v) { for (const ch of v) handleChar(ch); e.target.value = ""; } });
+el("stage").addEventListener("click", () => { if (started && !ended) el("ghostInput").focus(); });
+
+// preload the desk, then reveal
+(function () { const img = new Image(); img.onload = () => { el("desk").style.backgroundImage = "url('/dj/desk.jpg')"; }; img.src = "/dj/desk.jpg"; })();
+buildPaper(); loop();
+</script>
+</body>
+</html>

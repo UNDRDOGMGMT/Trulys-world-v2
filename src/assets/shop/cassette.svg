@@ -1,0 +1,162 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Translucent pink cassette — Truly Young · Dear Joshua">
+  <defs>
+    <!-- Translucent pink shell — outer body -->
+    <linearGradient id="shell" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#ffb6d5" stop-opacity="0.85"/>
+      <stop offset="45%"  stop-color="#ff9ec7" stop-opacity="0.65"/>
+      <stop offset="100%" stop-color="#e06898" stop-opacity="0.8"/>
+    </linearGradient>
+
+    <!-- Inner cassette chassis (visible through translucent shell) -->
+    <linearGradient id="innerBody" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#d87aa6" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#b04878" stop-opacity="0.55"/>
+    </linearGradient>
+
+    <!-- Label paper -->
+    <linearGradient id="label" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#fff8ec"/>
+      <stop offset="100%" stop-color="#f0d8c4"/>
+    </linearGradient>
+
+    <!-- Tape wound on reel -->
+    <radialGradient id="tape" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#3a1624"/>
+      <stop offset="75%"  stop-color="#1a0810"/>
+      <stop offset="100%" stop-color="#0a0408"/>
+    </radialGradient>
+
+    <!-- Hub (plastic gear) -->
+    <radialGradient id="hub" cx="40%" cy="35%" r="60%">
+      <stop offset="0%"   stop-color="#fff8ec"/>
+      <stop offset="100%" stop-color="#c8a684"/>
+    </radialGradient>
+
+    <!-- Glossy top sheen -->
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Pink halo drop shadow -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="8"/>
+      <feOffset dx="0" dy="6" result="shadow"/>
+      <feFlood flood-color="#ff69b4" flood-opacity="0.35"/>
+      <feComposite in2="shadow" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Ambient pink glow behind cassette -->
+  <ellipse cx="400" cy="330" rx="420" ry="200" fill="#ff69b4" opacity="0.12"/>
+
+  <g filter="url(#glow)">
+    <!-- Inner pink chassis (shows through the translucent shell) -->
+    <rect x="70" y="130" width="660" height="340" rx="18" ry="18" fill="url(#innerBody)"/>
+
+    <!-- OUTER TRANSLUCENT SHELL -->
+    <rect x="50" y="110" width="700" height="380" rx="32" ry="32"
+          fill="url(#shell)" stroke="#ff7eb3" stroke-width="3"/>
+
+    <!-- Inner bevel line of the shell -->
+    <rect x="60" y="120" width="680" height="360" rx="26" ry="26"
+          fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1"/>
+
+    <!-- WRITE-PROTECT TABS (top edge) -->
+    <rect x="80"  y="110" width="26" height="10" fill="#c04880" opacity="0.7"/>
+    <rect x="694" y="110" width="26" height="10" fill="#c04880" opacity="0.7"/>
+
+    <!-- ======== LABEL ======== -->
+    <rect x="100" y="145" width="600" height="170" rx="10" ry="10"
+          fill="url(#label)" stroke="#b08060" stroke-width="1.5"/>
+
+    <!-- Decorative dashed inner border -->
+    <rect x="112" y="157" width="576" height="146" rx="6" ry="6"
+          fill="none" stroke="#e06098" stroke-width="1.2" stroke-dasharray="5 4"/>
+
+    <!-- Corner hearts on label -->
+    <g fill="#e06098">
+      <path d="M132 178 C128 174 124 170 126 166 C127 163 131 163 132 166 C133 163 137 163 138 166 C140 170 136 174 132 178Z"/>
+      <path d="M668 178 C664 174 660 170 662 166 C663 163 667 163 668 166 C669 163 673 163 674 166 C676 170 672 174 668 178Z"/>
+      <path d="M132 286 C128 282 124 278 126 274 C127 271 131 271 132 274 C133 271 137 271 138 274 C140 278 136 282 132 286Z"/>
+      <path d="M668 286 C664 282 660 278 662 274 C663 271 667 271 668 274 C669 271 673 271 674 274 C676 278 672 282 668 286Z"/>
+    </g>
+
+    <!-- "TRULY YOUNG" — big whimsical logo treatment -->
+    <text x="400" y="210" text-anchor="middle"
+          font-family="Griffy, Georgia, cursive"
+          font-size="58" font-weight="400"
+          fill="#4a1428" letter-spacing="2">Truly Young</text>
+
+    <!-- Thin pink separator line -->
+    <line x1="240" y1="228" x2="560" y2="228" stroke="#e06098" stroke-width="1" opacity="0.6"/>
+    <circle cx="400" cy="228" r="3" fill="#e06098"/>
+
+    <!-- "Dear Joshua" — subtitle in MedievalSharp -->
+    <text x="400" y="268" text-anchor="middle"
+          font-family="MedievalSharp, Georgia, serif"
+          font-size="32" fill="#7a2a4a" letter-spacing="6">DEAR JOSHUA</text>
+
+    <!-- tiny metadata line -->
+    <text x="400" y="295" text-anchor="middle"
+          font-family="MedievalSharp, Georgia, serif"
+          font-size="11" fill="#9a5a7a" letter-spacing="4">SIDE A ✧ JUNE 2026 ✧ 6 TRACKS</text>
+
+    <!-- ======== REEL WINDOWS ======== -->
+    <!-- Left reel window frame (clear cut-out in shell) -->
+    <circle cx="260" cy="395" r="68" fill="rgba(10,4,8,0.6)" stroke="#3a1624" stroke-width="2"/>
+    <!-- Wound tape on left reel -->
+    <circle cx="260" cy="395" r="52" fill="url(#tape)"/>
+    <!-- Left hub (gear) -->
+    <circle cx="260" cy="395" r="24" fill="url(#hub)" stroke="#8a6042" stroke-width="1.5"/>
+    <!-- Hub teeth / spokes -->
+    <g fill="#8a6042">
+      <rect x="256" y="374" width="8" height="42" rx="1"/>
+      <rect x="239" y="391" width="42" height="8" rx="1"/>
+    </g>
+    <circle cx="260" cy="395" r="5" fill="#5a3828"/>
+
+    <!-- Right reel window -->
+    <circle cx="540" cy="395" r="68" fill="rgba(10,4,8,0.6)" stroke="#3a1624" stroke-width="2"/>
+    <circle cx="540" cy="395" r="52" fill="url(#tape)"/>
+    <circle cx="540" cy="395" r="24" fill="url(#hub)" stroke="#8a6042" stroke-width="1.5"/>
+    <g fill="#8a6042">
+      <rect x="536" y="374" width="8" height="42" rx="1"/>
+      <rect x="519" y="391" width="42" height="8" rx="1"/>
+    </g>
+    <circle cx="540" cy="395" r="5" fill="#5a3828"/>
+
+    <!-- Tape strand running between reels -->
+    <path d="M 328 395 Q 400 475 472 395" stroke="url(#tape)" stroke-width="6" fill="none" opacity="0.85"/>
+    <path d="M 328 395 Q 400 475 472 395" stroke="#2a1018" stroke-width="2" fill="none"/>
+
+    <!-- Pinch rollers (small silver circles at bottom) -->
+    <circle cx="340" cy="460" r="7" fill="#c8a684" stroke="#8a6042" stroke-width="1"/>
+    <circle cx="460" cy="460" r="7" fill="#c8a684" stroke="#8a6042" stroke-width="1"/>
+
+    <!-- Capstan holes (bottom center) -->
+    <circle cx="400" cy="460" r="4" fill="rgba(0,0,0,0.6)"/>
+
+    <!-- Head access window -->
+    <rect x="385" y="472" width="30" height="6" rx="2" fill="rgba(0,0,0,0.55)"/>
+
+    <!-- ======== SHELL HIGHLIGHTS ======== -->
+    <!-- Top glossy sheen -->
+    <rect x="60" y="120" width="680" height="90" rx="28" ry="28" fill="url(#sheen)"/>
+    <!-- Left shell catchlight -->
+    <path d="M 70 150 Q 85 250 75 450" stroke="#ffffff" stroke-width="2" fill="none" opacity="0.35"/>
+    <path d="M 80 160 Q 90 300 85 420" stroke="#ffffff" stroke-width="1" fill="none" opacity="0.2"/>
+  </g>
+
+  <!-- Floating sparkle charms -->
+  <g opacity="0.9">
+    <path d="M110 95 L113 102 L120 104 L113 106 L110 113 L107 106 L100 104 L107 102 Z" fill="#ffffff"/>
+    <path d="M700 510 L702 516 L708 518 L702 520 L700 526 L698 520 L692 518 L698 516 Z" fill="#ffb6d5"/>
+    <path d="M60 500 L62 504 L66 506 L62 508 L60 512 L58 508 L54 506 L58 504 Z" fill="#ffffff" opacity="0.8"/>
+    <path d="M720 90 L722 95 L727 97 L722 99 L720 104 L718 99 L713 97 L718 95 Z" fill="#ffb6d5" opacity="0.9"/>
+  </g>
+</svg>

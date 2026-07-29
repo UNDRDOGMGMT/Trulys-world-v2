@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>SAVE TRULY — get her off his scaffold</title>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Cutive+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --aubergine:#150a22; --plum:#22123a; --magenta:#ff4fa3; --hot:#ff2d8f;
+    --amber:#ffcf7a; --lilac:#9d8bff; --bone:#f2ead8; --red:#ff2d55;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
+  html,body{height:100%;overflow:hidden;background:#08040f;}
+  body{font-family:'Special Elite',monospace;color:var(--bone);touch-action:none;}
+  #wrap{position:fixed;inset:0;}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+  .scan{position:absolute;inset:0;z-index:5;pointer-events:none;mix-blend-mode:overlay;opacity:.35;
+    background:repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.45) 3px);}
+  .vig{position:absolute;inset:0;z-index:5;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 46%,transparent 52%,rgba(4,2,10,.8) 100%);}
+
+  /* ---------- HUD ---------- */
+  #hud{position:absolute;top:0;left:0;right:0;z-index:8;display:flex;align-items:flex-start;justify-content:space-between;
+    gap:10px;padding:calc(10px + env(safe-area-inset-top)) clamp(10px,3.5vw,26px) 10px;pointer-events:none;
+    font-family:'Cutive Mono',monospace;}
+  .stack{display:flex;flex-direction:column;gap:2px;}
+  .stack.mid{align-items:center;}
+  .stack.right{align-items:flex-end;}
+  .lab{font-size:8px;letter-spacing:.24em;color:#9a8ab8;text-transform:uppercase;}
+  .val{font-size:clamp(15px,2.6vw,22px);line-height:1.05;color:var(--bone);text-shadow:0 0 12px rgba(255,79,163,.5);}
+  .val.amber{color:var(--amber);text-shadow:0 0 12px rgba(255,207,122,.5);}
+  /* embedded in the site the wrapper puts an EXIT chip in the top-right corner,
+     so drop the bonus column clear of it */
+  body.embedded .stack.right{padding-top:34px;}
+  .lives{display:flex;gap:4px;font-size:16px;filter:drop-shadow(0 0 6px rgba(255,45,85,.6));}
+  .heart{color:var(--red);transition:.2s;}
+  .heart.gone{color:#3a2440;filter:none;opacity:.45;transform:scale(.8);}
+
+  /* ---------- mobile pads ---------- */
+  #pads{position:absolute;bottom:0;left:0;right:0;z-index:9;display:none;justify-content:space-between;align-items:flex-end;
+    padding:0 12px calc(14px + env(safe-area-inset-bottom));}
+  body.touch #pads{display:flex;}
+  #dpad{display:grid;grid-template-columns:repeat(3,var(--k));grid-template-rows:repeat(3,var(--k));
+    --k:clamp(46px,14vw,62px);}
+  .pad{border-radius:16px;background:rgba(34,18,58,.72);border:2px solid rgba(255,79,163,.38);
+    backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;
+    font-size:22px;color:var(--magenta);box-shadow:0 0 16px rgba(255,79,163,.16);}
+  .pad:active,.pad.on{background:rgba(255,79,163,.3);transform:scale(.95);}
+  #padU{grid-area:1/2}#padL{grid-area:2/1}#padR{grid-area:2/3}#padD{grid-area:3/2}
+  #padJ{width:clamp(78px,23vw,104px);height:clamp(78px,23vw,104px);border-radius:999px;font-size:13px;
+    letter-spacing:.1em;border-color:rgba(255,207,122,.5);color:var(--amber);
+    font-family:'Special Elite',monospace;}
+
+  /* ---------- overlays ---------- */
+  .ov{position:absolute;inset:0;z-index:12;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;gap:14px;padding:24px;
+    background:radial-gradient(ellipse at 50% 44%,rgba(21,10,34,.74),rgba(6,3,14,.95));backdrop-filter:blur(3px);}
+  .ov.hide{display:none;}
+  .kicker{font-family:'Cutive Mono',monospace;font-size:10px;letter-spacing:.34em;color:var(--lilac);text-transform:uppercase;}
+  .otitle{font-size:clamp(32px,8vw,68px);line-height:.98;letter-spacing:.02em;color:var(--magenta);
+    text-shadow:0 0 26px rgba(255,79,163,.6);}
+  .otitle.amber{color:var(--amber);text-shadow:0 0 26px rgba(255,207,122,.55);}
+  .otitle.red{color:var(--red);text-shadow:0 0 26px rgba(255,45,85,.55);}
+  .osub{font-family:'Cutive Mono',monospace;font-size:clamp(12px,1.8vw,15px);color:#d3c4ea;max-width:38ch;
+    line-height:1.75;letter-spacing:.03em;}
+  .osub b{color:var(--magenta);font-weight:normal;}
+  .keys{font-family:'Cutive Mono',monospace;font-size:10px;letter-spacing:.16em;color:#8a7ba8;text-transform:uppercase;}
+  .btn{font-family:'Special Elite',monospace;font-size:clamp(15px,2vw,19px);letter-spacing:.1em;color:#2a1730;
+    background:var(--amber);border:none;border-radius:999px;padding:13px 32px;cursor:pointer;
+    box-shadow:0 0 26px rgba(255,207,122,.5);transition:.15s;}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 0 36px rgba(255,207,122,.85);}
+  .oscore{display:flex;gap:22px;font-family:'Cutive Mono',monospace;margin-top:2px;}
+  .oscore div{color:#e7dcff;font-size:15px;}
+  .oscore span{display:block;font-size:8px;letter-spacing:.2em;color:#8a7ba8;text-transform:uppercase;margin-top:3px;}
+  #mug{width:clamp(104px,27vw,164px);filter:drop-shadow(0 0 26px rgba(255,79,163,.5));
+    background:radial-gradient(ellipse at 50% 62%,rgba(255,79,163,.22),rgba(34,18,58,0) 68%);}
+
+  /* mid-game flash card (round clear / get ready) */
+  #flash{position:absolute;inset:0;z-index:11;display:none;flex-direction:column;align-items:center;justify-content:center;
+    gap:8px;pointer-events:none;text-align:center;padding:20px;}
+  #flash b{font-size:clamp(28px,7vw,58px);color:var(--bone);text-shadow:0 0 28px rgba(255,79,163,.7);animation:pop .6s ease-out;}
+  #flash i{font-family:'Cutive Mono',monospace;font-style:normal;font-size:12px;letter-spacing:.28em;
+    color:var(--magenta);text-transform:uppercase;}
+  @keyframes pop{from{transform:scale(1.5);opacity:0}40%{opacity:1}to{transform:scale(1);opacity:1}}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="cv"></canvas>
+  <div class="scan"></div><div class="vig"></div>
+
+  <div id="hud">
+    <div class="stack">
+      <div class="lab">score</div>
+      <div class="val" id="score">0</div>
+      <div class="lives" id="lives"></div>
+    </div>
+    <div class="stack mid">
+      <div class="lab">round</div>
+      <div class="val" id="round">1</div>
+    </div>
+    <div class="stack right">
+      <div class="lab">bonus</div>
+      <div class="val amber" id="bonus">5000</div>
+      <div class="lab" id="best">best 0</div>
+    </div>
+  </div>
+
+  <div id="pads">
+    <div id="dpad">
+      <div class="pad" id="padU">▲</div>
+      <div class="pad" id="padL">◄</div>
+      <div class="pad" id="padR">►</div>
+      <div class="pad" id="padD">▼</div>
+    </div>
+    <div class="pad" id="padJ">JUMP</div>
+  </div>
+
+  <div id="flash"><b id="flashT"></b><i id="flashS"></i></div>
+
+  <div class="ov" id="startOv">
+    <div class="kicker">Hollywood Blvd · the scaffold</div>
+    <div class="otitle">SAVE TRULY</div>
+    <img id="mug" src="/climb/josh-throw.png" alt="">
+    <div class="osub">Her ex <b>Josh</b> dragged her up the marquee scaffold and he's raining his whole personality down on you —
+      <b>red flags</b>, <b>burner phones</b>, <b>3am texts</b>. Climb the girders, jump what he throws,
+      grab the <b>heart record</b> to smash it all. Get to the top. Get her down.</div>
+    <button class="btn" id="startBtn">▸ go get her</button>
+    <div class="keys">← → move · ↑ ↓ ladders · space jump</div>
+  </div>
+
+  <div class="ov hide" id="endOv">
+    <div class="otitle" id="endTitle">SHE'S FREE</div>
+    <div class="osub" id="endSub"></div>
+    <div class="oscore">
+      <div id="fScore">0<span>score</span></div>
+      <div id="fRound">1<span>round</span></div>
+      <div id="fBest">0<span>best</span></div>
+    </div>
+    <button class="btn" id="retryBtn">▸ run it back</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   SAVE TRULY — a Donkey-Kong-style climb for TRULY'S WORLD.
+   Josh is the ape. The barrels are red flags. Countess the
+   sphynx (Truly's cat, borrowed from Cruise Night) is the hero.
+
+   The whole game runs in a fixed 252x336 virtual world so the
+   layout, jump heights and hitboxes are identical on every
+   device; a single transform scales that world into the viewport
+   and the rest of the screen is bezel. Art is Higgsfield
+   (public/climb/*), everything else is drawn.
+   ============================================================ */
+
+const WW = 252, WH = 336;           // virtual world units
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+
+// older iOS Safari has no Path2D.roundRect on the 2D context
+if (!ctx.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r){
+    r = Math.min(r, w / 2, h / 2);
+    this.moveTo(x + r, y);
+    this.arcTo(x + w, y, x + w, y + h, r);
+    this.arcTo(x + w, y + h, x, y + h, r);
+    this.arcTo(x, y + h, x, y, r);
+    this.arcTo(x, y, x + w, y, r);
+    this.closePath();
+    return this;
+  };
+}
+let VW = 0, VH = 0, S = 1, OX = 0, OY = 0, DPR = 1;
+
+function resize(){
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  VW = window.innerWidth; VH = window.innerHeight;
+  cv.width = VW * DPR; cv.height = VH * DPR;
+  cv.style.width = VW + 'px'; cv.style.height = VH + 'px';
+  S  = Math.min(VW / WW, VH / WH);
+  OX = (VW - WW * S) / 2;
+  OY = (VH - WH * S) / 2;
+}
+addEventListener('resize', resize); resize();
+
+/* ---------- assets ---------- */
+const IMG = {};
+const ART = {
+  run:'hero-run', runL:'hero-run-l', jump:'hero-jump', jumpL:'hero-jump-l', climb:'hero-climb',
+  joshThrow:'josh-throw', joshRage:'josh-rage', joshBeat:'josh-beat',
+  trulyCaged:'truly-caged', trulyFree:'truly-free',
+  flag:'obj-flag', phone:'obj-phone', text:'obj-text', record:'obj-record',
+  bg:'backdrop'
+};
+let loaded = 0, toLoad = Object.keys(ART).length;
+for (const k in ART){
+  const im = new Image();
+  im.onload = () => { loaded++; };
+  im.onerror = () => { loaded++; IMG[k] = null; };
+  im.src = '/climb/' + ART[k] + (ART[k] === 'backdrop' ? '.jpg' : '.png');
+  IMG[k] = im;
+}
+
+/* ---------- level geometry ----------
+   Girders alternate their downhill direction so a flag rolls all
+   the way across a floor, drops off the low end, and starts back
+   the other way — the classic Kong switchback. */
+const FLOORS = [
+  { xl:0,  xr:252, yl:308, yr:308 },   // 0 street (flat)
+  { xl:6,  xr:246, yl:262, yr:250 },   // 1 downhill LEFT
+  { xl:6,  xr:246, yl:204, yr:216 },   // 2 downhill RIGHT
+  { xl:6,  xr:246, yl:170, yr:158 },   // 3 downhill LEFT
+  { xl:6,  xr:246, yl:112, yr:124 },   // 4 downhill RIGHT
+  { xl:26, xr:226, yl:70,  yr:70  },   // 5 the marquee deck — Josh + Truly
+];
+const TOP = FLOORS.length - 1;
+// downhill direction of each floor: +1 right, -1 left, 0 flat
+const DIR = FLOORS.map(f => Math.sign(f.yr - f.yl));
+
+const LADDERS = [
+  { x:40,  hi:1, lo:0 }, { x:196, hi:1, lo:0 },
+  { x:210, hi:2, lo:1 }, { x:76,  hi:2, lo:1 },
+  { x:32,  hi:3, lo:2 }, { x:150, hi:3, lo:2 },
+  { x:206, hi:4, lo:3 }, { x:92,  hi:4, lo:3 },
+  { x:104, hi:5, lo:4 }, { x:172, hi:5, lo:4 },
+];
+for (const L of LADDERS){
+  L.top = surfaceY(L.hi, L.x);      // y of the upper deck
+  L.bot = surfaceY(L.lo, L.x);      // y of the deck it lands on
+}
+
+function surfaceY(i, x){
+  const f = FLOORS[i];
+  const t = Math.max(0, Math.min(1, (x - f.xl) / (f.xr - f.xl)));
+  return f.yl + (f.yr - f.yl) * t;
+}
+function onFloorSpan(i, x){ return x >= FLOORS[i].xl - 1 && x <= FLOORS[i].xr + 1; }
+
+const JOSH  = { x:52,  f:TOP };
+const TRULY = { x:204, f:TOP };
+
+/* ---------- game state ---------- */
+const P = { x:20, y:0, vy:0, f:0, state:'ground', face:1, walk:0, climbT:0 };
+let hazards = [], pickups = [], sparks = [], floaters = [];
+let score = 0, lives = 3, round = 1, bonus = 5000, smash = 0;
+let running = false, dead = 0, clearing = 0, shake = 0, t = 0, spawnT = 0, bonusT = 0;
+let best = +(localStorage.getItem('tw-savetruly-best') || 0);
+
+const TUNE = [
+  null,
+  { gap:2.20, speed:32, drop:0.26, kinds:['flag'] },
+  { gap:1.70, speed:38, drop:0.34, kinds:['flag','flag','phone'] },
+  { gap:1.30, speed:44, drop:0.44, kinds:['flag','phone','text'] },
+];
+function tune(){ return TUNE[Math.min(round, 3)]; }
+
+/* ---------- audio ---------- */
+let AC = null, music = null;
+function ac(){ if(!AC) AC = new (window.AudioContext||window.webkitAudioContext)(); return AC; }
+function blip(freq, dur, type='square', vol=0.12, slide=0){
+  try{
+    const a = ac(), o = a.createOscillator(), g = a.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, a.currentTime);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), a.currentTime + dur);
+    g.gain.setValueAtTime(vol, a.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + dur);
+    o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime + dur);
+  }catch(e){}
+}
+const SFX = {
+  jump:  () => blip(320, .16, 'square', .10, 260),
+  step:  () => blip(150, .04, 'square', .05),
+  climb: () => blip(210, .05, 'triangle', .05),
+  over:  () => { blip(660, .09, 'square', .09); setTimeout(()=>blip(880,.11,'square',.09), 70); },
+  grab:  () => { blip(520,.08,'triangle',.12); setTimeout(()=>blip(780,.12,'triangle',.12),80); },
+  bash:  () => blip(180, .14, 'sawtooth', .13, -120),
+  die:   () => { blip(260,.5,'sawtooth',.15,-200); },
+  clear: () => [0,120,240,400].forEach((d,i)=>setTimeout(()=>blip([523,659,784,1046][i],.18,'triangle',.13),d)),
+  lose:  () => [0,160,320].forEach((d,i)=>setTimeout(()=>blip([330,247,165][i],.3,'sawtooth',.13),d)),
+};
+function startMusic(){
+  if (music) { music.currentTime = 0; music.play().catch(()=>{}); return; }
+  music = new Audio('/audio/03-forever.mp3');
+  music.loop = true; music.volume = 0.5;
+  music.play().catch(()=>{});   // silence is an acceptable outcome; the game never waits on it
+}
+
+/* ---------- input ---------- */
+const K = { l:false, r:false, u:false, d:false, j:false };
+const MAP = { ArrowLeft:'l', KeyA:'l', ArrowRight:'r', KeyD:'r', ArrowUp:'u', KeyW:'u',
+              ArrowDown:'d', KeyS:'d', Space:'j', KeyZ:'j', KeyX:'j' };
+addEventListener('keydown', e => {
+  const k = MAP[e.code]; if (!k) return;
+  e.preventDefault();
+  if (k === 'j' && !K.j) tryJump();
+  K[k] = true;
+});
+addEventListener('keyup', e => { const k = MAP[e.code]; if (k) K[k] = false; });
+
+if (matchMedia('(pointer:coarse)').matches) document.body.classList.add('touch');
+if (window.self !== window.top) document.body.classList.add('embedded');
+function bindPad(id, key){
+  const el = document.getElementById(id);
+  const on  = e => { e.preventDefault(); el.classList.add('on'); if (key === 'j') tryJump(); K[key] = true; };
+  const off = e => { e.preventDefault(); el.classList.remove('on'); K[key] = false; };
+  el.addEventListener('touchstart', on, {passive:false});
+  el.addEventListener('touchend', off, {passive:false});
+  el.addEventListener('touchcancel', off, {passive:false});
+  el.addEventListener('mousedown', on); addEventListener('mouseup', off);
+}
+bindPad('padL','l'); bindPad('padR','r'); bindPad('padU','u'); bindPad('padD','d'); bindPad('padJ','j');
+
+/* ---------- player ---------- */
+const PH = 20, PW = 11;                 // hitbox, world units
+const GRAV = 340, JUMP_V = -118, RUN = 52, CLIMB_V = 42;
+
+function tryJump(){
+  if (!running || dead || clearing) return;
+  if (P.state === 'ground'){ P.vy = JUMP_V; P.state = 'air'; SFX.jump(); }
+}
+function ladderAt(x, y){
+  for (const L of LADDERS){
+    if (Math.abs(x - L.x) < 7 && y >= L.top - 4 && y <= L.bot + 4) return L;
+  }
+  return null;
+}
+function resetPlayer(){
+  P.x = 20; P.f = 0; P.y = surfaceY(0, 20); P.vy = 0; P.state = 'ground'; P.face = 1; P.walk = 0;
+}
+
+function stepPlayer(dt){
+  if (P.state === 'ladder'){
+    const L = P.ladder;
+    P.x = L.x;
+    if (K.u) { P.y -= CLIMB_V * dt; P.climbT += dt; }
+    else if (K.d) { P.y += CLIMB_V * dt; P.climbT += dt; }
+    if (P.climbT > 0.16){ P.climbT = 0; SFX.climb(); }
+    if (P.y <= L.top){                    // stepped off the top of the ladder
+      P.y = L.top; P.f = L.hi; P.state = 'ground';
+    } else if (P.y >= L.bot){              // back down onto the lower deck
+      P.y = L.bot; P.f = L.lo; P.state = 'ground';
+    }
+    return;
+  }
+
+  // horizontal
+  let vx = 0;
+  if (K.l) { vx = -RUN; P.face = -1; }
+  if (K.r) { vx =  RUN; P.face =  1; }
+  P.x += vx * dt;
+  P.x = Math.max(4, Math.min(WW - 4, P.x));
+  if (vx && P.state === 'ground'){
+    P.walk += dt * 9;
+    if (Math.floor(P.walk) !== Math.floor(P.walk - dt * 9)) SFX.step();
+  }
+
+  // grab a ladder
+  if (P.state === 'ground'){
+    const L = ladderAt(P.x, P.y);
+    if (L && ((K.u && P.y > L.top + 2) || (K.d && P.y < L.bot - 2))){
+      P.state = 'ladder'; P.ladder = L; P.climbT = 0;
+      P.y += K.u ? -1 : 1;
+      return;
+    }
+  }
+
+  // gravity + landing
+  if (P.state === 'air'){
+    P.vy += GRAV * dt;
+    P.y += P.vy * dt;
+    if (P.vy > 0){
+      // land on the highest floor whose surface we just crossed
+      for (let i = FLOORS.length - 1; i >= 0; i--){
+        if (!onFloorSpan(i, P.x)) continue;
+        const sy = surfaceY(i, P.x);
+        if (P.y >= sy && P.y - P.vy * dt <= sy + 2){
+          P.y = sy; P.f = i; P.vy = 0; P.state = 'ground'; break;
+        }
+      }
+    }
+    if (P.y > WH + 40){ hit(); }
+  } else {
+    // walking off the low end of a girder
+    if (!onFloorSpan(P.f, P.x)) { P.state = 'air'; P.vy = 0; }
+    else P.y = surfaceY(P.f, P.x);
+  }
+}
+
+/* ---------- hazards ---------- */
+function spawnHazard(){
+  const T = tune();
+  const kind = T.kinds[(Math.random() * T.kinds.length) | 0];
+  if (kind === 'text'){
+    floaters.push({ x: JOSH.x + 12, y: FLOORS[TOP].yl - 10, vy: 20 + Math.random() * 8,
+                    ph: Math.random() * 6, r: 7, scored:false });
+    return;
+  }
+  hazards.push({
+    kind, x: JOSH.x + 14, px: JOSH.x + 14, y: FLOORS[TOP].yl - 8, f: TOP, dir: 1,
+    state: 'fall', vy: 0, rot: 0, r: kind === 'phone' ? 5.5 : 6.5,
+    hop: 0, scored: false
+  });
+}
+
+function stepHazards(dt){
+  const T = tune();
+  for (const h of hazards){
+    if (h.state === 'roll'){
+      const sp = T.speed * (h.kind === 'phone' ? 1.18 : 1);
+      h.x += h.dir * sp * dt;
+      h.rot += h.dir * sp * dt * 0.16;
+      let base = surfaceY(h.f, h.x) - h.r;
+      if (h.kind === 'phone'){ h.hop += dt * 7; base -= Math.abs(Math.sin(h.hop)) * 7; }
+      h.y = base;
+
+      // take a ladder down? roll the dice ONCE per ladder actually crossed —
+      // a per-frame check would make the drop chance depend on the framerate
+      if (h.f > 0){
+        for (const L of LADDERS){
+          if (L.hi !== h.f) continue;
+          if ((h.px - L.x) * (h.x - L.x) <= 0 && h.px !== h.x && Math.random() < T.drop){
+            h.state = 'ladder'; h.ladder = L; h.x = L.x;
+            break;
+          }
+        }
+      }
+      h.px = h.x;
+
+      // off the low end -> drop to whatever is below
+      const f = FLOORS[h.f];
+      if ((h.dir > 0 && h.x > f.xr) || (h.dir < 0 && h.x < f.xl)){
+        h.state = 'fall'; h.vy = 0;
+      }
+    } else if (h.state === 'ladder'){
+      h.y += 46 * dt; h.rot += dt * 3;
+      if (h.y >= h.ladder.bot - h.r){
+        h.f = h.ladder.lo; h.y = surfaceY(h.f, h.x) - h.r;
+        h.state = 'roll'; h.dir = DIR[h.f] || 1; h.px = h.x;
+      }
+    } else { // fall
+      h.vy += GRAV * dt; h.y += h.vy * dt; h.rot += dt * 4;
+      for (let i = TOP - 1; i >= 0; i--){          // never lands back on Josh's deck
+        if (i >= h.f) continue;                    // only ever falls downward
+        if (!onFloorSpan(i, h.x)) continue;
+        const sy = surfaceY(i, h.x) - h.r;
+        if (h.y >= sy && h.y - h.vy * dt <= sy + 3){
+          h.f = i; h.y = sy; h.state = 'roll';
+          h.dir = DIR[i] || (h.x < WW / 2 ? 1 : -1);
+          // nudge back inside so it doesn't instantly fall off again
+          h.x = Math.max(FLOORS[i].xl + 3, Math.min(FLOORS[i].xr - 3, h.x));
+          h.px = h.x;
+          break;
+        }
+      }
+    }
+    if (h.y > WH + 30 || h.x < -20 || h.x > WW + 20) h.dead = true;
+  }
+  hazards = hazards.filter(h => !h.dead);
+
+  for (const f of floaters){
+    f.ph += dt * 2.2;
+    f.y += f.vy * dt;
+    f.x += Math.sin(f.ph) * 22 * dt;
+    if (f.y > WH + 20) f.dead = true;
+  }
+  floaters = floaters.filter(f => !f.dead);
+}
+
+/* ---------- pickups ---------- */
+function layPickups(){
+  pickups = [
+    { x:  62, f:3, taken:false },
+    { x: 168, f:1, taken:false },
+  ].map(p => ({ ...p, y: surfaceY(p.f, p.x) - 9 }));
+}
+
+/* ---------- collisions & scoring ---------- */
+function overlaps(h){
+  const dx = Math.abs(h.x - P.x), dy = Math.abs(h.y - (P.y - PH / 2));
+  return dx < h.r + PW / 2 - 1.5 && dy < h.r + PH / 2 - 2;
+}
+function scoreJumpOvers(){
+  const all = hazards.concat(floaters);
+  for (const h of all){
+    if (h.scored) continue;
+    // credit the dodge once the thing is under your feet while you're off the deck
+    if (P.state === 'air' && Math.abs(h.x - P.x) < 11 && h.y > P.y - 5 && h.y < P.y + 14){
+      h.scored = true; score += 100; SFX.over();
+      floatText(P.x, P.y - 26, '+100', '#ffcf7a');
+    }
+  }
+}
+function floatText(x, y, txt, col){ sparks.push({ x, y, txt, col, life: 0.9, kind:'txt' }); }
+function burst(x, y, col){
+  for (let i = 0; i < 10; i++){
+    const a = Math.random() * Math.PI * 2, s = 20 + Math.random() * 45;
+    sparks.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 20, life: .5 + Math.random() * .3, col, kind:'p' });
+  }
+}
+function hit(){
+  if (dead) return;
+  dead = 1.4; lives--; shake = 1; SFX.die();
+  updateHUD();
+}
+
+/* ---------- rounds ---------- */
+function startRound(n){
+  round = n; bonus = 4000 + n * 1000; bonusT = 0; smash = 0;
+  hazards = []; floaters = []; sparks = []; spawnT = 1.1;
+  layPickups(); resetPlayer();
+  flash('ROUND ' + n, n === 1 ? 'he thinks he still owns her' : n === 2 ? 'he is getting loud' : 'last flight of stairs');
+  updateHUD();
+}
+function flash(title, sub){
+  const el = document.getElementById('flash');
+  document.getElementById('flashT').textContent = title;
+  document.getElementById('flashS').textContent = sub || '';
+  el.style.display = 'flex';
+  el.querySelector('b').style.animation = 'none'; void el.offsetWidth;
+  el.querySelector('b').style.animation = '';
+  clearTimeout(flash._t);
+  flash._t = setTimeout(() => { el.style.display = 'none'; }, 1500);
+}
+function reachedTruly(){
+  return P.f === TOP && P.state === 'ground' && Math.abs(P.x - TRULY.x) < 15;
+}
+function clearRound(){
+  clearing = 2.2;
+  score += Math.floor(bonus);
+  SFX.clear();
+  floatText(TRULY.x, FLOORS[TOP].yl - 40, '+' + Math.floor(bonus), '#ffcf7a');
+  updateHUD();
+}
+
+/* ---------- HUD ---------- */
+// Called every frame, so only touch the DOM for values that actually moved.
+let hudCache = { score:-1, round:-1, bonus:-1, best:-1, lives:-1 };
+function updateHUD(){
+  if (score !== hudCache.score) document.getElementById('score').textContent = hudCache.score = score;
+  if (round !== hudCache.round) document.getElementById('round').textContent = hudCache.round = round;
+  const b = Math.max(0, Math.floor(bonus));
+  if (b !== hudCache.bonus) document.getElementById('bonus').textContent = hudCache.bonus = b;
+  if (best !== hudCache.best) document.getElementById('best').textContent = 'best ' + (hudCache.best = best);
+  if (lives !== hudCache.lives){
+    hudCache.lives = lives;
+    const lv = document.getElementById('lives');
+    lv.innerHTML = '';
+    for (let i = 0; i < 3; i++){
+      const s = document.createElement('span');
+      s.className = 'heart' + (i < lives ? '' : ' gone');
+      s.textContent = '♥'; lv.appendChild(s);
+    }
+  }
+}
+
+/* ---------- drawing ---------- */
+function sprite(key, cx, baseY, h, flip){
+  const im = IMG[key];
+  if (!im || !im.complete || !im.naturalWidth) return false;
+  const w = h * im.naturalWidth / im.naturalHeight;
+  if (flip){
+    ctx.save(); ctx.translate(cx, 0); ctx.scale(-1, 1);
+    ctx.drawImage(im, -w / 2, baseY - h, w, h);
+    ctx.restore();
+  } else {
+    ctx.drawImage(im, cx - w / 2, baseY - h, w, h);
+  }
+  return true;
+}
+function item(key, cx, cy, h, rot){
+  const im = IMG[key];
+  if (!im || !im.complete || !im.naturalWidth) return false;
+  const w = h * im.naturalWidth / im.naturalHeight;
+  ctx.save(); ctx.translate(cx, cy); if (rot) ctx.rotate(rot);
+  ctx.drawImage(im, -w / 2, -h / 2, w, h); ctx.restore();
+  return true;
+}
+function glow(x, y, r, col){
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, col); g.addColorStop(1, col.replace(/[\d.]+\)$/, '0)'));
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+}
+function contact(x, y, w, a){
+  const g = ctx.createRadialGradient(x, y, 0, x, y, w);
+  g.addColorStop(0, 'rgba(255,79,163,' + a + ')');
+  g.addColorStop(1, 'rgba(255,79,163,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.ellipse(x, y, w, w * 0.34, 0, 0, 7); ctx.fill();
+}
+
+function drawGirders(){
+  for (let i = 0; i < FLOORS.length; i++){
+    const f = FLOORS[i];
+    ctx.lineCap = 'round';
+    // glow
+    ctx.strokeStyle = 'rgba(255,45,143,.18)'; ctx.lineWidth = 11;
+    ctx.beginPath(); ctx.moveTo(f.xl, f.yl + 3); ctx.lineTo(f.xr, f.yr + 3); ctx.stroke();
+    // body
+    ctx.strokeStyle = '#2b1440'; ctx.lineWidth = 6.5;
+    ctx.beginPath(); ctx.moveTo(f.xl, f.yl + 3); ctx.lineTo(f.xr, f.yr + 3); ctx.stroke();
+    // lit top edge
+    ctx.strokeStyle = '#ff4fa3'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(f.xl, f.yl + 0.4); ctx.lineTo(f.xr, f.yr + 0.4); ctx.stroke();
+    // cross-hatch ticks — the hand-inked scaffold read
+    ctx.strokeStyle = 'rgba(157,139,255,.42)'; ctx.lineWidth = .8;
+    const n = Math.floor((f.xr - f.xl) / 11);
+    for (let k = 0; k <= n; k++){
+      const x = f.xl + (f.xr - f.xl) * k / n, y = f.yl + (f.yr - f.yl) * k / n;
+      ctx.beginPath(); ctx.moveTo(x - 2.6, y + 1.2); ctx.lineTo(x + 2.6, y + 5.4); ctx.stroke();
+    }
+  }
+}
+function drawLadders(){
+  for (const L of LADDERS){
+    const x = L.x, y0 = L.top, y1 = L.bot;
+    ctx.strokeStyle = 'rgba(255,207,122,.16)'; ctx.lineWidth = 9;
+    ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke();
+    ctx.strokeStyle = '#ffcf7a'; ctx.lineWidth = 1.1;
+    ctx.beginPath(); ctx.moveTo(x - 3.2, y0); ctx.lineTo(x - 3.2, y1);
+    ctx.moveTo(x + 3.2, y0); ctx.lineTo(x + 3.2, y1); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,207,122,.72)'; ctx.lineWidth = 1;
+    for (let y = y0 + 3; y < y1 - 1; y += 5.5){
+      ctx.beginPath(); ctx.moveTo(x - 3.2, y); ctx.lineTo(x + 3.2, y); ctx.stroke();
+    }
+  }
+}
+function drawFlag(h){
+  glow(h.x, h.y, h.r * 2.2, 'rgba(255,45,85,.42)');
+  if (item('flag', h.x, h.y, h.r * 3.2, h.rot)) return;
+  ctx.fillStyle = '#ff2d55';
+  ctx.beginPath(); ctx.arc(h.x, h.y, h.r, 0, 7); ctx.fill();
+}
+function drawPhone(h){
+  glow(h.x, h.y, h.r * 2.2, 'rgba(157,139,255,.42)');
+  if (item('phone', h.x, h.y, h.r * 3.2, h.rot * 1.6)) return;
+  ctx.fillStyle = '#c9baff';
+  ctx.fillRect(h.x - h.r * .6, h.y - h.r, h.r * 1.2, h.r * 2);
+}
+function drawText3am(f){
+  const p = 1 + Math.sin(f.ph * 3) * .08;
+  glow(f.x, f.y, f.r * 2.4, 'rgba(255,79,163,.42)');
+  if (item('text', f.x, f.y, f.r * 3.4 * p, 0)) return;
+  ctx.fillStyle = '#ff4fa3';
+  ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, 7); ctx.fill();
+}
+function drawRecord(p, wob){
+  const y = p.y + Math.sin(wob) * 1.6;
+  glow(p.x, y, 15, 'rgba(255,79,163,.5)');
+  if (item('record', p.x, y, 21, Math.sin(wob * .5) * .12)) return;
+  ctx.fillStyle = '#ff2d8f';
+  ctx.beginPath(); ctx.arc(p.x, y, 7, 0, 7); ctx.fill();
+}
+function drawHero(){
+  const flick = dead && Math.floor(t * 20) % 2 === 0;
+  if (flick) return;
+  if (smash > 0){
+    const a = .28 + Math.sin(t * 22) * .18;
+    contact(P.x, P.y - PH / 2, 17, a);
+  }
+  contact(P.x, P.y, 9, .35);
+  let key = 'run', flip = false, h = 24, bob = 0;
+  if (P.state === 'ladder'){ key = 'climb'; bob = Math.sin(P.y * 0.9) * 0.8; }
+  else if (P.state === 'air'){ key = P.face < 0 ? 'jumpL' : 'jump'; }
+  else {
+    key = P.face < 0 ? 'runL' : 'run';
+    if (K.l || K.r) bob = Math.abs(Math.sin(P.walk * 3.1)) * -1.6;
+  }
+  if (!sprite(key, P.x, P.y + bob, h, false)){
+    ctx.fillStyle = '#e7b7d8';
+    ctx.fillRect(P.x - PW / 2, P.y - PH, PW, PH);   // fallback block if art fails to load
+  }
+}
+function drawCast(){
+  const deckY = FLOORS[TOP].yl;
+  // Josh — winds up before every throw so the barrel is telegraphed
+  const wind = spawnT < 0.34 && running && !clearing;
+  const key = clearing && round >= 3 ? 'joshBeat' : (wind || shake > .2 ? 'joshRage' : 'joshThrow');
+  contact(JOSH.x, deckY, 16, .3);
+  sprite(key, JOSH.x + (wind ? Math.sin(t * 30) * 0.8 : 0), deckY, 44, false);
+
+  // Truly
+  const freed = clearing && round >= 3;
+  contact(TRULY.x, deckY, 14, .3);
+  if (freed) sprite('trulyFree', TRULY.x, deckY, 34, false);
+  else sprite('trulyCaged', TRULY.x, deckY, 38, false);
+}
+
+// The playfield is a fixed 3:4 box, so on a phone (very tall) or a desktop (very
+// wide) there is leftover screen. Rather than black bars, bleed a dimmed cover-fit
+// copy of the same backdrop across the whole viewport so the scaffold reads as
+// continuing past the frame.
+function drawSurround(){
+  const bg = IMG.bg;
+  ctx.fillStyle = '#0c0618'; ctx.fillRect(0, 0, VW, VH);
+  if (!bg || !bg.complete || !bg.naturalWidth) return;
+  const k = Math.max(VW / bg.naturalWidth, VH / bg.naturalHeight);
+  const w = bg.naturalWidth * k, h = bg.naturalHeight * k;
+  ctx.globalAlpha = 0.6;
+  ctx.drawImage(bg, (VW - w) / 2, (VH - h) / 2, w, h);
+  ctx.globalAlpha = 1;
+  const g = ctx.createRadialGradient(VW / 2, VH / 2, Math.min(VW, VH) * 0.3, VW / 2, VH / 2, Math.max(VW, VH) * 0.78);
+  g.addColorStop(0, 'rgba(8,4,15,.12)'); g.addColorStop(1, 'rgba(6,3,12,.7)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+}
+function drawBezel(){
+  ctx.save(); ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.strokeStyle = 'rgba(255,79,163,.34)'; ctx.lineWidth = 2;
+  ctx.strokeRect(OX - 1, OY - 1, WW * S + 2, WH * S + 2);
+  ctx.strokeStyle = 'rgba(255,79,163,.10)'; ctx.lineWidth = 8;
+  ctx.strokeRect(OX - 5, OY - 5, WW * S + 10, WH * S + 10);
+  ctx.restore();
+}
+
+function draw(){
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.clearRect(0, 0, VW, VH);
+  drawSurround();
+
+  const sx = shake > 0 ? (Math.random() - .5) * shake * 7 : 0;
+  const sy = shake > 0 ? (Math.random() - .5) * shake * 7 : 0;
+  ctx.setTransform(S * DPR, 0, 0, S * DPR, (OX + sx) * DPR, (OY + sy) * DPR);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, 0, WW, WH); ctx.clip();
+
+  const bg = IMG.bg;
+  if (bg && bg.complete && bg.naturalWidth) ctx.drawImage(bg, 0, 0, WW, WH);
+  else { ctx.fillStyle = '#160b26'; ctx.fillRect(0, 0, WW, WH); }
+
+  drawGirders();
+  drawLadders();
+  for (const p of pickups) if (!p.taken) drawRecord(p, t * 3);
+  drawCast();
+  for (const h of hazards) (h.kind === 'phone' ? drawPhone : drawFlag)(h);
+  for (const f of floaters) drawText3am(f);
+  drawHero();
+
+  for (const s of sparks){
+    ctx.globalAlpha = Math.max(0, s.life / .9);
+    if (s.kind === 'txt'){
+      ctx.fillStyle = s.col; ctx.font = '8px "Cutive Mono", monospace'; ctx.textAlign = 'center';
+      ctx.fillText(s.txt, s.x, s.y);
+    } else {
+      ctx.fillStyle = s.col;
+      ctx.beginPath(); ctx.arc(s.x, s.y, 1.5, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+  drawBezel();
+}
+
+/* ---------- loop ---------- */
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(0.033, (now - last) / 1000); last = now;
+  t += dt;
+  if (shake > 0) shake = Math.max(0, shake - dt * 2.6);
+
+  if (running){
+    if (clearing > 0){
+      clearing -= dt;
+      P.x += (TRULY.x - 16 - P.x) * Math.min(1, dt * 3);   // walk her way
+      if (clearing <= 0){
+        if (round >= 3) win();
+        else startRound(round + 1);
+      }
+    } else if (dead > 0){
+      dead -= dt;
+      if (dead <= 0){
+        if (lives <= 0) lose();
+        else { resetPlayer(); hazards = []; floaters = []; }
+      }
+    } else {
+      stepPlayer(dt);
+      stepHazards(dt);
+      scoreJumpOvers();
+
+      if (smash > 0) smash -= dt;
+
+      // hazards vs hero
+      for (const h of hazards.concat(floaters)){
+        if (!overlaps(h)) continue;
+        if (smash > 0){
+          h.dead = true; score += 300; SFX.bash();
+          burst(h.x, h.y, '#ffcf7a'); floatText(h.x, h.y - 8, '+300', '#ffcf7a');
+        } else { hit(); break; }
+      }
+      hazards = hazards.filter(h => !h.dead); floaters = floaters.filter(f => !f.dead);
+
+      // pickups
+      for (const p of pickups){
+        if (p.taken) continue;
+        if (Math.abs(p.x - P.x) < 10 && Math.abs(p.y - (P.y - PH / 2)) < 13){
+          p.taken = true; smash = 6; score += 200; SFX.grab();
+          burst(p.x, p.y, '#ff4fa3'); floatText(p.x, p.y - 10, 'SMASH!', '#ff4fa3');
+        }
+      }
+
+      // spawner
+      spawnT -= dt;
+      if (spawnT <= 0){ spawnHazard(); spawnT = tune().gap * (0.75 + Math.random() * 0.5); }
+
+      // bonus timer
+      bonusT += dt;
+      if (bonusT > 0.4){ bonusT = 0; bonus -= 25; if (bonus <= 0){ bonus = 0; hit(); } }
+
+      if (reachedTruly()) clearRound();
+      updateHUD();
+    }
+  }
+
+  for (const s of sparks){
+    s.life -= dt;
+    if (s.kind === 'p'){ s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 200 * dt; }
+    else s.y -= 14 * dt;
+  }
+  sparks = sparks.filter(s => s.life > 0);
+
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ---------- flow ---------- */
+function finish(title, sub, cls){
+  running = false;
+  if (score > best){ best = score; localStorage.setItem('tw-savetruly-best', best); }
+  if (music) music.pause();
+  document.getElementById('endTitle').textContent = title;
+  document.getElementById('endTitle').className = 'otitle ' + (cls || '');
+  document.getElementById('endSub').innerHTML = sub;
+  document.getElementById('fScore').innerHTML = score + '<span>score</span>';
+  document.getElementById('fRound').innerHTML = round + '<span>round</span>';
+  document.getElementById('fBest').innerHTML = best + '<span>best</span>';
+  document.getElementById('endOv').classList.remove('hide');
+  updateHUD();
+}
+function win(){
+  SFX.clear();
+  finish("SHE'S FREE",
+    "Josh is on the deck crying into his own chain and Truly is already three blocks down Hollywood Blvd. <b>You never have to hear about him again.</b>",
+    'amber');
+}
+function lose(){
+  SFX.lose();
+  finish('HE GOT TO YOU',
+    "Three hits and he is still up there acting like that means something. <b>Go back up.</b>",
+    'red');
+}
+function begin(){
+  score = 0; lives = 3; sparks = [];
+  document.getElementById('startOv').classList.add('hide');
+  document.getElementById('endOv').classList.add('hide');
+  running = true; dead = 0; clearing = 0; t = 0;
+  startRound(1);
+  try { ac().resume(); } catch(e){}
+  startMusic();
+}
+document.getElementById('startBtn').addEventListener('click', begin);
+document.getElementById('retryBtn').addEventListener('click', begin);
+updateHUD();
+</script>
+</body>
+</html>

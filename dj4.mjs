@@ -1,0 +1,11 @@
+import { chromium } from '/Users/paulsalem/.npm/_npx/2334a3ea0ef73d73/node_modules/playwright/index.mjs';
+const b = await chromium.launch({ executablePath:'/Users/paulsalem/Library/Caches/ms-playwright/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing', args:['--no-sandbox','--autoplay-policy=no-user-gesture-required'] });
+const c = await b.newContext({ viewport:{width:1200,height:820} });
+const p = await c.newPage();
+const errs=[]; p.on('pageerror',e=>errs.push(String(e).slice(0,120)));
+await p.goto('http://localhost:8080/dear-joshua-game.html',{waitUntil:'load'}); await p.waitForTimeout(1300);
+await p.keyboard.press('Enter'); await p.waitForTimeout(700);
+await p.evaluate(()=>{ if(audio) audio.currentTime=30; }); await p.waitForTimeout(1300);
+await p.screenshot({path:'scratchpad/fpv-fixed.png'});
+console.log('errs:',errs.length?errs.join('|'):'none');
+await b.close();
