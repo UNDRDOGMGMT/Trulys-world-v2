@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { locations, type EmbedData, type LocationData, type EnvView, type EnvHotspot } from "@/data/locations";
@@ -6,6 +6,7 @@ import PageMeta from "@/components/PageMeta";
 import Shape from "@/components/Shape";
 import { useIsPortrait } from "@/hooks/useIsPortrait";
 import { trackEvent } from "@/lib/analytics";
+import { shouldReduceMedia } from "@/lib/network";
 import TrulyList from "@/components/TrulyList";
 
 /**
@@ -203,6 +204,7 @@ const LocationPage: React.FC = () => {
 
   // Current point-of-view within the neighborhood (starts on the establishing shot).
   const [viewId, setViewId] = useState<string>(env?.start ?? "");
+  const cineRef = useRef<HTMLVideoElement>(null);
   useEffect(() => { if (env) setViewId(env.start); }, [id, env]);
 
   // Warm every POV still for this hood so switching views crossfades instantly
@@ -214,6 +216,25 @@ const LocationPage: React.FC = () => {
       img.src = isPortrait && v.srcPortrait ? v.srcPortrait : v.src;
     });
   }, [env, isPortrait]);
+
+  // Single reused <video> — swap src on POV change instead of mounting a new element.
+  useEffect(() => {
+    const el = cineRef.current;
+    if (!el || !env) return;
+    const view = env.views.find((v) => v.id === viewId) ?? env.views[0];
+    const useCine = !!(view?.video && !(isPortrait && view.srcPortrait) && !shouldReduceMedia());
+    if (!useCine || !view.video) {
+      el.pause();
+      el.removeAttribute("src");
+      el.load();
+      return;
+    }
+    if (el.getAttribute("src") !== view.video) {
+      el.src = view.video;
+    }
+    const p = el.play();
+    if (p && (p as Promise<void>).catch) (p as Promise<void>).catch(() => {});
+  }, [env, viewId, isPortrait]);
 
   if (!loc) {
     return (
@@ -238,6 +259,7 @@ const LocationPage: React.FC = () => {
     // always-visible callout (a hood can host more than one, e.g. DTLA = Cruise
     // Night + Dear Joshua), so none stay hidden behind a POV you have to find.
     const gameViews = env.views.filter((v) => v.action && !v.action.shop);
+    const showCine = !!(view.video && !(isPortrait && view.srcPortrait) && !shouldReduceMedia());
 
     return (
       <>
@@ -251,7 +273,7 @@ const LocationPage: React.FC = () => {
         >
           {/* HERO — interactive living environment, full viewport so it bleeds off every edge */}
           <div className="relative h-[100dvh] min-h-[520px] w-full overflow-hidden">
-            {/* crossfading POV — kept slightly over-scaled so any framed art bleeds past the edges */}
+            {/* crossfading POV stills — kept slightly over-scaled so framed art bleeds past edges */}
             <AnimatePresence mode="popLayout">
               <motion.div
                 key={view.id}
@@ -262,22 +284,19 @@ const LocationPage: React.FC = () => {
                 transition={{ duration: 0.7, ease: "easeOut" }}
               >
                 <img src={isPortrait && view.srcPortrait ? view.srcPortrait : view.src} alt={`${loc.name} — ${view.label}`} className="absolute inset-0 w-full h-full object-cover" />
-                {view.video && !(isPortrait && view.srcPortrait) && (
-                  <video
-                    className="absolute inset-0 w-full h-full object-cover"
-                    poster={view.src}
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    preload="auto"
-                    aria-hidden
-                  >
-                    <source src={view.video} type="video/mp4" />
-                  </video>
-                )}
               </motion.div>
             </AnimatePresence>
+            {/* single reused cine element (desktop / non–Save-Data) — sits above still, below UI */}
+            <video
+              ref={cineRef}
+              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+              style={{ opacity: showCine ? 1 : 0, zIndex: 1 }}
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              aria-hidden
+            />
 
             {/* legibility scrim */}
             <div

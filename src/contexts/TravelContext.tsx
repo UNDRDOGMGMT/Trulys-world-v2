@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { locations } from "@/data/locations";
 import { trackEvent } from "@/lib/analytics";
+import { shouldReduceMedia } from "@/lib/network";
 
 /**
  * Cinematic "travel" between the map and a neighborhood — mirrors the production
@@ -61,8 +62,8 @@ export const TravelProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const key = ASSET_KEY[id];
     trackEvent("travel", { location: id });
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    // no clip for this hood, or the visitor asked for less motion → go straight in
-    if (!key || reduce) { navigate(`/location/${id}`); return; }
+    // no clip, reduced motion, or Save-Data / slow network → go straight in
+    if (!key || reduce || shouldReduceMedia()) { navigate(`/location/${id}`); return; }
     targetRef.current = id;
     doneRef.current = false;
     const name = locations.find((l) => l.id === id)?.name ?? id;

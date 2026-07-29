@@ -158,9 +158,9 @@ const CorbinArcade: React.FC = () => {
           ))}
 
           {/* TRANSITION videos (desktop only): push-in on enter, pull-out on back */}
-          <video ref={vidRef} src={trans !== null ? BAYS[trans].video : undefined} muted playsInline preload="auto"
+          <video ref={vidRef} src={trans !== null ? BAYS[trans].video : undefined} muted playsInline preload="metadata"
             className="absolute inset-0 h-full w-full object-cover" style={{ zIndex: 30, opacity: trans !== null ? 1 : 0, pointerEvents: "none" }} />
-          <video ref={backRef} src={backing !== null ? BACK_VIDEO[backing] : undefined} muted playsInline preload="auto"
+          <video ref={backRef} src={backing !== null ? BACK_VIDEO[backing] : undefined} muted playsInline preload="metadata"
             className="absolute inset-0 h-full w-full object-cover" style={{ zIndex: 30, opacity: backing !== null ? 1 : 0, pointerEvents: "none" }} />
 
           <div className="scanlines pointer-events-none absolute inset-0 opacity-15" style={{ zIndex: 31 }} />
