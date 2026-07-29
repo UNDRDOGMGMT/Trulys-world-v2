@@ -44,7 +44,7 @@ const Index: React.FC = () => {
             Also warms the browser cache for /map. */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden>
           <img
-            src={isPortrait ? "/world/maps/la-map-6-v.jpg" : "/world/maps/la-map-6.jpg"}
+            src={isPortrait ? "/world/maps/la-map-6-v.jpg" : "/world/maps/la-map-7.jpg"}
             alt=""
             onLoad={() => setMapReady(true)}
             className={`absolute inset-0 w-full h-full object-cover ${reduceMotion ? "" : "bg-drift"} transition-opacity duration-[1600ms] ease-out ${mapReady ? "opacity-30" : "opacity-0"}`}
