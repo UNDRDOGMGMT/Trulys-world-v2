@@ -1,6 +1,8 @@
 import React, { Suspense } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import { UnlockProvider } from "@/contexts/UnlockContext";
 import { MemberProvider } from "@/contexts/MemberContext";
 import { TravelProvider } from "@/contexts/TravelContext";
@@ -163,6 +165,8 @@ const Gated = () => {
 const App = () => (
   <MemberProvider>
     <Gated />
+    <Analytics />
+    <SpeedInsights />
   </MemberProvider>
 );
 
