@@ -326,11 +326,8 @@ const MapHub: React.FC = () => {
             <button onClick={() => navigate("/world")} className="btn-retro !text-[10px] !py-1 !px-3" aria-label="Truly's World — the globe">
               &#9673; GLOBE
             </button>
-            <button onClick={() => navigate("/shadows")} className="btn-retro !text-[10px] !py-1 !px-3" aria-label="Shadows — the new single">
+            <button onClick={() => navigate("/shadows")} className="btn-retro !text-[10px] !py-1 !px-3" aria-label="Shadows">
               &#10022; SHADOWS
-            </button>
-            <button onClick={() => navigate("/dear-joshua")} className="btn-retro !text-[10px] !py-1 !px-3">
-              &#9829; EP
             </button>
             {member && (
               <button onClick={() => navigate("/account")} aria-label="Your member dashboard"

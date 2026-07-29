@@ -5,7 +5,7 @@ import CountdownTimer from "@/components/CountdownTimer";
 import TrulyList from "@/components/TrulyList";
 import PageMeta from "@/components/PageMeta";
 
-// Shadows — the new single. The whole gated world counts down to this drop.
+// Shadows. The whole gated world counts down to this drop.
 // 12:00am ET, July 31 2026 (matches the arm-gate LAUNCH + landing countdown).
 const SHADOWS_RELEASE = new Date("2026-07-31T00:00:00-04:00");
 // Same master the Chateau (Do Not Disturb) game + karaoke use.
@@ -27,8 +27,8 @@ const Shadows: React.FC = () => {
   return (
     <>
       <PageMeta
-        title="SHADOWS — the new single — TRULYS WORLD"
-        description="Truly Young's new single Shadows. Out July 31, 2026. Pre-save and get notified the moment it drops."
+        title="SHADOWS — TRULYS WORLD"
+        description="Shadows by Truly Young. Out July 31, 2026. Get notified the moment it drops."
       />
       <main className="relative min-h-[100dvh] w-full overflow-hidden bg-[#0a0510] text-white grain-overlay">
         {/* full-bleed hero */}
@@ -61,12 +61,6 @@ const Shadows: React.FC = () => {
           >
             ← the map
           </button>
-          <button
-            onClick={() => navigate("/dear-joshua")}
-            className="font-whimsy text-[13px] text-pink-light/90 hover:text-white glitter-glow transition-colors"
-          >
-            ♥ the EP →
-          </button>
         </div>
 
         {/* hero content */}
@@ -77,7 +71,7 @@ const Shadows: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.6 }}
           >
-            ✦ The New Single ✦
+            ✦ Out July 31 ✦
           </motion.p>
 
           <motion.div

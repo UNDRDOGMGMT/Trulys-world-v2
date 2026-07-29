@@ -324,7 +324,6 @@ const LocationPage: React.FC = () => {
                     ▶ {gv.action!.label}
                   </button>
                 ))}
-                <button onClick={() => navigate("/dear-joshua")} className="btn-retro !text-[10px] !py-1 !px-3">&#9829; EP</button>
               </div>
             </div>
 

@@ -11,7 +11,7 @@ import Shape from "@/components/Shape";
 import HandDrawnFrame from "@/components/HandDrawnFrame";
 import PageMeta from "@/components/PageMeta";
 
-// Shadows — the new single. The whole world is gated to this drop.
+// Shadows. The whole world is gated to this drop.
 // 12:00am ET, July 31 2026 (matches the arm-gate LAUNCH in Gate.tsx).
 const SHADOWS_RELEASE = new Date("2026-07-31T00:00:00-04:00");
 
@@ -31,7 +31,7 @@ const Index: React.FC = () => {
     <>
       <PageMeta
         title="TRULYS WORLD — Enter the Map"
-        description="Truly Young's world is a map of Los Angeles. Every neighborhood is a case file. New single Shadows — July 31, 2026."
+        description="Truly Young's world is a map of Los Angeles. Every neighborhood is a case file. Shadows — out July 31, 2026."
       />
       <motion.main
         variants={reduceMotion ? undefined : pageVariants}
@@ -135,13 +135,7 @@ const Index: React.FC = () => {
               onClick={() => navigate("/shadows")}
               className="btn-retro shimmer-sweep text-[13px] px-6 py-2 mt-1"
             >
-              <span>&#10047;</span> the Shadows single <span>&#10047;</span>
-            </button>
-            <button
-              onClick={() => navigate("/dear-joshua")}
-              className="font-whimsy text-[13px] text-pink-light hover:text-white glitter-glow transition-colors"
-            >
-              ♥ hear Dear Joshua →
+              <span>&#10047;</span> Shadows — out 7.31 <span>&#10047;</span>
             </button>
             <button
               onClick={() => navigate("/sing")}

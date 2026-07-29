@@ -1,7 +1,7 @@
 import React from 'react';
 
 const items = [
-  '✧ Shadows — the new single ✧',
+  '✧ Shadows — out 7.31 ✧',
   '♥ Dear Joshua — the EP — Aug 21 ♥',
   '✦ New case files unlocking ✦',
   '♥ The map is alive ~ explore ♥',
