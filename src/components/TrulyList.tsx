@@ -24,11 +24,13 @@ const prettyPhone = (s: string) => {
 
 const TrulyList: React.FC<{
   tone?: Tone; logo?: boolean; wide?: boolean;
+  /** Extra content rendered inside the card (e.g. gate login / passcode links). */
+  footer?: React.ReactNode;
   onDone?: (d: { first: string; last: string; email: string; phone: string }) => void;
   // fires the instant the form validates (before the Laylo POST) so account
   // creation / site entry never depends on the capture API being reachable
   onData?: (d: { first: string; last: string; email: string; phone: string }) => void;
-}> = ({ tone = 'dark', logo = false, wide = false, onDone, onData }) => {
+}> = ({ tone = 'dark', logo = false, wide = false, footer, onDone, onData }) => {
   const [first, setFirst] = useState('');
   const [last, setLast] = useState('');
   const [email, setEmail] = useState('');
@@ -76,6 +78,7 @@ const TrulyList: React.FC<{
         <p className="mt-1.5 font-display text-[11px] uppercase tracking-[0.28em] text-[#f0b4e4]/70">
           SEE YA REAL SOON :)
         </p>
+        {footer && <div className="mt-4 border-t border-[#f0b4e4]/20 pt-3">{footer}</div>}
       </div>
     );
   }
@@ -133,48 +136,52 @@ const TrulyList: React.FC<{
   // ── horizontal gate layout: big wordmark left, form right (stacks on phones) ──
   if (wide) {
     return (
-      <form onSubmit={submit}
-        className={`rounded-2xl border-2 ${surface} px-4 py-3 sm:px-6 sm:py-5 backdrop-blur-sm`} style={shadow}>
-        <div className="flex flex-col items-center gap-2 sm:flex-row sm:items-center sm:gap-6">
-          <div className="shrink-0 text-center sm:w-[196px]">
-            <Wordmark className="mx-auto w-[min(38%,140px)] sm:w-full" />
-            <p className="mt-1 hidden font-display text-[10px] uppercase tracking-[0.26em] text-[#f0b4e4]/60 sm:block">
-              sign up for all things Truly's World
-            </p>
+      <div className={`rounded-2xl border-2 ${surface} px-4 py-3 sm:px-6 sm:py-5 backdrop-blur-sm`} style={shadow}>
+        <form onSubmit={submit}>
+          <div className="flex flex-col items-center gap-2 sm:flex-row sm:items-center sm:gap-6">
+            <div className="shrink-0 text-center sm:w-[196px]">
+              <Wordmark className="mx-auto w-[min(38%,140px)] sm:w-full" />
+              <p className="mt-1 hidden font-display text-[10px] uppercase tracking-[0.26em] text-[#f0b4e4]/60 sm:block">
+                sign up for all things Truly's World
+              </p>
+            </div>
+            <div className="flex w-full flex-1 flex-col gap-2 sm:gap-2.5">
+              {fields}
+            </div>
           </div>
-          <div className="flex w-full flex-1 flex-col gap-2 sm:gap-2.5">
-            {fields}
-          </div>
-        </div>
-        {consent}
-      </form>
+          {consent}
+        </form>
+        {footer && <div className="mt-3 border-t border-[#f0b4e4]/20 pt-3">{footer}</div>}
+      </div>
     );
   }
 
   // ── stacked layout (LAX case file, or logo-topped column) ──
   return (
-    <form onSubmit={submit}
-      className={`flex flex-col gap-2.5 rounded-2xl border-2 ${surface} px-5 py-5 backdrop-blur-sm`} style={shadow}>
-      {logo ? (
-        <div className="mb-1 text-center">
-          <Wordmark className="mx-auto w-[min(58%,196px)]" />
-          <p className="mt-0.5 font-display text-[9px] uppercase tracking-[0.3em] text-[#f0b4e4]/55">
-            sign up for all things Truly's World
-          </p>
-        </div>
-      ) : (
-        <div className="mb-0.5 text-center">
-          <p className="font-display text-[12px] uppercase tracking-[0.24em]" style={{ color: PINK_TEXT }}>
-            sign up for all things Truly's World
-          </p>
-          <p className="mt-1 font-display text-[9px] uppercase tracking-[0.3em] text-[#f0b4e4]/55">
-            the drop, the merch, the shows — before the algorithm decides
-          </p>
-        </div>
-      )}
-      {fields}
-      {consent}
-    </form>
+    <div className={`rounded-2xl border-2 ${surface} px-5 py-5 backdrop-blur-sm`} style={shadow}>
+      <form onSubmit={submit} className="flex flex-col gap-2.5">
+        {logo ? (
+          <div className="mb-1 text-center">
+            <Wordmark className="mx-auto w-[min(58%,196px)]" />
+            <p className="mt-0.5 font-display text-[9px] uppercase tracking-[0.3em] text-[#f0b4e4]/55">
+              sign up for all things Truly's World
+            </p>
+          </div>
+        ) : (
+          <div className="mb-0.5 text-center">
+            <p className="font-display text-[12px] uppercase tracking-[0.24em]" style={{ color: PINK_TEXT }}>
+              sign up for all things Truly's World
+            </p>
+            <p className="mt-1 font-display text-[9px] uppercase tracking-[0.3em] text-[#f0b4e4]/55">
+              the drop, the merch, the shows — before the algorithm decides
+            </p>
+          </div>
+        )}
+        {fields}
+        {consent}
+      </form>
+      {footer && <div className="mt-3 border-t border-[#f0b4e4]/20 pt-3">{footer}</div>}
+    </div>
   );
 };
 

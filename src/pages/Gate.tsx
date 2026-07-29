@@ -166,16 +166,17 @@ const Gate: React.FC<{ onUnlock: () => void }> = ({ onUnlock }) => {
     }
   };
 
-  // access row (log-in for returning members + backstage passcode), both layouts
+  // access row (log-in for returning members + backstage passcode), both layouts.
+  // Rendered inside the TrulyList card so the links sit on the dark surface
+  // instead of the grass photo (where light pink was nearly unreadable).
   const accessRow = (
     <div className="flex flex-col items-center gap-2">
-      <div className="flex items-center gap-4 font-display text-[9px] uppercase tracking-[0.28em] text-[#f0b4e4]/70"
-        style={{ textShadow: '0 1px 8px rgba(0,0,0,0.85)' }}>
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 font-display text-[9px] uppercase tracking-[0.28em] text-[#ffd9f2]/90">
         <button type="button" onClick={() => setMode(mode === 'login' ? 'join' : 'login')}
           className={`transition-colors hover:text-[#ffd9f2] ${mode === 'login' ? 'text-[#ffd9f2]' : ''}`}>
           already a member? log in
         </button>
-        <span className="text-[#f0b4e4]/30">·</span>
+        <span className="text-[#f0b4e4]/40">·</span>
         <button type="button" onClick={() => setMode(mode === 'code' ? 'join' : 'code')}
           className={`transition-colors hover:text-[#ffd9f2] ${mode === 'code' ? 'text-[#ffd9f2]' : ''}`}>
           have a code?
@@ -232,8 +233,9 @@ const Gate: React.FC<{ onUnlock: () => void }> = ({ onUnlock }) => {
         <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 50%, transparent 52%, rgba(20,10,6,0.5) 100%)' }} />
         <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-2.5 px-6 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-16"
           style={{ background: 'linear-gradient(180deg, transparent, rgba(10,8,4,0.5) 30%, rgba(10,8,4,0.88))' }}>
-          <div className="w-[min(88vw,556px)]"><TrulyList tone="dark" wide onData={onJoined} /></div>
-          {accessRow}
+          <div className="w-[min(88vw,556px)]">
+            <TrulyList tone="dark" wide onData={onJoined} footer={accessRow} />
+          </div>
         </div>
       </div>
 
@@ -262,8 +264,9 @@ const Gate: React.FC<{ onUnlock: () => void }> = ({ onUnlock }) => {
         {/* only this region scrolls; grass shows through so the box floats on it */}
         <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
           <div className="flex flex-col items-center gap-3 px-3 pb-10 pt-5">
-            <div className="w-full max-w-[480px]"><TrulyList tone="dark" wide onData={onJoined} /></div>
-            {accessRow}
+            <div className="w-full max-w-[480px]">
+              <TrulyList tone="dark" wide onData={onJoined} footer={accessRow} />
+            </div>
           </div>
         </div>
       </div>
