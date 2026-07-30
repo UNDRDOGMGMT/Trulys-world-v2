@@ -703,25 +703,10 @@ const MapHub: React.FC = () => {
               {mapReady && (() => {
                 const P = isPortrait;
                 // feature centers (% of the map box) per orientation
-                const spider = P ? { x: 14, y: 6 } : { x: 14, y: 8 };
                 const moon = P ? { x: 67, y: 5, s: 7 } : { x: 60, y: 6, s: 6 };
                 const holly = P ? { x: 71, y: 26, w: 24, h: 12 } : { x: 53, y: 25, w: 20, h: 9 };
                 return (
                   <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 4 }} aria-hidden>
-                    {/* Spider — gentle dangle on its thread */}
-                    <div className="absolute" style={{ left: `${spider.x}%`, top: `${spider.y}%`, transform: "translate(-50%,0)" }}>
-                      <div className={reduceMotion ? "" : "map-spider"}>
-                        <svg width="34" height="30" viewBox="0 0 34 30" style={{ filter: "drop-shadow(0 0 3px rgba(210,150,230,0.5))" }}>
-                          <g stroke="#c98fd8" strokeWidth="1.4" fill="none" strokeLinecap="round">
-                            <path d="M17 0 L17 11" />
-                            <path d="M17 15 C 9 10, 4 13, 1 9 M17 15 C 10 14, 5 18, 2 16 M17 15 C 25 10, 30 13, 33 9 M17 15 C 24 14, 29 18, 32 16" />
-                          </g>
-                          <ellipse cx="17" cy="14.5" rx="3.2" ry="2.6" fill="#3a1f45" stroke="#c98fd8" strokeWidth="1" />
-                          <ellipse cx="17" cy="18.5" rx="4" ry="4.4" fill="#3a1f45" stroke="#c98fd8" strokeWidth="1" />
-                        </svg>
-                      </div>
-                    </div>
-
                     {/* Moon — breathing halo */}
                     <div className={reduceMotion ? "absolute" : "map-moon absolute"} style={{ left: `${moon.x}%`, top: `${moon.y}%`, width: `${moon.s}%`, aspectRatio: "1", borderRadius: "50%", background: "radial-gradient(circle, rgba(255,235,250,0.5) 0%, rgba(255,190,235,0.28) 45%, transparent 72%)", mixBlendMode: "screen" }} />
 
