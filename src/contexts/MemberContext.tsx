@@ -1,13 +1,15 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { BYPASS_KEY, GATE_KEY } from '@/lib/gate';
 import { setAwardHook } from '@/lib/analytics';
 import { audit } from '@/lib/audit';
 import { supabase, supabaseConfigured } from '@/lib/supabase';
 
 /**
- * Truly's World membership — Supabase Auth (email OTP) + members / plays tables.
- * Public surface stays close to the old demo API so Gate / Account / SessionChip
- * keep working; bodies talk to Supabase instead of localStorage.
+ * Truly's World membership — Supabase Auth (email magic link + OTP) + members / plays.
+ *
+ * Join flow: save pending profile → signInWithOtp (redirects back to this origin) →
+ * on session, upsert members from pending. Works whether the email is a
+ * confirmation link (Supabase default) or a 6-digit {{ .Token }} OTP.
  */
 
 export interface GamePlay {
@@ -27,6 +29,13 @@ export interface Member {
   points: number;
   plays: GamePlay[];
   redeemed: string[];
+}
+
+export interface PendingProfile {
+  first: string;
+  last: string;
+  email: string;
+  phone: string;
 }
 
 export interface Tier {
@@ -56,23 +65,44 @@ export function tierFor(points: number): { tier: Tier; next: Tier | null; toNext
 
 type OkErr = { ok: true } | { ok: false; error: string };
 
+const PENDING_KEY = 'tw-pending-member';
+
+export function savePendingProfile(p: PendingProfile) {
+  try { sessionStorage.setItem(PENDING_KEY, JSON.stringify(p)); } catch { /* ignore */ }
+}
+
+export function loadPendingProfile(): PendingProfile | null {
+  try {
+    const raw = sessionStorage.getItem(PENDING_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw) as PendingProfile;
+    if (!p?.email) return null;
+    return p;
+  } catch { return null; }
+}
+
+export function clearPendingProfile() {
+  try { sessionStorage.removeItem(PENDING_KEY); } catch { /* ignore */ }
+}
+
 interface MemberState {
   member: Member | null;
   isMember: boolean;
-  /** Session + member row finished hydrating (or bypass checked). */
   ready: boolean;
-  /** Real unlock: authenticated member profile OR staff bypass. */
   unlocked: boolean;
+  /** Authenticated in Supabase but no `members` row yet. */
+  needsProfile: boolean;
+  sessionEmail: string | null;
   requestOtp: (email: string) => Promise<OkErr>;
   verifyOtp: (email: string, token: string) => Promise<OkErr & { hasProfile?: boolean }>;
-  completeProfile: (d: { first: string; last: string; email: string; phone: string }) => Promise<OkErr>;
-  /** @deprecated prefer requestOtp + verifyOtp + completeProfile — kept for type compat */
-  signUp: (d: { first: string; last: string; email: string; phone: string }) => Member;
+  completeProfile: (d: PendingProfile) => Promise<OkErr>;
+  /** Start join: persist pending + send magic link / OTP email. */
+  beginJoin: (d: PendingProfile) => Promise<OkErr>;
+  signUp: (d: PendingProfile) => Member;
   logIn: (email: string) => boolean;
   logOut: () => void;
   award: (game: string, label: string, points: number) => void;
   redeem: (rewardId: string) => void;
-  /** Call after /api/gate-bypass returns ok. */
   enableBypass: () => void;
 }
 
@@ -100,6 +130,11 @@ const readBypass = () => {
 
 const clearLegacyGate = () => {
   try { localStorage.removeItem(GATE_KEY); } catch { /* ignore */ }
+};
+
+const redirectTo = () => {
+  if (typeof window === 'undefined') return undefined;
+  return `${window.location.origin}/`;
 };
 
 async function loadMember(userId: string): Promise<Member | null> {
@@ -138,12 +173,62 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [member, setMember] = useState<Member | null>(null);
   const [ready, setReady] = useState(false);
   const [bypass, setBypass] = useState(readBypass);
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
+  const finishingRef = useRef(false);
 
   const refreshMember = useCallback(async (userId: string) => {
     const m = await loadMember(userId);
     setMember(m);
     return m;
   }, []);
+
+  const upsertProfile = useCallback(async (d: PendingProfile, userId: string): Promise<OkErr> => {
+    const email = d.email.trim().toLowerCase();
+    const row = {
+      id: userId,
+      first: d.first.trim(),
+      last: d.last.trim(),
+      email,
+      phone: d.phone,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from('members').upsert(row, { onConflict: 'id' });
+    if (error) return { ok: false, error: error.message };
+
+    await supabase.rpc('award_play', {
+      p_game: 'join',
+      p_label: "Joined Truly's World",
+      p_points: 100,
+    });
+    audit('auth.signup_profile', { email, first: row.first, last: row.last });
+    clearPendingProfile();
+    clearLegacyGate();
+    await refreshMember(userId);
+    return { ok: true };
+  }, [refreshMember]);
+
+  /** After magic-link / OTP session: create members row from pending if needed. */
+  const settleSession = useCallback(async (userId: string, email?: string | null) => {
+    setSessionEmail((email || '').toLowerCase() || null);
+    let m = await refreshMember(userId);
+    if (m) {
+      clearPendingProfile();
+      return m;
+    }
+    if (finishingRef.current) return null;
+    const pending = loadPendingProfile();
+    if (!pending) return null;
+    finishingRef.current = true;
+    try {
+      const res = await upsertProfile(pending, userId);
+      if (res.ok) m = await loadMember(userId);
+      else return null;
+      if (m) setMember(m);
+      return m;
+    } finally {
+      finishingRef.current = false;
+    }
+  }, [refreshMember, upsertProfile]);
 
   useEffect(() => {
     if (!supabaseConfigured) {
@@ -156,25 +241,34 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const { data: { session } } = await supabase.auth.getSession();
         if (cancelled) return;
         if (session?.user) {
-          await refreshMember(session.user.id);
+          await settleSession(session.user.id, session.user.email);
+          // clean PKCE / magic-link hash junk from the address bar
+          if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
+            window.history.replaceState({}, '', window.location.pathname || '/');
+          }
         }
       } finally {
         if (!cancelled) setReady(true);
       }
     })();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session?.user) {
         setMember(null);
+        setSessionEmail(null);
         return;
       }
-      void refreshMember(session.user.id);
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
+        void settleSession(session.user.id, session.user.email);
+      } else {
+        void refreshMember(session.user.id);
+      }
     });
     return () => {
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, [refreshMember]);
+  }, [refreshMember, settleSession]);
 
   const requestOtp = useCallback(async (email: string): Promise<OkErr> => {
     if (!supabaseConfigured) {
@@ -184,12 +278,21 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!e) return { ok: false, error: 'email required' };
     const { error } = await supabase.auth.signInWithOtp({
       email: e,
-      options: { shouldCreateUser: true },
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: redirectTo(),
+      },
     });
     if (error) return { ok: false, error: error.message };
     audit('auth.otp_requested', { email: e });
     return { ok: true };
   }, []);
+
+  const beginJoin = useCallback(async (d: PendingProfile): Promise<OkErr> => {
+    const email = d.email.trim().toLowerCase();
+    savePendingProfile({ ...d, email });
+    return requestOtp(email);
+  }, [requestOtp]);
 
   const verifyOtp = useCallback(async (email: string, token: string): Promise<OkErr & { hasProfile?: boolean }> => {
     if (!supabaseConfigured) {
@@ -207,43 +310,20 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return { ok: false, error: error?.message || 'invalid code' };
     }
     audit('auth.otp_verified', { email: e });
-    const m = await refreshMember(data.session.user.id);
+    const m = await settleSession(data.session.user.id, data.session.user.email);
     clearLegacyGate();
     return { ok: true, hasProfile: !!m };
-  }, [refreshMember]);
+  }, [settleSession]);
 
-  const completeProfile = useCallback(async (d: {
-    first: string; last: string; email: string; phone: string;
-  }): Promise<OkErr> => {
+  const completeProfile = useCallback(async (d: PendingProfile): Promise<OkErr> => {
     if (!supabaseConfigured) return { ok: false, error: 'auth not configured' };
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return { ok: false, error: 'verify your email code first' };
-    const email = d.email.trim().toLowerCase();
-    const row = {
-      id: session.user.id,
-      first: d.first.trim(),
-      last: d.last.trim(),
-      email,
-      phone: d.phone,
-      updated_at: new Date().toISOString(),
-    };
-    const { error } = await supabase.from('members').upsert(row, { onConflict: 'id' });
-    if (error) return { ok: false, error: error.message };
+    if (!session?.user) return { ok: false, error: 'confirm your email first — open the link we sent' };
+    savePendingProfile({ ...d, email: d.email.trim().toLowerCase() });
+    return upsertProfile(d, session.user.id);
+  }, [upsertProfile]);
 
-    // welcome bonus (de-duped by game id 'join')
-    await supabase.rpc('award_play', {
-      p_game: 'join',
-      p_label: "Joined Truly's World",
-      p_points: 100,
-    });
-    audit('auth.signup_profile', { email, first: row.first, last: row.last });
-    await refreshMember(session.user.id);
-    clearLegacyGate();
-    return { ok: true };
-  }, [refreshMember]);
-
-  // legacy sync stubs — Gate no longer uses these for unlock
-  const signUp = useCallback((d: { first: string; last: string; email: string; phone: string }): Member => {
+  const signUp = useCallback((d: PendingProfile): Member => {
     const now = Date.now();
     return {
       id: 'pending',
@@ -257,9 +337,11 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const logOut = useCallback(() => {
     audit('auth.logout', {});
     try { sessionStorage.removeItem(BYPASS_KEY); } catch { /* ignore */ }
+    clearPendingProfile();
     clearLegacyGate();
     setBypass(false);
     setMember(null);
+    setSessionEmail(null);
     if (supabaseConfigured) void supabase.auth.signOut();
   }, []);
 
@@ -301,6 +383,7 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => { setAwardHook(award); return () => setAwardHook(null); }, [award]);
 
   const unlocked = !!member || bypass;
+  const needsProfile = !!sessionEmail && !member && !bypass;
 
   return (
     <Ctx.Provider value={{
@@ -308,9 +391,12 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       isMember: !!member,
       ready,
       unlocked,
+      needsProfile,
+      sessionEmail,
       requestOtp,
       verifyOtp,
       completeProfile,
+      beginJoin,
       signUp,
       logIn,
       logOut,

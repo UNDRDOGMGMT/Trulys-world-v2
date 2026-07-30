@@ -1,14 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import TrulyList from '@/components/TrulyList';
-import { useMember } from '@/contexts/MemberContext';
+import { useMember, loadPendingProfile, type PendingProfile } from '@/contexts/MemberContext';
 
 /**
- * The gate (login). A 90s-film-grain photo of her arm on the grass, with the
- * launch countdown inked onto the forearm in marker — In Time style — ticking
- * down every second. Animated film grain + gate weave sell the stock.
- *
- * Auth: Supabase email OTP. Join captures Laylo + profile, then verifies a code.
- * Login requests a code for an existing email. Staff bypass hits /api/gate-bypass.
+ * The gate (login). Auth is Supabase email magic-link (default) and/or OTP.
+ * Pending join profile is stored so clicking the confirmation link finishes signup.
  *
  * LAUNCH = 12:00am ET on July 31 2026 (= 9:00pm PT July 30).
  */
@@ -67,8 +63,7 @@ const Countdown: React.FC<{ className?: string; style?: React.CSSProperties }> =
   return <div className={className} style={style}><Clock parts={[dd, hh, mm, ss]} /></div>;
 };
 
-type Pending = { first: string; last: string; email: string; phone: string };
-type Mode = 'join' | 'login' | 'code' | 'otp';
+type Mode = 'join' | 'login' | 'code' | 'wait' | 'finish';
 
 const inputCls =
   'rounded-full border-2 border-[#f0b4e4]/55 bg-black/45 px-4 py-2 text-center font-display text-sm text-[#ffd9f2] outline-none backdrop-blur-sm placeholder:text-[#f0b4e4]/45 focus:border-[#f0b4e4]';
@@ -77,22 +72,41 @@ const btnCls =
   'rounded-full border-2 border-[#f0b4e4]/55 bg-black/45 px-4 py-2 font-display text-sm text-[#ffd9f2] backdrop-blur-sm transition-colors hover:border-[#f0b4e4] hover:bg-[#f0b4e4]/15 disabled:opacity-60';
 
 const Gate: React.FC = () => {
-  const { requestOtp, verifyOtp, completeProfile, enableBypass } = useMember();
+  const {
+    beginJoin, requestOtp, verifyOtp, completeProfile, enableBypass,
+    needsProfile, sessionEmail,
+  } = useMember();
   const [pw, setPw] = useState('');
   const [denied, setDenied] = useState(false);
-  const [mode, setMode] = useState<Mode>('join');
+  const [mode, setMode] = useState<Mode>(() => (loadPendingProfile() ? 'wait' : 'join'));
   const [loginEmail, setLoginEmail] = useState('');
   const [otp, setOtp] = useState('');
-  const [otpEmail, setOtpEmail] = useState('');
-  const [pending, setPending] = useState<Pending | null>(null);
+  const [otpEmail, setOtpEmail] = useState(() => loadPendingProfile()?.email ?? '');
+  const [pending, setPending] = useState<PendingProfile | null>(() => loadPendingProfile());
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [finishFirst, setFinishFirst] = useState('');
+  const [finishLast, setFinishLast] = useState('');
+  const [finishPhone, setFinishPhone] = useState('');
   const grainRef = useRef<HTMLCanvasElement>(null);
 
-  const startJoinOtp = async (d: Pending) => {
+  // Email confirmed but no members row (e.g. link opened without pending join data)
+  useEffect(() => {
+    if (needsProfile) {
+      setMode('finish');
+      const p = loadPendingProfile();
+      if (p) {
+        setFinishFirst(p.first);
+        setFinishLast(p.last);
+        setFinishPhone(p.phone);
+      }
+    }
+  }, [needsProfile]);
+
+  const startJoin = async (d: PendingProfile) => {
     setErr('');
     setBusy(true);
-    const res = await requestOtp(d.email);
+    const res = await beginJoin(d);
     setBusy(false);
     if (!res.ok) {
       setErr(res.error);
@@ -101,7 +115,7 @@ const Gate: React.FC = () => {
     setPending(d);
     setOtpEmail(d.email);
     setOtp('');
-    setMode('otp');
+    setMode('wait');
   };
 
   const doLoginRequest = async (e: React.FormEvent) => {
@@ -117,35 +131,47 @@ const Gate: React.FC = () => {
     }
     setOtpEmail(loginEmail.trim().toLowerCase());
     setOtp('');
-    setMode('otp');
+    setMode('wait');
   };
 
-  const doVerify = async (e: React.FormEvent) => {
+  const doVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr('');
     setBusy(true);
     const res = await verifyOtp(otpEmail, otp);
+    setBusy(false);
     if (!res.ok) {
-      setBusy(false);
       setErr(res.error);
       return;
     }
-    if (pending) {
-      const profile = await completeProfile(pending);
-      setBusy(false);
-      if (!profile.ok) {
-        setErr(profile.error);
-        return;
-      }
-      // unlocked via member state
+    // settleSession / needsProfile + unlocked handled by MemberProvider
+    if (!res.hasProfile && !loadPendingProfile()) {
+      setMode('finish');
+      setErr('email confirmed — finish joining below ♥');
+    }
+  };
+
+  const doFinishProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr('');
+    const email = (sessionEmail || otpEmail || pending?.email || '').trim().toLowerCase();
+    if (!email) {
+      setErr('missing email — join again');
       return;
     }
+    if (finishFirst.trim().length < 1 || finishLast.trim().length < 1) {
+      setErr('first and last name, please.');
+      return;
+    }
+    setBusy(true);
+    const res = await completeProfile({
+      first: finishFirst.trim(),
+      last: finishLast.trim(),
+      email,
+      phone: finishPhone.replace(/\D/g, ''),
+    });
     setBusy(false);
-    if (!res.hasProfile) {
-      setErr('no member profile for that email — join the list first ♥');
-      setMode('join');
-      return;
-    }
+    if (!res.ok) setErr(res.error);
   };
 
   const submitBypass = async (e: React.FormEvent) => {
@@ -208,26 +234,36 @@ const Gate: React.FC = () => {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  const otpPanel = mode === 'otp' && (
-    <form onSubmit={doVerify} className="flex flex-col items-center gap-1.5">
-      <p className="font-whimsy text-xs text-[#ffd9f2]/90">
-        check {otpEmail} for a code
+  const waitPanel = (
+    <div className="flex flex-col items-center gap-2">
+      <p className="font-whimsy text-sm text-[#ffd9f2]">
+        {"check your email \u2665\uFE0E"}
       </p>
-      <div className="flex items-center gap-2">
-        <input
-          value={otp}
-          onChange={(e) => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 8)); setErr(''); }}
-          placeholder="6-digit code"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          aria-label="Email verification code"
-          className={`w-44 tracking-[0.28em] ${inputCls}`}
-          style={inputShadow}
-        />
-        <button type="submit" disabled={busy || otp.length < 6} className={btnCls} style={inputShadow}>
-          {busy ? '…' : 'verify'}
-        </button>
-      </div>
+      <p className="max-w-xs text-center font-display text-[10px] uppercase tracking-[0.2em] text-[#f0b4e4]/75">
+        open the confirmation link we sent to{' '}
+        <span className="text-[#ffd9f2]">{otpEmail}</span>
+        {' '}— that brings you back in
+      </p>
+      <p className="mt-1 font-display text-[9px] uppercase tracking-[0.22em] text-[#f0b4e4]/50">
+        or enter a 6-digit code if your email includes one
+      </p>
+      <form onSubmit={doVerifyCode} className="mt-1 flex flex-col items-center gap-1.5">
+        <div className="flex items-center gap-2">
+          <input
+            value={otp}
+            onChange={(e) => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 8)); setErr(''); }}
+            placeholder="6-digit code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            aria-label="Email verification code"
+            className={`w-44 tracking-[0.28em] ${inputCls}`}
+            style={inputShadow}
+          />
+          <button type="submit" disabled={busy || otp.length < 6} className={btnCls} style={inputShadow}>
+            {busy ? '…' : 'verify'}
+          </button>
+        </div>
+      </form>
       <button
         type="button"
         className="font-display text-[9px] uppercase tracking-[0.28em] text-[#f0b4e4]/70 hover:text-[#ffd9f2]"
@@ -236,24 +272,43 @@ const Gate: React.FC = () => {
         back
       </button>
       <span className="min-h-4 font-whimsy text-xs text-red-300">{err}</span>
+    </div>
+  );
+
+  const finishPanel = (
+    <form onSubmit={doFinishProfile} className="flex flex-col items-center gap-2">
+      <p className="font-whimsy text-sm text-[#ffd9f2]">email confirmed</p>
+      <p className="max-w-xs text-center font-display text-[10px] uppercase tracking-[0.2em] text-[#f0b4e4]/75">
+        finish joining as {sessionEmail || otpEmail}
+      </p>
+      <div className="flex w-full max-w-xs gap-2">
+        <input value={finishFirst} onChange={(e) => setFinishFirst(e.target.value)} placeholder="first name"
+          aria-label="First name" className={`flex-1 ${inputCls}`} style={inputShadow} />
+        <input value={finishLast} onChange={(e) => setFinishLast(e.target.value)} placeholder="last name"
+          aria-label="Last name" className={`flex-1 ${inputCls}`} style={inputShadow} />
+      </div>
+      <input value={finishPhone} onChange={(e) => setFinishPhone(e.target.value)} placeholder="phone"
+        type="tel" inputMode="tel" aria-label="Phone" className={`w-full max-w-xs ${inputCls}`} style={inputShadow} />
+      <button type="submit" disabled={busy} className={btnCls} style={inputShadow}>
+        {busy ? '…' : 'enter the world'}
+      </button>
+      <span className="min-h-4 font-whimsy text-xs text-red-300">{err}</span>
     </form>
   );
 
   const accessRow = (
     <div className="flex flex-col items-center gap-2">
-      {mode !== 'otp' && (
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 font-display text-[9px] uppercase tracking-[0.28em] text-[#ffd9f2]/90">
-          <button type="button" onClick={() => { setMode(mode === 'login' ? 'join' : 'login'); setErr(''); }}
-            className={`transition-colors hover:text-[#ffd9f2] ${mode === 'login' ? 'text-[#ffd9f2]' : ''}`}>
-            already a member? log in
-          </button>
-          <span className="text-[#f0b4e4]/40">·</span>
-          <button type="button" onClick={() => { setMode(mode === 'code' ? 'join' : 'code'); setErr(''); }}
-            className={`transition-colors hover:text-[#ffd9f2] ${mode === 'code' ? 'text-[#ffd9f2]' : ''}`}>
-            have a code?
-          </button>
-        </div>
-      )}
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 font-display text-[9px] uppercase tracking-[0.28em] text-[#ffd9f2]/90">
+        <button type="button" onClick={() => { setMode(mode === 'login' ? 'join' : 'login'); setErr(''); }}
+          className={`transition-colors hover:text-[#ffd9f2] ${mode === 'login' ? 'text-[#ffd9f2]' : ''}`}>
+          already a member? log in
+        </button>
+        <span className="text-[#f0b4e4]/40">·</span>
+        <button type="button" onClick={() => { setMode(mode === 'code' ? 'join' : 'code'); setErr(''); }}
+          className={`transition-colors hover:text-[#ffd9f2] ${mode === 'code' ? 'text-[#ffd9f2]' : ''}`}>
+          have a code?
+        </button>
+      </div>
 
       {mode === 'login' && (
         <form onSubmit={doLoginRequest} className="flex flex-col items-center gap-1.5">
@@ -262,7 +317,7 @@ const Gate: React.FC = () => {
               placeholder="your email" type="email" inputMode="email" aria-label="Member email"
               className={`w-52 ${inputCls}`} style={inputShadow} />
             <button type="submit" disabled={busy} className={btnCls} style={inputShadow}>
-              {busy ? '…' : 'send code'}
+              {busy ? '…' : 'email me'}
             </button>
           </div>
           <span className="min-h-4 font-whimsy text-xs text-red-300">{err}</span>
@@ -283,8 +338,28 @@ const Gate: React.FC = () => {
     </div>
   );
 
-  const listFooter = mode === 'otp' ? otpPanel : accessRow;
-  const hideJoinForm = mode === 'otp' && !!pending;
+  const card = (body: React.ReactNode) => (
+    <div className="rounded-2xl border-2 border-[#f0b4e4]/45 bg-black/55 px-6 py-7 text-center backdrop-blur-sm"
+      style={{ boxShadow: '0 0 26px rgba(240,180,228,0.20)' }}>
+      {body}
+    </div>
+  );
+
+  const mainCard = mode === 'wait' ? (
+    card(
+      <>
+        <p className="font-whimsy text-lg text-[#f0b4e4]">{"you\u2019re on the list \u2665\uFE0E"}</p>
+        <p className="mt-1.5 font-display text-[11px] uppercase tracking-[0.28em] text-[#f0b4e4]/70">
+          one more step — confirm your email
+        </p>
+        <div className="mt-4 border-t border-[#f0b4e4]/20 pt-3">{waitPanel}</div>
+      </>,
+    )
+  ) : mode === 'finish' ? (
+    card(finishPanel)
+  ) : (
+    <TrulyList tone="dark" wide onData={startJoin} footer={accessRow} />
+  );
 
   return (
     <>
@@ -304,18 +379,7 @@ const Gate: React.FC = () => {
         <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-2.5 px-6 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-16"
           style={{ background: 'linear-gradient(180deg, transparent, rgba(10,8,4,0.5) 30%, rgba(10,8,4,0.88))' }}>
           <div className="w-[min(88vw,556px)]">
-            {hideJoinForm ? (
-              <div className="rounded-2xl border-2 border-[#f0b4e4]/45 bg-black/55 px-6 py-7 text-center backdrop-blur-sm"
-                style={{ boxShadow: '0 0 26px rgba(240,180,228,0.20)' }}>
-                <p className="font-whimsy text-lg text-[#f0b4e4]">{"you\u2019re on the list \u2665\uFE0E"}</p>
-                <p className="mt-1.5 font-display text-[11px] uppercase tracking-[0.28em] text-[#f0b4e4]/70">
-                  one more step — enter your code
-                </p>
-                <div className="mt-4 border-t border-[#f0b4e4]/20 pt-3">{otpPanel}</div>
-              </div>
-            ) : (
-              <TrulyList tone="dark" wide onData={startJoinOtp} footer={listFooter} />
-            )}
+            {mainCard}
             {mode === 'join' && err && (
               <p className="mt-2 text-center font-whimsy text-xs text-red-300">{err}</p>
             )}
@@ -341,18 +405,7 @@ const Gate: React.FC = () => {
         <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
           <div className="flex flex-col items-center gap-3 px-3 pb-10 pt-5">
             <div className="w-full max-w-[480px]">
-              {hideJoinForm ? (
-                <div className="rounded-2xl border-2 border-[#f0b4e4]/45 bg-black/55 px-6 py-7 text-center backdrop-blur-sm"
-                  style={{ boxShadow: '0 0 26px rgba(240,180,228,0.20)' }}>
-                  <p className="font-whimsy text-lg text-[#f0b4e4]">{"you\u2019re on the list \u2665\uFE0E"}</p>
-                  <p className="mt-1.5 font-display text-[11px] uppercase tracking-[0.28em] text-[#f0b4e4]/70">
-                    one more step — enter your code
-                  </p>
-                  <div className="mt-4 border-t border-[#f0b4e4]/20 pt-3">{otpPanel}</div>
-                </div>
-              ) : (
-                <TrulyList tone="dark" wide onData={startJoinOtp} footer={listFooter} />
-              )}
+              {mainCard}
               {mode === 'join' && err && (
                 <p className="mt-2 text-center font-whimsy text-xs text-red-300">{err}</p>
               )}
