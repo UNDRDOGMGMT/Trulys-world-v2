@@ -38,6 +38,14 @@ const DISTRICT_R = 13.5;
 // labelBelowP: on the tighter portrait map, hang the label under the pin so
 // neighboring labels don't collide (LC / WeHo / Hollywood cluster at the top).
 interface Waypoint { id: string; name: string; blurb: string; x: number; y: number; xP: number; yP: number; labelBelowP?: boolean; }
+
+// Heart-shaped waypoint marker — fill = currentColor, stroke/glow via style so it
+// scales and lights up like the old dot did (on-brand for Truly's World hearts).
+const HeartMark: React.FC<{ className?: string; style?: React.CSSProperties }> = ({ className, style }) => (
+  <svg viewBox="0 0 24 24" className={className} style={style} aria-hidden fill="currentColor">
+    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+  </svg>
+);
 const WAYPOINTS: Waypoint[] = [
   // x/y = % on la-map-7 (landscape); xP/yP = % on la-map-6-v (portrait).
   { id: "malibu", name: "Malibu", blurb: "Downloads", x: 10, y: 30, xP: 7, yP: 21, labelBelowP: true },
@@ -752,16 +760,18 @@ const MapHub: React.FC = () => {
                       >
                         {wp.name}
                       </span>
-                      {/* pin marker */}
-                      <span className="relative flex items-center justify-center">
-                        <span className="absolute w-6 h-6 rounded-full bg-[#ff4fa3]/40 animate-ping" />
-                        <span
-                          className="relative w-3.5 h-3.5 rounded-full bg-[#ff4fa3] border border-white/70 transition-transform duration-300"
+                      {/* pin marker — heart */}
+                      <span className="relative flex items-center justify-center" style={{ color: "#ff4fa3" }}>
+                        <HeartMark className="absolute w-5 h-5 animate-ping" style={{ opacity: 0.4 }} />
+                        <HeartMark
+                          className="relative w-4 h-4 transition-transform duration-300"
                           style={{
-                            boxShadow: on
-                              ? "0 0 10px #ff4fa3, 0 0 24px #ff4fa3, 0 0 44px rgba(255,79,163,0.8)"
-                              : "0 0 8px #ff4fa3, 0 0 18px #ff4fa3, 0 0 30px rgba(255,79,163,0.6)",
-                            transform: on ? "scale(1.25)" : "scale(1)",
+                            stroke: "rgba(255,255,255,0.75)",
+                            strokeWidth: 1.2,
+                            filter: on
+                              ? "drop-shadow(0 0 6px #ff4fa3) drop-shadow(0 0 16px #ff4fa3) drop-shadow(0 1px 1px rgba(0,0,0,0.9))"
+                              : "drop-shadow(0 0 5px #ff4fa3) drop-shadow(0 0 11px rgba(255,79,163,0.7)) drop-shadow(0 1px 1px rgba(0,0,0,0.8))",
+                            transform: on ? "scale(1.3)" : "scale(1)",
                           }}
                         />
                       </span>
