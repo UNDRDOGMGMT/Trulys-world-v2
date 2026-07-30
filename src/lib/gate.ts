@@ -9,3 +9,11 @@
 export const GATE_KEY = 'tw-gate-2';
 /** Set only after POST /api/gate-bypass succeeds — never trust a client-typed code. */
 export const BYPASS_KEY = 'tw-gate-bypass';
+
+/**
+ * PRE-LAUNCH LOCKDOWN. While false, trulys.world shows ONLY the sign-up page to
+ * the public: signing up still captures the email/SMS + creates the account,
+ * but it does NOT open the site — the only thing that opens it is the
+ * server-validated staff bypass. Flip to true at launch to let members in.
+ */
+export const LAUNCHED = false;

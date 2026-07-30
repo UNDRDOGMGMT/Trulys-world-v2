@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { BYPASS_KEY, GATE_KEY } from '@/lib/gate';
+import { BYPASS_KEY, GATE_KEY, LAUNCHED } from '@/lib/gate';
 import { setAwardHook } from '@/lib/analytics';
 import { audit } from '@/lib/audit';
 import { supabase, supabaseConfigured } from '@/lib/supabase';
@@ -446,7 +446,9 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => { setAwardHook(award); return () => setAwardHook(null); }, [award]);
 
-  const unlocked = !!member || bypass;
+  // PRE-LAUNCH: only the staff bypass opens the site. Fans can still sign up
+  // (member/account is created for launch) but do NOT get in. Flip LAUNCHED at go-live.
+  const unlocked = bypass || (LAUNCHED && !!member);
   const needsProfile = !!sessionEmail && !member && !bypass;
 
   return (
