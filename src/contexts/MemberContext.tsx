@@ -68,6 +68,9 @@ export function formatAuthError(message: string): string {
   if (m.includes('rate limit')) {
     return 'too many emails just now — wait a few minutes, or enter a code you already received ♥';
   }
+  if (/error sending|smtp|unable to send|magic link/i.test(m)) {
+    return 'could not send the email code — check SMTP / try again in a minute';
+  }
   if (/signups not allowed|user not found|unable to validate/i.test(message)) {
     return 'no account for that email — join the list first ♥';
   }

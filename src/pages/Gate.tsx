@@ -389,7 +389,7 @@ const Gate: React.FC = () => {
       >
         back
       </button>
-      <span className="min-h-4 font-whimsy text-xs text-red-300">{err}</span>
+      <span className="min-h-4 font-sans text-[11px] leading-snug text-red-300">{err}</span>
     </form>
   );
 
@@ -410,7 +410,7 @@ const Gate: React.FC = () => {
       <button type="submit" disabled={busy} className={btnCls} style={inputShadow}>
         {busy ? '…' : 'continue'}
       </button>
-      <span className="min-h-4 font-whimsy text-xs text-red-300">{err}</span>
+      <span className="min-h-4 font-sans text-[11px] leading-snug text-red-300">{err}</span>
     </form>
   );
 
@@ -443,7 +443,7 @@ const Gate: React.FC = () => {
       <button type="submit" disabled={busy} className={btnCls} style={inputShadow}>
         {busy ? '…' : LAUNCHED ? 'enter the world' : 'save password'}
       </button>
-      <span className="min-h-4 font-whimsy text-xs text-red-300">{err}</span>
+      <span className="min-h-4 font-sans text-[11px] leading-snug text-red-300">{err}</span>
     </form>
   );
 
@@ -494,7 +494,7 @@ const Gate: React.FC = () => {
           >
             email me a code instead
           </button>
-          <span className="min-h-4 font-whimsy text-xs text-red-300">{err}</span>
+          <span className="min-h-4 font-sans text-[11px] leading-snug text-red-300">{err}</span>
         </form>
       )}
 
@@ -559,7 +559,7 @@ const Gate: React.FC = () => {
           <div className="w-[min(88vw,556px)]">
             {mainCard}
             {mode === 'join' && err && (
-              <p className="mt-2 text-center font-whimsy text-xs text-red-300">{err}</p>
+              <p className="mt-2 text-center font-sans text-[11px] leading-snug text-red-300">{err}</p>
             )}
           </div>
         </div>
@@ -585,7 +585,7 @@ const Gate: React.FC = () => {
             <div className="w-full max-w-[480px]">
               {mainCard}
               {mode === 'join' && err && (
-                <p className="mt-2 text-center font-whimsy text-xs text-red-300">{err}</p>
+                <p className="mt-2 text-center font-sans text-[11px] leading-snug text-red-300">{err}</p>
               )}
             </div>
           </div>

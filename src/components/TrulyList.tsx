@@ -54,6 +54,19 @@ const TrulyList: React.FC<{
       setErr(err instanceof Error ? err.message : 'something broke');
       return;
     }
+    // When the gate owns the next step (OTP), don't block or flip this card to
+    // error/done — Laylo is best-effort in the background.
+    if (onData) {
+      void fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          first: first.trim(), last: last.trim(), name: `${first.trim()} ${last.trim()}`,
+          email: email.trim(), phone: digits(phone), company,
+        }),
+      }).catch(() => { /* ignore */ });
+      return;
+    }
     try {
       const r = await fetch('/api/subscribe', {
         method: 'POST',
@@ -67,7 +80,6 @@ const TrulyList: React.FC<{
       if (!r.ok || !data.ok) throw new Error(data.error || 'something broke');
       setState('done'); onDone?.({ first: first.trim(), last: last.trim(), email: email.trim(), phone: digits(phone) });
     } catch (err) {
-      // List capture is best-effort once auth already succeeded (Gate will have moved on).
       setErr(err instanceof Error ? err.message : 'something broke');
     }
   };
@@ -115,7 +127,7 @@ const TrulyList: React.FC<{
         style={{ boxShadow: '0 0 18px rgba(240,180,228,0.22)' }}>
         {state === 'sending' ? 'entering…' : <>enter the list <span style={{ color: PINK }}>{'\u2665\uFE0E'}</span></>}
       </button>
-      <span className="h-3 text-center font-whimsy text-xs" style={{ color: '#ffb3d1' }}>
+      <span className="min-h-[1rem] text-center font-sans text-[11px] leading-snug" style={{ color: '#ffb3d1' }}>
         {state === 'error' ? msg : ''}
       </span>
     </>

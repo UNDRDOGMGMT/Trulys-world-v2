@@ -10,7 +10,8 @@ export default async function handler(req, res) {
 
   const expected = String(process.env.GATE_BYPASS_CODE || '').trim();
   if (!expected) {
-    return res.status(503).json({ ok: false, error: 'bypass not configured' });
+    // Not configured on this deployment — staff code won't work until the env is set.
+    return res.status(503).json({ ok: false, error: 'bypass not configured — set GATE_BYPASS_CODE on Vercel' });
   }
 
   let body = req.body;
