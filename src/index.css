@@ -427,6 +427,14 @@
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+  /* Griffy has tall caps + deep tails; background-clip:text clips glyphs to the
+     line box, so give it room (line-height + vertical padding) or H tops / y tails
+     get cut — especially at small mobile sizes. box-decoration-break keeps the
+     gradient continuous if a heading wraps. */
+  line-height: 1.15;
+  padding-block: 0.14em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
   filter:
     drop-shadow(0 1px 0 rgba(255,255,255,0.3))
     drop-shadow(0 0 6px rgba(255,105,180,0.5))
