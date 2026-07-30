@@ -51,7 +51,10 @@ const TrulyList: React.FC<{
     try {
       await Promise.resolve(onData?.(captured));
     } catch (err) {
-      setErr(err instanceof Error ? err.message : 'something broke');
+      const raw = err instanceof Error ? err.message : '';
+      setErr(!raw || raw === '{}' || raw === '[object Object]'
+        ? 'could not start signup — check auth settings and try again'
+        : raw);
       return;
     }
     // When the gate owns the next step (OTP), don't block or flip this card to

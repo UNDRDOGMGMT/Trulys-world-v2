@@ -63,12 +63,27 @@ export function tierFor(points: number): { tier: Tier; next: Tier | null; toNext
 type OkErr = { ok: true } | { ok: false; error: string };
 
 /** Map Supabase auth errors to gate-friendly copy. */
-export function formatAuthError(message: string): string {
-  const m = (message || '').toLowerCase();
+export function formatAuthError(err: unknown): string {
+  let message = '';
+  let status: string | number | undefined;
+
+  if (typeof err === 'string') {
+    message = err;
+  } else if (err && typeof err === 'object') {
+    const e = err as Record<string, unknown>;
+    message = String(e.message ?? e.error_description ?? e.error ?? e.msg ?? '');
+    status = (e.status as string | number | undefined) ?? (e.code as string | number | undefined);
+    // Empty Auth bodies sometimes stringify as "{}"
+    if (!message || message === '{}' || message === '[object Object]') {
+      message = '';
+    }
+  }
+
+  const m = message.toLowerCase();
   if (m.includes('rate limit')) {
     return 'too many emails just now — wait a few minutes, or enter a code you already received ♥';
   }
-  if (/error sending|smtp|unable to send|magic link/i.test(m)) {
+  if (/error sending|smtp|unable to send|magic link|error sending magic link/i.test(m)) {
     return 'could not send the email code — check SMTP / try again in a minute';
   }
   if (/signups not allowed|user not found|unable to validate/i.test(message)) {
@@ -80,7 +95,9 @@ export function formatAuthError(message: string): string {
   if (/password should be|password.*at least|weak password/i.test(m)) {
     return 'password must be at least 8 characters';
   }
-  return message || 'something broke';
+  if (message && message !== '{}') return message;
+  if (status) return `could not send signup code (auth ${status}) — check Supabase SMTP and try again`;
+  return 'could not send signup code — check Supabase URL/key + SMTP, then try again';
 }
 
 const PENDING_KEY = 'tw-pending-member';
@@ -343,7 +360,7 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         shouldCreateUser: false,
       },
     });
-    if (error) return { ok: false, error: formatAuthError(error.message) };
+    if (error) return { ok: false, error: formatAuthError(error) };
     audit('auth.otp_requested', { email: e, mode: 'login' });
     return { ok: true };
   }, []);
@@ -355,18 +372,32 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const email = d.email.trim().toLowerCase();
     const profile = { ...d, email };
     savePendingProfile(profile);
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: true,
-        data: {
-          first: profile.first.trim(),
-          last: profile.last.trim(),
-          phone: profile.phone,
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true,
+          data: {
+            first: profile.first.trim(),
+            last: profile.last.trim(),
+            phone: profile.phone,
+          },
         },
-      },
-    });
-    if (error) return { ok: false, error: formatAuthError(error.message) };
+      });
+      if (error) {
+        if (import.meta.env.DEV) {
+          // eslint-disable-next-line no-console
+          console.error('[auth] beginJoin', error);
+        }
+        return { ok: false, error: formatAuthError(error) };
+      }
+    } catch (err) {
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.error('[auth] beginJoin threw', err);
+      }
+      return { ok: false, error: formatAuthError(err) };
+    }
     audit('auth.otp_requested', { email, mode: 'join' });
     return { ok: true };
   }, []);
@@ -385,7 +416,7 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       type: 'email',
     });
     if (error || !data.session?.user) {
-      return { ok: false, error: formatAuthError(error?.message || 'invalid code') };
+      return { ok: false, error: formatAuthError(error || 'invalid code') };
     }
     audit('auth.otp_verified', { email: e });
     const m = await settleSession(data.session.user.id, data.session.user);
@@ -411,7 +442,7 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       password,
       data: { password_set: true },
     });
-    if (error) return { ok: false, error: formatAuthError(error.message) };
+    if (error) return { ok: false, error: formatAuthError(error) };
     setPasswordReady(true);
     audit('auth.password_set', { email: session.user.email });
     if (data.user) await settleSession(data.user.id, data.user);
@@ -426,7 +457,7 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!e || !password) return { ok: false, error: 'email and password required' };
     const { data, error } = await supabase.auth.signInWithPassword({ email: e, password });
     if (error || !data.session?.user) {
-      return { ok: false, error: formatAuthError(error?.message || 'wrong email or password') };
+      return { ok: false, error: formatAuthError(error || 'wrong email or password') };
     }
     // Password login implies they have a password; stamp metadata if missing (older accounts).
     if (!hasPasswordSet(data.session.user.user_metadata)) {
