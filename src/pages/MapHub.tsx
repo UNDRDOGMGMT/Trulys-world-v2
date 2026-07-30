@@ -100,12 +100,6 @@ const MapHub: React.FC = () => {
   const mapW = isPortrait ? MAP_W_P : MAP_W;
   const mapH = isPortrait ? MAP_H_P : MAP_H;
 
-  // hover-capable (mouse/trackpad) vs touch — decides one-tap vs select-then-dive
-  const canHover = useMemo(
-    () => typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches,
-    []
-  );
-
   const coords = (wp: Waypoint) => ({ x: isPortrait ? wp.xP : wp.x, y: isPortrait ? wp.yP : wp.y });
 
   // ── Dev-only pin PLACEMENT tool (gated by ?place=1) ─────────────────────
@@ -237,6 +231,10 @@ const MapHub: React.FC = () => {
 
   const onWorldPointerDown = (e: React.PointerEvent) => {
     if (placeMode || diving) return;
+    // If the press started on a waypoint pin, let the pin's own click handler run
+    // (it dives into the district). Capturing the pointer here would make the
+    // browser swallow that click, so pins would never respond to a tap.
+    if ((e.target as HTMLElement).closest?.("[data-tw-pin]")) { didPan.current = false; return; }
     stopMomentum();
     (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -386,13 +384,13 @@ const MapHub: React.FC = () => {
     diveTimer.current = setTimeout(() => travelTo(wp.id), 560);
   };
 
-  // Pin behavior: desktop = hover already lifted, click dives.
-  // Touch = first tap selects+lifts (card shows "dive in"), second tap dives.
+  // Pin behavior: a clean tap/click always dives into the district. The didPan
+  // guard already rejects pan-drags, so there's no need for a two-tap arm step
+  // (that made touch users tap twice — the first tap looked like a no-op).
   const onPinActivate = (wp: Waypoint) => {
     if (placeMode) return;                       // placement tool owns the pins
     if (didPan.current) { didPan.current = false; return; } // was a pan-drag, not a tap
-    if (canHover || active === wp.id) dive(wp);
-    else holdActive(wp.id);
+    dive(wp);
   };
 
   const activeWp = WAYPOINTS.find((w) => w.id === active) ?? null;
@@ -709,6 +707,7 @@ const MapHub: React.FC = () => {
                 return (
                   <motion.button
                     key={wp.id}
+                    data-tw-pin
                     className="absolute z-10 group flex items-center justify-center -translate-x-1/2 -translate-y-1/2 min-w-[48px] min-h-[48px] p-2"
                     style={{ left: `${x}%`, top: `${y}%`, touchAction: "manipulation" }}
                     onClick={() => onPinActivate(wp)}
