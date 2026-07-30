@@ -113,16 +113,38 @@ const SPARKLES = [
 const SHOOTING = [
   { x: 16, y: 9, d: 1.5, dur: 12 }, { x: 60, y: 6, d: 6.5, dur: 15 }, { x: 40, y: 15, d: 10, dur: 18 },
 ];
-// City lights flickering on — warm windows + pink neon over the cityscape. Kept to
-// the lower-center building band so they read right on both landscape + portrait art.
+// City lights flickering on — warm windows + pink neon on the buildings. x/y =
+// landscape (la-map-10), xP/yP = portrait (la-map-portrait-2), so they sit on the
+// towers on both maps. Clustered on Downtown, Koreatown, Silver Lake + WeHo/Holly.
 const GLIMMERS = [
-  { x: 86, y: 55, c: "#ffcf7a", d: 0 }, { x: 90, y: 60, c: "#ff7bbd", d: 1.1 },
-  { x: 83, y: 62, c: "#ffcf7a", d: 2.0 }, { x: 54, y: 60, c: "#ff7bbd", d: 0.6 },
-  { x: 51, y: 63, c: "#ffcf7a", d: 1.7 }, { x: 57, y: 57, c: "#ff7bbd", d: 2.4 },
-  { x: 45, y: 51, c: "#ffcf7a", d: 0.3 }, { x: 39, y: 53, c: "#ff7bbd", d: 1.4 },
-  { x: 48, y: 47, c: "#ffcf7a", d: 2.2 }, { x: 67, y: 52, c: "#ff7bbd", d: 0.9 },
-  { x: 71, y: 55, c: "#ffcf7a", d: 1.9 }, { x: 35, y: 48, c: "#ff7bbd", d: 2.6 },
-  { x: 88, y: 50, c: "#ff7bbd", d: 1.3 }, { x: 62, y: 63, c: "#ffcf7a", d: 0.5 },
+  // Downtown towers
+  { x: 86, y: 55, xP: 80, yP: 58, c: "#ffcf7a", d: 0 },
+  { x: 90, y: 60, xP: 84, yP: 61, c: "#ff7bbd", d: 1.1 },
+  { x: 83, y: 62, xP: 77, yP: 60, c: "#ffcf7a", d: 2.0 },
+  { x: 88, y: 50, xP: 82, yP: 55, c: "#ff7bbd", d: 1.3 },
+  { x: 92, y: 58, xP: 86, yP: 63, c: "#ffcf7a", d: 0.8 },
+  // Koreatown
+  { x: 54, y: 60, xP: 48, yP: 61, c: "#ff7bbd", d: 0.6 },
+  { x: 57, y: 57, xP: 52, yP: 59, c: "#ffcf7a", d: 2.4 },
+  { x: 51, y: 63, xP: 45, yP: 63, c: "#ff7bbd", d: 1.7 },
+  { x: 62, y: 62, xP: 52, yP: 64, c: "#ffcf7a", d: 0.5 },
+  // Silver Lake edge
+  { x: 64, y: 53, xP: 62, yP: 50, c: "#ff7bbd", d: 0.9 },
+  { x: 71, y: 55, xP: 63, yP: 55, c: "#ffcf7a", d: 1.9 },
+  // WeHo / Hollywood / Rodeo buildings
+  { x: 45, y: 51, xP: 45, yP: 42, c: "#ffcf7a", d: 0.3 },
+  { x: 48, y: 47, xP: 58, yP: 40, c: "#ff7bbd", d: 2.2 },
+  { x: 39, y: 53, xP: 35, yP: 44, c: "#ff7bbd", d: 1.4 },
+  { x: 35, y: 48, xP: 30, yP: 41, c: "#ffcf7a", d: 2.6 },
+  { x: 42, y: 50, xP: 40, yP: 43, c: "#ff7bbd", d: 1.0 },
+];
+// Water glints twinkling on the ocean. x/y = landscape ocean (bottom-left swirl),
+// xP/yP = portrait ocean (left side). Cool white so they read as light on water.
+const WATER = [
+  { x: 8, y: 70, xP: 6, yP: 46, d: 0 }, { x: 14, y: 78, xP: 10, yP: 55, d: 1.3 },
+  { x: 20, y: 72, xP: 5, yP: 64, d: 2.1 }, { x: 11, y: 86, xP: 12, yP: 72, d: 0.7 },
+  { x: 6, y: 80, xP: 4, yP: 80, d: 1.8 }, { x: 18, y: 84, xP: 9, yP: 88, d: 2.6 },
+  { x: 23, y: 66, xP: 14, yP: 50, d: 1.0 }, { x: 15, y: 90, xP: 7, yP: 92, d: 0.4 },
 ];
 
 const pageVariants = {
@@ -665,12 +687,84 @@ const MapHub: React.FC = () => {
                       key={`glimmer-${i}`}
                       className={reduceMotion ? "absolute rounded-full" : "map-glimmer absolute rounded-full"}
                       style={{
-                        left: `${g.x}%`, top: `${g.y}%`,
+                        left: `${isPortrait ? g.xP : g.x}%`, top: `${isPortrait ? g.yP : g.y}%`,
                         width: i % 2 ? 3 : 4, height: i % 2 ? 3 : 4,
                         background: g.c,
                         boxShadow: `0 0 6px 1px ${g.c}, 0 0 13px 2px ${g.c}88`,
                         mixBlendMode: "screen",
                         animationDelay: `${g.d}s`,
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* ── Placed FX: ferris wheel, spider, rainbow flow, ocean, moon, spotlight ── */}
+              {mapReady && (() => {
+                const P = isPortrait;
+                // feature centers (% of the map box) per orientation
+                const ferris = P ? { x: 13, y: 48, s: 7 } : { x: 13, y: 60, s: 6 };
+                const spider = P ? { x: 14, y: 6 } : { x: 14, y: 8 };
+                const rainbow = P ? { x: 50, y: 43, w: 18, h: 3.2, r: -20 } : { x: 40, y: 49, w: 16, h: 2.8, r: -26 };
+                const moon = P ? { x: 67, y: 5, s: 7 } : { x: 60, y: 6, s: 6 };
+                const holly = P ? { x: 71, y: 26, w: 24, h: 12 } : { x: 53, y: 25, w: 20, h: 9 };
+                const WHEEL_DOTS = 10;
+                return (
+                  <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 4 }} aria-hidden>
+                    {/* Ferris wheel — rotating ring of lights */}
+                    <div className="absolute" style={{ left: `${ferris.x}%`, top: `${ferris.y}%`, width: `${ferris.s}%`, aspectRatio: "1", transform: "translate(-50%,-50%)" }}>
+                      <div className={reduceMotion ? "" : "map-spin"} style={{ position: "absolute", inset: 0 }}>
+                        {Array.from({ length: WHEEL_DOTS }).map((_, i) => {
+                          const a = (i / WHEEL_DOTS) * Math.PI * 2;
+                          return <span key={i} style={{ position: "absolute", left: `${50 + Math.cos(a) * 47}%`, top: `${50 + Math.sin(a) * 47}%`, width: 3, height: 3, borderRadius: "50%", background: "#ffe3f1", boxShadow: "0 0 5px 1px #ff9fd6", transform: "translate(-50%,-50%)", mixBlendMode: "screen" }} />;
+                        })}
+                        <span style={{ position: "absolute", left: "50%", top: "50%", width: 3, height: 3, borderRadius: "50%", background: "#fff", boxShadow: "0 0 5px 1px #ff9fd6", transform: "translate(-50%,-50%)" }} />
+                      </div>
+                    </div>
+
+                    {/* Spider — gentle dangle on its thread */}
+                    <div className="absolute" style={{ left: `${spider.x}%`, top: `${spider.y}%`, transform: "translate(-50%,0)" }}>
+                      <div className={reduceMotion ? "" : "map-spider"}>
+                        <svg width="34" height="30" viewBox="0 0 34 30" style={{ filter: "drop-shadow(0 0 3px rgba(210,150,230,0.5))" }}>
+                          <g stroke="#c98fd8" strokeWidth="1.4" fill="none" strokeLinecap="round">
+                            <path d="M17 0 L17 11" />
+                            <path d="M17 15 C 9 10, 4 13, 1 9 M17 15 C 10 14, 5 18, 2 16 M17 15 C 25 10, 30 13, 33 9 M17 15 C 24 14, 29 18, 32 16" />
+                          </g>
+                          <ellipse cx="17" cy="14.5" rx="3.2" ry="2.6" fill="#3a1f45" stroke="#c98fd8" strokeWidth="1" />
+                          <ellipse cx="17" cy="18.5" rx="4" ry="4.4" fill="#3a1f45" stroke="#c98fd8" strokeWidth="1" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* Rainbow road — a light runs along it right → left */}
+                    <div className="absolute overflow-hidden" style={{ left: `${rainbow.x}%`, top: `${rainbow.y}%`, width: `${rainbow.w}%`, height: `${rainbow.h}%`, transform: `translate(-50%,-50%) rotate(${rainbow.r}deg)`, borderRadius: 999 }}>
+                      <div className={reduceMotion ? "" : "map-rainbow-sheen"} style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, transparent 32%, rgba(255,255,255,0.85) 50%, transparent 68%)", mixBlendMode: "screen" }} />
+                    </div>
+
+                    {/* Moon — breathing halo */}
+                    <div className={reduceMotion ? "absolute" : "map-moon absolute"} style={{ left: `${moon.x}%`, top: `${moon.y}%`, width: `${moon.s}%`, aspectRatio: "1", borderRadius: "50%", background: "radial-gradient(circle, rgba(255,235,250,0.5) 0%, rgba(255,190,235,0.28) 45%, transparent 72%)", mixBlendMode: "screen" }} />
+
+                    {/* Hollywood sign — sweeping searchlight */}
+                    <div className="absolute overflow-hidden" style={{ left: `${holly.x}%`, top: `${holly.y}%`, width: `${holly.w}%`, height: `${holly.h}%`, transform: "translate(-50%,-50%)" }}>
+                      <div className={reduceMotion ? "absolute" : "map-spotlight absolute"} style={{ left: "50%", top: "50%", width: "60%", height: "260%", background: "radial-gradient(ellipse 40% 50% at 50% 50%, rgba(255,246,214,0.55) 0%, rgba(255,240,190,0.18) 40%, transparent 70%)", mixBlendMode: "screen" }} />
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Ocean — water glints twinkling on the waves */}
+              {mapReady && (
+                <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 2 }} aria-hidden>
+                  {WATER.map((w, i) => (
+                    <span key={`water-${i}`}
+                      className={reduceMotion ? "absolute rounded-full" : "map-water absolute rounded-full"}
+                      style={{
+                        left: `${isPortrait ? w.xP : w.x}%`, top: `${isPortrait ? w.yP : w.y}%`,
+                        width: i % 2 ? 2 : 3, height: i % 2 ? 2 : 3,
+                        background: "#dff2ff",
+                        boxShadow: "0 0 5px 1px rgba(200,225,255,0.85)",
+                        mixBlendMode: "screen",
+                        animationDelay: `${w.d}s`,
                       }}
                     />
                   ))}

@@ -638,12 +638,59 @@
 }
 .map-glimmer { animation: map-glimmer 3.2s ease-in-out infinite; }
 
+/* Ferris wheel — its ring of lights turns slowly */
+@keyframes map-spin { to { transform: rotate(360deg); } }
+.map-spin { animation: map-spin 16s linear infinite; }
+
+/* Spider — gentle dangle/sway on its thread */
+@keyframes map-spider {
+  0%, 100% { transform: translateY(0) rotate(-3.5deg); }
+  50%      { transform: translateY(5px) rotate(3.5deg); }
+}
+.map-spider { animation: map-spider 4.6s ease-in-out infinite; transform-origin: top center; }
+
+/* Rainbow road — a light runs along it, right → left (toward Beverly Hills) */
+@keyframes map-rainbow-sheen {
+  0%   { transform: translateX(120%); }
+  100% { transform: translateX(-120%); }
+}
+.map-rainbow-sheen { animation: map-rainbow-sheen 3.2s linear infinite; }
+
+/* Ocean — slow shimmer + water glints twinkling */
+@keyframes map-water {
+  0%, 100% { opacity: 0.06; transform: scale(0.7); }
+  50%      { opacity: 0.75; transform: scale(1.1); }
+}
+.map-water { animation: map-water 3.8s ease-in-out infinite; }
+@keyframes map-ripple {
+  0%   { background-position: 0 0; }
+  100% { background-position: 240px 0; }
+}
+.map-ripple { animation: map-ripple 11s linear infinite; }
+
+/* Moon — breathing halo */
+@keyframes map-moon {
+  0%, 100% { opacity: 0.32; transform: translate(-50%, -50%) scale(1); }
+  50%      { opacity: 0.66; transform: translate(-50%, -50%) scale(1.09); }
+}
+.map-moon { animation: map-moon 6.5s ease-in-out infinite; }
+
+/* Hollywood sign — a searchlight sweeps across it */
+@keyframes map-spotlight {
+  0%, 100% { transform: translate(-50%, -50%) rotate(-15deg); opacity: 0.45; }
+  50%      { transform: translate(-50%, -50%) rotate(15deg);  opacity: 0.8; }
+}
+.map-spotlight { animation: map-spotlight 7.5s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
-  .map-energy, .map-beacon, .map-twinkle, .map-sparkle, .map-shooting, .map-glimmer { animation: none !important; }
+  .map-energy, .map-beacon, .map-twinkle, .map-sparkle, .map-shooting, .map-glimmer,
+  .map-spin, .map-spider, .map-rainbow-sheen, .map-water, .map-ripple, .map-moon, .map-spotlight { animation: none !important; }
   .map-energy { opacity: 0 !important; }
   .map-sparkle { opacity: 0.5 !important; }
   .map-shooting { opacity: 0 !important; }
   .map-glimmer { opacity: 0.5 !important; }
+  .map-rainbow-sheen, .map-ripple { opacity: 0 !important; }
+  .map-water { opacity: 0.4 !important; }
 }
 
 /* ══ GATE: the UFO towing Truly's World through space (seamless loop) ══ */
