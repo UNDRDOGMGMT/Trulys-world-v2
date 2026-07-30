@@ -3,8 +3,9 @@ import TrulyList from '@/components/TrulyList';
 import { useMember, loadPendingProfile, type PendingProfile } from '@/contexts/MemberContext';
 
 /**
- * The gate (login). Auth is Supabase email magic-link (default) and/or OTP.
- * Pending join profile is stored so clicking the confirmation link finishes signup.
+ * Gate auth: enter the list → 6-digit email code → unlock.
+ * Profile (name/phone) is kept in localStorage + Supabase user_metadata so
+ * verify never asks them to re-type.
  *
  * LAUNCH = 12:00am ET on July 31 2026 (= 9:00pm PT July 30).
  */
@@ -63,7 +64,7 @@ const Countdown: React.FC<{ className?: string; style?: React.CSSProperties }> =
   return <div className={className} style={style}><Clock parts={[dd, hh, mm, ss]} /></div>;
 };
 
-type Mode = 'join' | 'login' | 'code' | 'wait' | 'finish';
+type Mode = 'join' | 'login' | 'code' | 'otp' | 'finish';
 
 const inputCls =
   'rounded-full border-2 border-[#f0b4e4]/55 bg-black/45 px-4 py-2 text-center font-display text-sm text-[#ffd9f2] outline-none backdrop-blur-sm placeholder:text-[#f0b4e4]/45 focus:border-[#f0b4e4]';
@@ -78,7 +79,7 @@ const Gate: React.FC = () => {
   } = useMember();
   const [pw, setPw] = useState('');
   const [denied, setDenied] = useState(false);
-  const [mode, setMode] = useState<Mode>(() => (loadPendingProfile() ? 'wait' : 'join'));
+  const [mode, setMode] = useState<Mode>(() => (loadPendingProfile() ? 'otp' : 'join'));
   const [loginEmail, setLoginEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [otpEmail, setOtpEmail] = useState(() => loadPendingProfile()?.email ?? '');
@@ -90,18 +91,33 @@ const Gate: React.FC = () => {
   const [finishPhone, setFinishPhone] = useState('');
   const grainRef = useRef<HTMLCanvasElement>(null);
 
-  // Email confirmed but no members row (e.g. link opened without pending join data)
+  // Rare fallback: session exists but name/phone never saved (old attempts)
   useEffect(() => {
-    if (needsProfile) {
-      setMode('finish');
-      const p = loadPendingProfile();
-      if (p) {
-        setFinishFirst(p.first);
-        setFinishLast(p.last);
-        setFinishPhone(p.phone);
-      }
+    if (!needsProfile) return;
+    const p = loadPendingProfile();
+    if (p?.first && p?.last) {
+      setFinishFirst(p.first);
+      setFinishLast(p.last);
+      setFinishPhone(p.phone);
+      // auto-finish when we already have the data
+      void (async () => {
+        setBusy(true);
+        const res = await completeProfile({
+          first: p.first,
+          last: p.last,
+          email: (sessionEmail || p.email).toLowerCase(),
+          phone: p.phone,
+        });
+        setBusy(false);
+        if (!res.ok) {
+          setMode('finish');
+          setErr(res.error);
+        }
+      })();
+      return;
     }
-  }, [needsProfile]);
+    setMode('finish');
+  }, [needsProfile, sessionEmail, completeProfile]);
 
   const startJoin = async (d: PendingProfile) => {
     setErr('');
@@ -115,7 +131,7 @@ const Gate: React.FC = () => {
     setPending(d);
     setOtpEmail(d.email);
     setOtp('');
-    setMode('wait');
+    setMode('otp');
   };
 
   const doLoginRequest = async (e: React.FormEvent) => {
@@ -131,7 +147,7 @@ const Gate: React.FC = () => {
     }
     setOtpEmail(loginEmail.trim().toLowerCase());
     setOtp('');
-    setMode('wait');
+    setMode('otp');
   };
 
   const doVerifyCode = async (e: React.FormEvent) => {
@@ -144,10 +160,26 @@ const Gate: React.FC = () => {
       setErr(res.error);
       return;
     }
-    // settleSession / needsProfile + unlocked handled by MemberProvider
-    if (!res.hasProfile && !loadPendingProfile()) {
+    if (!res.hasProfile) {
+      const p = loadPendingProfile() || pending;
+      if (p?.first && p?.last) {
+        setBusy(true);
+        const done = await completeProfile({
+          ...p,
+          email: otpEmail || p.email,
+        });
+        setBusy(false);
+        if (!done.ok) {
+          setFinishFirst(p.first);
+          setFinishLast(p.last);
+          setFinishPhone(p.phone);
+          setMode('finish');
+          setErr(done.error);
+        }
+        return;
+      }
       setMode('finish');
-      setErr('email confirmed — finish joining below ♥');
+      setErr('almost there — add your name to finish ♥');
     }
   };
 
@@ -234,36 +266,45 @@ const Gate: React.FC = () => {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  const waitPanel = (
-    <div className="flex flex-col items-center gap-2">
-      <p className="font-whimsy text-sm text-[#ffd9f2]">
-        {"check your email \u2665\uFE0E"}
-      </p>
+  const otpPanel = (
+    <form onSubmit={doVerifyCode} className="flex flex-col items-center gap-2">
       <p className="max-w-xs text-center font-display text-[10px] uppercase tracking-[0.2em] text-[#f0b4e4]/75">
-        open the confirmation link we sent to{' '}
+        we emailed a 6-digit code to{' '}
         <span className="text-[#ffd9f2]">{otpEmail}</span>
-        {' '}— that brings you back in
       </p>
-      <p className="mt-1 font-display text-[9px] uppercase tracking-[0.22em] text-[#f0b4e4]/50">
-        or enter a 6-digit code if your email includes one
-      </p>
-      <form onSubmit={doVerifyCode} className="mt-1 flex flex-col items-center gap-1.5">
-        <div className="flex items-center gap-2">
-          <input
-            value={otp}
-            onChange={(e) => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 8)); setErr(''); }}
-            placeholder="6-digit code"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            aria-label="Email verification code"
-            className={`w-44 tracking-[0.28em] ${inputCls}`}
-            style={inputShadow}
-          />
-          <button type="submit" disabled={busy || otp.length < 6} className={btnCls} style={inputShadow}>
-            {busy ? '…' : 'verify'}
-          </button>
-        </div>
-      </form>
+      <div className="flex items-center gap-2">
+        <input
+          value={otp}
+          onChange={(e) => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 8)); setErr(''); }}
+          placeholder="6-digit code"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          aria-label="Email verification code"
+          className={`w-44 tracking-[0.28em] ${inputCls}`}
+          style={inputShadow}
+          autoFocus
+        />
+        <button type="submit" disabled={busy || otp.length < 6} className={btnCls} style={inputShadow}>
+          {busy ? '…' : 'verify'}
+        </button>
+      </div>
+      <button
+        type="button"
+        className="font-display text-[9px] uppercase tracking-[0.28em] text-[#f0b4e4]/70 hover:text-[#ffd9f2]"
+        disabled={busy}
+        onClick={async () => {
+          setErr('');
+          setBusy(true);
+          const res = pending
+            ? await beginJoin(pending)
+            : await requestOtp(otpEmail);
+          setBusy(false);
+          if (!res.ok) setErr(res.error);
+          else setErr('');
+        }}
+      >
+        resend code
+      </button>
       <button
         type="button"
         className="font-display text-[9px] uppercase tracking-[0.28em] text-[#f0b4e4]/70 hover:text-[#ffd9f2]"
@@ -272,12 +313,12 @@ const Gate: React.FC = () => {
         back
       </button>
       <span className="min-h-4 font-whimsy text-xs text-red-300">{err}</span>
-    </div>
+    </form>
   );
 
   const finishPanel = (
     <form onSubmit={doFinishProfile} className="flex flex-col items-center gap-2">
-      <p className="font-whimsy text-sm text-[#ffd9f2]">email confirmed</p>
+      <p className="font-whimsy text-sm text-[#ffd9f2]">one last detail</p>
       <p className="max-w-xs text-center font-display text-[10px] uppercase tracking-[0.2em] text-[#f0b4e4]/75">
         finish joining as {sessionEmail || otpEmail}
       </p>
@@ -317,7 +358,7 @@ const Gate: React.FC = () => {
               placeholder="your email" type="email" inputMode="email" aria-label="Member email"
               className={`w-52 ${inputCls}`} style={inputShadow} />
             <button type="submit" disabled={busy} className={btnCls} style={inputShadow}>
-              {busy ? '…' : 'email me'}
+              {busy ? '…' : 'send code'}
             </button>
           </div>
           <span className="min-h-4 font-whimsy text-xs text-red-300">{err}</span>
@@ -345,14 +386,14 @@ const Gate: React.FC = () => {
     </div>
   );
 
-  const mainCard = mode === 'wait' ? (
+  const mainCard = mode === 'otp' ? (
     card(
       <>
-        <p className="font-whimsy text-lg text-[#f0b4e4]">{"you\u2019re on the list \u2665\uFE0E"}</p>
+        <p className="font-whimsy text-lg text-[#f0b4e4]">{"check your email \u2665\uFE0E"}</p>
         <p className="mt-1.5 font-display text-[11px] uppercase tracking-[0.28em] text-[#f0b4e4]/70">
-          one more step — confirm your email
+          enter the 6-digit code
         </p>
-        <div className="mt-4 border-t border-[#f0b4e4]/20 pt-3">{waitPanel}</div>
+        <div className="mt-4 border-t border-[#f0b4e4]/20 pt-3">{otpPanel}</div>
       </>,
     )
   ) : mode === 'finish' ? (

@@ -5,11 +5,13 @@ import { audit } from '@/lib/audit';
 import { supabase, supabaseConfigured } from '@/lib/supabase';
 
 /**
- * Truly's World membership — Supabase Auth (email magic link + OTP) + members / plays.
+ * Truly's World membership — Supabase email OTP (6-digit code) + members / plays.
  *
- * Join flow: save pending profile → signInWithOtp (redirects back to this origin) →
- * on session, upsert members from pending. Works whether the email is a
- * confirmation link (Supabase default) or a 6-digit {{ .Token }} OTP.
+ * Join: save profile to localStorage + auth user_metadata → email OTP →
+ * verifyOtp → upsert members from pending/metadata (no re-type).
+ *
+ * Emails only contain a code when the Supabase **Magic Link** template uses
+ * {{ .Token }} and NOT {{ .ConfirmationURL }} — see supabase/AUTH_SETUP.md.
  */
 
 export interface GamePlay {
@@ -68,21 +70,59 @@ type OkErr = { ok: true } | { ok: false; error: string };
 const PENDING_KEY = 'tw-pending-member';
 
 export function savePendingProfile(p: PendingProfile) {
-  try { sessionStorage.setItem(PENDING_KEY, JSON.stringify(p)); } catch { /* ignore */ }
+  try { localStorage.setItem(PENDING_KEY, JSON.stringify(p)); } catch { /* ignore */ }
 }
 
 export function loadPendingProfile(): PendingProfile | null {
   try {
-    const raw = sessionStorage.getItem(PENDING_KEY);
+    const raw = localStorage.getItem(PENDING_KEY);
     if (!raw) return null;
     const p = JSON.parse(raw) as PendingProfile;
     if (!p?.email) return null;
-    return p;
+    return {
+      first: String(p.first || ''),
+      last: String(p.last || ''),
+      email: String(p.email).trim().toLowerCase(),
+      phone: String(p.phone || ''),
+    };
   } catch { return null; }
 }
 
 export function clearPendingProfile() {
-  try { sessionStorage.removeItem(PENDING_KEY); } catch { /* ignore */ }
+  try {
+    localStorage.removeItem(PENDING_KEY);
+    sessionStorage.removeItem(PENDING_KEY); // clear legacy key
+  } catch { /* ignore */ }
+}
+
+function profileFromMetadata(user: { email?: string | null; user_metadata?: Record<string, unknown> }): PendingProfile | null {
+  const meta = user.user_metadata || {};
+  const first = String(meta.first ?? meta.first_name ?? '').trim();
+  const last = String(meta.last ?? meta.last_name ?? '').trim();
+  const phone = String(meta.phone ?? '').trim();
+  const email = String(user.email || meta.email || '').trim().toLowerCase();
+  if (!email || (!first && !last)) return null;
+  return { first, last, email, phone };
+}
+
+function resolvePending(user?: { email?: string | null; user_metadata?: Record<string, unknown> } | null): PendingProfile | null {
+  const stored = loadPendingProfile();
+  if (stored?.first && stored?.last) return stored;
+  if (user) {
+    const fromMeta = profileFromMetadata(user);
+    if (fromMeta?.first && fromMeta?.last) return fromMeta;
+  }
+  // merge: metadata email + partial stored
+  if (stored && user) {
+    const meta = profileFromMetadata(user);
+    return {
+      first: stored.first || meta?.first || '',
+      last: stored.last || meta?.last || '',
+      email: stored.email || meta?.email || String(user.email || '').toLowerCase(),
+      phone: stored.phone || meta?.phone || '',
+    };
+  }
+  return stored;
 }
 
 interface MemberState {
@@ -90,13 +130,11 @@ interface MemberState {
   isMember: boolean;
   ready: boolean;
   unlocked: boolean;
-  /** Authenticated in Supabase but no `members` row yet. */
   needsProfile: boolean;
   sessionEmail: string | null;
   requestOtp: (email: string) => Promise<OkErr>;
   verifyOtp: (email: string, token: string) => Promise<OkErr & { hasProfile?: boolean }>;
   completeProfile: (d: PendingProfile) => Promise<OkErr>;
-  /** Start join: persist pending + send magic link / OTP email. */
   beginJoin: (d: PendingProfile) => Promise<OkErr>;
   signUp: (d: PendingProfile) => Member;
   logIn: (email: string) => boolean;
@@ -130,11 +168,6 @@ const readBypass = () => {
 
 const clearLegacyGate = () => {
   try { localStorage.removeItem(GATE_KEY); } catch { /* ignore */ }
-};
-
-const redirectTo = () => {
-  if (typeof window === 'undefined') return undefined;
-  return `${window.location.origin}/`;
 };
 
 async function loadMember(userId: string): Promise<Member | null> {
@@ -207,22 +240,27 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return { ok: true };
   }, [refreshMember]);
 
-  /** After magic-link / OTP session: create members row from pending if needed. */
-  const settleSession = useCallback(async (userId: string, email?: string | null) => {
-    setSessionEmail((email || '').toLowerCase() || null);
+  const settleSession = useCallback(async (
+    userId: string,
+    user?: { email?: string | null; user_metadata?: Record<string, unknown> } | null,
+  ) => {
+    const email = (user?.email || '').toLowerCase() || null;
+    setSessionEmail(email);
     let m = await refreshMember(userId);
     if (m) {
       clearPendingProfile();
       return m;
     }
     if (finishingRef.current) return null;
-    const pending = loadPendingProfile();
-    if (!pending) return null;
+
+    const pending = resolvePending(user);
+    if (!pending?.first?.trim() || !pending?.last?.trim()) return null;
+
     finishingRef.current = true;
     try {
       const res = await upsertProfile(pending, userId);
-      if (res.ok) m = await loadMember(userId);
-      else return null;
+      if (!res.ok) return null;
+      m = await loadMember(userId);
       if (m) setMember(m);
       return m;
     } finally {
@@ -241,11 +279,7 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const { data: { session } } = await supabase.auth.getSession();
         if (cancelled) return;
         if (session?.user) {
-          await settleSession(session.user.id, session.user.email);
-          // clean PKCE / magic-link hash junk from the address bar
-          if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
-            window.history.replaceState({}, '', window.location.pathname || '/');
-          }
+          await settleSession(session.user.id, session.user);
         }
       } finally {
         if (!cancelled) setReady(true);
@@ -259,7 +293,7 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         return;
       }
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
-        void settleSession(session.user.id, session.user.email);
+        void settleSession(session.user.id, session.user);
       } else {
         void refreshMember(session.user.id);
       }
@@ -279,20 +313,43 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const { error } = await supabase.auth.signInWithOtp({
       email: e,
       options: {
-        shouldCreateUser: true,
-        emailRedirectTo: redirectTo(),
+        shouldCreateUser: false, // login path — join uses beginJoin
       },
     });
-    if (error) return { ok: false, error: error.message };
-    audit('auth.otp_requested', { email: e });
+    if (error) {
+      // friendlier when they haven't joined yet
+      const msg = /signups not allowed|user not found|unable to validate/i.test(error.message)
+        ? 'no account for that email — join the list first ♥'
+        : error.message;
+      return { ok: false, error: msg };
+    }
+    audit('auth.otp_requested', { email: e, mode: 'login' });
     return { ok: true };
   }, []);
 
   const beginJoin = useCallback(async (d: PendingProfile): Promise<OkErr> => {
+    if (!supabaseConfigured) {
+      return { ok: false, error: 'auth not configured — set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY' };
+    }
     const email = d.email.trim().toLowerCase();
-    savePendingProfile({ ...d, email });
-    return requestOtp(email);
-  }, [requestOtp]);
+    const profile = { ...d, email };
+    savePendingProfile(profile);
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true,
+        // Survives verify even if localStorage is cleared — used to auto-finish members row
+        data: {
+          first: profile.first.trim(),
+          last: profile.last.trim(),
+          phone: profile.phone,
+        },
+      },
+    });
+    if (error) return { ok: false, error: error.message };
+    audit('auth.otp_requested', { email, mode: 'join' });
+    return { ok: true };
+  }, []);
 
   const verifyOtp = useCallback(async (email: string, token: string): Promise<OkErr & { hasProfile?: boolean }> => {
     if (!supabaseConfigured) {
@@ -301,6 +358,7 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const e = email.trim().toLowerCase();
     const t = token.trim();
     if (!e || !t) return { ok: false, error: 'email and code required' };
+    if (t.length < 6) return { ok: false, error: 'enter the 6-digit code from your email' };
     const { data, error } = await supabase.auth.verifyOtp({
       email: e,
       token: t,
@@ -310,7 +368,7 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return { ok: false, error: error?.message || 'invalid code' };
     }
     audit('auth.otp_verified', { email: e });
-    const m = await settleSession(data.session.user.id, data.session.user.email);
+    const m = await settleSession(data.session.user.id, data.session.user);
     clearLegacyGate();
     return { ok: true, hasProfile: !!m };
   }, [settleSession]);
@@ -318,7 +376,7 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const completeProfile = useCallback(async (d: PendingProfile): Promise<OkErr> => {
     if (!supabaseConfigured) return { ok: false, error: 'auth not configured' };
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return { ok: false, error: 'confirm your email first — open the link we sent' };
+    if (!session?.user) return { ok: false, error: 'enter the 6-digit code from your email first' };
     savePendingProfile({ ...d, email: d.email.trim().toLowerCase() });
     return upsertProfile(d, session.user.id);
   }, [upsertProfile]);
