@@ -31,7 +31,7 @@ const Index: React.FC = () => {
     <>
       <PageMeta
         title="TRULYS WORLD — Enter the Map"
-        description="Truly Young's world is a map of Los Angeles. Every neighborhood is a case file. Shadows — out July 31, 2026."
+        description="Truly Young's world is a map of Los Angeles. Shadows out now, Dear Joshua — the EP — out August 21, and one LA show on August 8."
       />
       <motion.main
         variants={reduceMotion ? undefined : pageVariants}
@@ -103,7 +103,7 @@ const Index: React.FC = () => {
             animate={reduceMotion ? undefined : { scale: 1, rotate: -3 }}
             transition={{ delay: 0.6, duration: 0.4, type: "spring", stiffness: 200 }}
           >
-            ✦ File Opened ✦
+            ✦ Shadows — Out Now ✦
           </motion.div>
 
           <motion.div

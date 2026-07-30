@@ -77,10 +77,9 @@ const MailingList: React.FC = () => (
 );
 
 /**
- * Internal destinations that exist as routes today. A case file may point at a
- * room we haven't built yet — /shop, /press and /vault are all planned — and
- * those must render as "coming soon" rather than dropping a fan on the 404.
- * Add a path here the moment its route lands in App.tsx and the CTA lights up.
+ * Internal destinations that exist as routes today. A CTA may point at a page we
+ * haven't built yet — those render as "coming soon" rather than dropping a fan on
+ * the 404. Add a path here the moment its route lands in App.tsx and the CTA lights up.
  */
 const LIVE_ROUTES = new Set(["/", "/map", "/world", "/dear-joshua", "/cruise-night", "/do-not-disturb", "/trulys-pinball", "/trulys-map-pinball", "/sing", "/corbin-bowl", "/boutique", "/shadows", "/selects"]);
 
@@ -239,8 +238,8 @@ const LocationPage: React.FC = () => {
   if (!loc) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background grain-overlay text-center px-4">
-        <PageMeta title="Case File Not Found — TRULYS WORLD" />
-        <p className="font-display text-xl text-cream">✦ That case file is sealed ✦</p>
+        <PageMeta title="Not Found — TRULYS WORLD" />
+        <p className="font-display text-xl text-cream">✦ Nothing here ✦</p>
         <Link to="/map" className="btn-retro !text-xs">← Back to the Map</Link>
       </div>
     );
@@ -496,7 +495,7 @@ const LocationPage: React.FC = () => {
               <button
                 onClick={() => navigate("/map")}
                 className="text-pink-light hover:text-accent transition-colors text-lg leading-none"
-                aria-label="Close case file"
+                aria-label="Close"
               >
                 ✕
               </button>

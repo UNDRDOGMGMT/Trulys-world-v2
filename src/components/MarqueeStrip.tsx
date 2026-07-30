@@ -1,10 +1,9 @@
 import React from 'react';
 
 const items = [
-  '✧ Shadows — out 7.31 ✧',
-  '♥ Dear Joshua — the EP — Aug 21 ♥',
-  '✦ New case files unlocking ✦',
-  '♥ The map is alive ~ explore ♥',
+  '✧ Shadows — out now ✧',
+  '♥ Dear Joshua — the EP — out 8.21 ♥',
+  '✦ Live in LA — 8.8 — location TBA ✦',
 ];
 
 const MarqueeStrip: React.FC = () => {

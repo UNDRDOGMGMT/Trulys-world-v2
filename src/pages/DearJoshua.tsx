@@ -17,7 +17,7 @@ const DearJoshua: React.FC = () => {
     <>
       <PageMeta
         title="Dear Joshua — the EP — TRULYS WORLD"
-        description="Truly Young's debut EP Dear Joshua. Six rooms. Six confessions. Out August 21, 2026."
+        description="Truly Young's debut EP Dear Joshua — out August 21, 2026. Shadows out now."
       />
 
       <motion.main
@@ -46,7 +46,7 @@ const DearJoshua: React.FC = () => {
               DEAR JOSHUA
             </h1>
             <p className="font-whimsy text-pink-light text-sm mt-3">
-              Six rooms I built. Six confessions you weren't supposed to find.
+              The debut EP — out August 21. Shadows out now.
             </p>
           </div>
 

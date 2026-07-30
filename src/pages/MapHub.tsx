@@ -78,7 +78,7 @@ const WAYPOINTS: Waypoint[] = [
   { id: "malibu", name: "Malibu", blurb: "Downloads", x: 10, y: 30, xP: 7, yP: 21, labelBelowP: true },
   { id: "santa-monica", name: "Santa Monica", blurb: "Live / Sessions", x: 13, y: 62, xP: 11, yP: 47, labelBelowP: true },
   { id: "venice", name: "Venice", blurb: "Videos", x: 27, y: 71, xP: 15, yP: 66, labelBelowP: true },
-  { id: "the-valley", name: "The Valley", blurb: "The Lore", x: 38, y: 15, xP: 42, yP: 14 },
+  { id: "the-valley", name: "The Valley", blurb: "The EP Arcade", x: 38, y: 15, xP: 42, yP: 14 },
   { id: "laurel-canyon", name: "Laurel Canyon", blurb: "Songbook", x: 43, y: 33, xP: 47, yP: 25 },
   { id: "weho", name: "West Hollywood", blurb: "Merch", x: 34, y: 44, xP: 52, yP: 37, labelBelowP: true },
   { id: "beverly-hills", name: "Beverly Hills", blurb: "Press / EPK", x: 26, y: 48, xP: 39, yP: 35, labelBelowP: true },
@@ -88,7 +88,7 @@ const WAYPOINTS: Waypoint[] = [
   { id: "dtla", name: "Downtown", blurb: "Cruise Night", x: 88, y: 52, xP: 80, yP: 60 },
   { id: "lax", name: "LAX", blurb: "Get the Drop", x: 44, y: 78, xP: 26, yP: 78, labelBelowP: true },
   { id: "inglewood", name: "Inglewood", blurb: "Dress-Up", x: 56, y: 81, xP: 56, yP: 80, labelBelowP: true },
-  { id: "long-beach", name: "Long Beach", blurb: "Raw Archive", x: 85, y: 90, xP: 82, yP: 91, labelBelowP: true },
+  { id: "long-beach", name: "Long Beach", blurb: "B-Sides", x: 85, y: 90, xP: 82, yP: 91, labelBelowP: true },
 ];
 
 // Future cities on the horizon — Truly's world keeps expanding. These distant
@@ -435,7 +435,7 @@ const MapHub: React.FC = () => {
     <>
       <PageMeta
         title="The Map — TRULYS WORLD"
-        description="Truly Young's world is a map of Los Angeles. Six neighborhoods, six case files. Downtown, Silver Lake, Hollywood, West Hollywood, Laurel Canyon, LAX."
+        description="Truly Young's world is a map of Los Angeles. Shadows out now, Dear Joshua — the EP — out August 21, one LA show August 8. Explore every neighborhood."
       />
       <motion.div
         className="h-screen [height:100dvh] bg-background flex flex-col"
