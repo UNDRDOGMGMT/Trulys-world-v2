@@ -92,6 +92,8 @@ const Gate: React.FC = () => {
   const [finishPhone, setFinishPhone] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  /** Waitlist copy: after first password set vs returning login. */
+  const [waitlistKind, setWaitlistKind] = useState<'afterPassword' | 'returning'>('returning');
   const grainRef = useRef<HTMLCanvasElement>(null);
 
   // Rare fallback: session exists but name/phone never saved
@@ -126,13 +128,18 @@ const Gate: React.FC = () => {
     if (needsPassword) setMode('setPassword');
   }, [needsPassword]);
 
-  // Pre-launch: member + password ready but site still locked
+  // Pre-launch: member + password ready but site still locked (just finished set-password)
   useEffect(() => {
     if (!LAUNCHED && member && !needsPassword && !needsProfile && mode === 'setPassword') {
+      setWaitlistKind('afterPassword');
       setMode('waitlist');
     }
   }, [member, needsPassword, needsProfile, mode]);
 
+  const goWaitlist = (kind: 'afterPassword' | 'returning') => {
+    setWaitlistKind(kind);
+    setMode('waitlist');
+  };
   const startJoin = async (d: PendingProfile) => {
     setErr('');
     setBusy(true);
@@ -166,7 +173,7 @@ const Gate: React.FC = () => {
       return;
     }
     // unlocked via provider when LAUNCHED; else waitlist
-    if (!LAUNCHED) setMode('waitlist');
+    if (!LAUNCHED) goWaitlist('returning');
   };
 
   const doLoginOtpRequest = async () => {
@@ -229,7 +236,7 @@ const Gate: React.FC = () => {
       setMode('setPassword');
       return;
     }
-    if (!LAUNCHED) setMode('waitlist');
+    if (!LAUNCHED) goWaitlist('returning');
   };
 
   const doFinishProfile = async (e: React.FormEvent) => {
@@ -279,7 +286,7 @@ const Gate: React.FC = () => {
     }
     setNewPassword('');
     setConfirmPassword('');
-    if (!LAUNCHED) setMode('waitlist');
+    if (!LAUNCHED) goWaitlist('afterPassword');
     // else provider unlocks
   };
 
@@ -454,7 +461,9 @@ const Gate: React.FC = () => {
         SEE YA REAL SOON :)
       </p>
       <p className="max-w-xs text-center font-display text-[10px] uppercase tracking-[0.2em] text-[#f0b4e4]/55">
-        your password is saved — log in when we open
+        {waitlistKind === 'afterPassword'
+          ? 'your password is saved — log in when we open'
+          : 'log in when we open'}
       </p>
     </div>
   );
