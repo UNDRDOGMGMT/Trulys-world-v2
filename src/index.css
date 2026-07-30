@@ -620,10 +620,30 @@
 }
 .map-sparkle { animation: map-drift 8s ease-in-out infinite; }
 
+/* Shooting star — streaks across the sky briefly, then rests most of the loop */
+@keyframes map-shooting {
+  0%   { opacity: 0; transform: translate(-30px, -10px) rotate(20deg); }
+  7%   { opacity: 1; }
+  18%  { opacity: 1; }
+  28%  { opacity: 0; transform: translate(232px, 76px) rotate(20deg); }
+  100% { opacity: 0; transform: translate(232px, 76px) rotate(20deg); }
+}
+.map-shooting { animation: map-shooting 13s ease-in infinite; }
+
+/* City lights flickering on — windows / neon coming alive */
+@keyframes map-glimmer {
+  0%, 100% { opacity: 0.14; }
+  45%      { opacity: 0.92; }
+  60%      { opacity: 0.4; }
+}
+.map-glimmer { animation: map-glimmer 3.2s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
-  .map-energy, .map-beacon, .map-twinkle, .map-sparkle { animation: none !important; }
+  .map-energy, .map-beacon, .map-twinkle, .map-sparkle, .map-shooting, .map-glimmer { animation: none !important; }
   .map-energy { opacity: 0 !important; }
   .map-sparkle { opacity: 0.5 !important; }
+  .map-shooting { opacity: 0 !important; }
+  .map-glimmer { opacity: 0.5 !important; }
 }
 
 /* ══ GATE: the UFO towing Truly's World through space (seamless loop) ══ */

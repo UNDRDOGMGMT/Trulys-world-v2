@@ -109,6 +109,21 @@ const SPARKLES = [
   { x: 62, y: 55, g: "✦", d: 1.2, dur: 7.5 }, { x: 78, y: 67, g: "✧", d: 3.6, dur: 10 },
   { x: 52, y: 42, g: "♥", d: 4.6, dur: 8.6 }, { x: 33, y: 50, g: "✦", d: 6, dur: 9 },
 ];
+// Occasional shooting stars across the night sky (start %, stagger, loop length).
+const SHOOTING = [
+  { x: 16, y: 9, d: 1.5, dur: 12 }, { x: 60, y: 6, d: 6.5, dur: 15 }, { x: 40, y: 15, d: 10, dur: 18 },
+];
+// City lights flickering on — warm windows + pink neon over the cityscape. Kept to
+// the lower-center building band so they read right on both landscape + portrait art.
+const GLIMMERS = [
+  { x: 86, y: 55, c: "#ffcf7a", d: 0 }, { x: 90, y: 60, c: "#ff7bbd", d: 1.1 },
+  { x: 83, y: 62, c: "#ffcf7a", d: 2.0 }, { x: 54, y: 60, c: "#ff7bbd", d: 0.6 },
+  { x: 51, y: 63, c: "#ffcf7a", d: 1.7 }, { x: 57, y: 57, c: "#ff7bbd", d: 2.4 },
+  { x: 45, y: 51, c: "#ffcf7a", d: 0.3 }, { x: 39, y: 53, c: "#ff7bbd", d: 1.4 },
+  { x: 48, y: 47, c: "#ffcf7a", d: 2.2 }, { x: 67, y: 52, c: "#ff7bbd", d: 0.9 },
+  { x: 71, y: 55, c: "#ffcf7a", d: 1.9 }, { x: 35, y: 48, c: "#ff7bbd", d: 2.6 },
+  { x: 88, y: 50, c: "#ff7bbd", d: 1.3 }, { x: 62, y: 63, c: "#ffcf7a", d: 0.5 },
+];
 
 const pageVariants = {
   initial: { opacity: 0 },
@@ -616,6 +631,46 @@ const MapHub: React.FC = () => {
                         background: i % 2 ? "#ffd9ec" : "#ffffff",
                         boxShadow: "0 0 5px rgba(255,190,225,0.9)",
                         animationDelay: `${t.d}s`,
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Shooting stars — an occasional streak across the night sky */}
+              {mapReady && !reduceMotion && (
+                <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 2 }} aria-hidden>
+                  {SHOOTING.map((s, i) => (
+                    <span
+                      key={`shoot-${i}`}
+                      className="map-shooting absolute"
+                      style={{
+                        left: `${s.x}%`, top: `${s.y}%`,
+                        width: 92, height: 2, borderRadius: 2,
+                        background: "linear-gradient(90deg, transparent 0%, rgba(255,220,245,0.10) 45%, #ffffff 100%)",
+                        boxShadow: "0 0 7px 1px rgba(255,235,250,0.85)",
+                        transformOrigin: "right center",
+                        animationDelay: `${s.d}s`, animationDuration: `${s.dur}s`,
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* City lights flickering on — warm windows + pink neon coming alive */}
+              {mapReady && (
+                <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 3 }} aria-hidden>
+                  {GLIMMERS.map((g, i) => (
+                    <span
+                      key={`glimmer-${i}`}
+                      className={reduceMotion ? "absolute rounded-full" : "map-glimmer absolute rounded-full"}
+                      style={{
+                        left: `${g.x}%`, top: `${g.y}%`,
+                        width: i % 2 ? 3 : 4, height: i % 2 ? 3 : 4,
+                        background: g.c,
+                        boxShadow: `0 0 6px 1px ${g.c}, 0 0 13px 2px ${g.c}88`,
+                        mixBlendMode: "screen",
+                        animationDelay: `${g.d}s`,
                       }}
                     />
                   ))}
