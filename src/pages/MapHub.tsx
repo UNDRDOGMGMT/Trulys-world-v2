@@ -21,12 +21,12 @@ import { shouldReduceMedia } from "@/lib/network";
 
 // Higgsfield inked map — immersive full-bleed, geographically-truer LA.
 // Landscape (desktop) + purpose-composed vertical portrait (mobile) assets.
-// One cohesive flat top-down LA map — districts embedded in a continuous street
-// grid (real LA geography), no floating islands. Same art on web + mobile.
-const MAP_SRC = "/world/maps/la-flat.jpg";
-const MAP_W = 2400, MAP_H = 1610;
-const MAP_SRC_P = "/world/maps/la-flat.jpg";
-const MAP_W_P = 2400, MAP_H_P = 1610;
+// The detailed illustrated LA map (the look/feel that was live before the
+// redesign). Landscape (desktop) + purpose-composed portrait (mobile).
+const MAP_SRC = "/world/maps/la-map-7.jpg";
+const MAP_W = 2752, MAP_H = 1536;
+const MAP_SRC_P = "/world/maps/la-map-6-v.jpg";
+const MAP_W_P = 896, MAP_H_P = 1200;
 
 // District "cutout" radius — % of the clip-path diagonal reference box.
 const DISTRICT_R = 13.5;
@@ -36,22 +36,21 @@ const DISTRICT_R = 13.5;
 // neighboring labels don't collide (LC / WeHo / Hollywood cluster at the top).
 interface Waypoint { id: string; name: string; blurb: string; x: number; y: number; xP: number; yP: number; labelBelowP?: boolean; }
 const WAYPOINTS: Waypoint[] = [
-  // % positions on la-flat.jpg (same map on web + mobile). First-pass placement
-  // read off the art — fine-tune live with /map?place=1.
-  { id: "the-valley", name: "The Valley", blurb: "The Lore", x: 13, y: 6, xP: 13, yP: 6 },
-  { id: "laurel-canyon", name: "Laurel Canyon", blurb: "Songbook", x: 25, y: 13, xP: 25, yP: 13 },
-  { id: "hollywood", name: "Hollywood", blurb: "Music / Releases", x: 57, y: 10, xP: 57, yP: 10 },
-  { id: "silverlake", name: "Silver Lake", blurb: "The Inner Circle", x: 85, y: 15, xP: 85, yP: 15 },
-  { id: "weho", name: "West Hollywood", blurb: "Merch", x: 37, y: 27, xP: 37, yP: 27, labelBelowP: true },
-  { id: "beverly-hills", name: "Beverly Hills", blurb: "Press / EPK", x: 23, y: 34, xP: 23, yP: 34, labelBelowP: true },
-  { id: "koreatown", name: "Koreatown", blurb: "After Hours", x: 52, y: 42, xP: 52, yP: 42 },
-  { id: "dtla", name: "Downtown", blurb: "Cruise Night", x: 77, y: 42, xP: 77, yP: 42 },
-  { id: "malibu", name: "Malibu", blurb: "Downloads", x: 7, y: 60, xP: 7, yP: 60, labelBelowP: true },
-  { id: "santa-monica", name: "Santa Monica", blurb: "Live / Sessions", x: 17, y: 67, xP: 17, yP: 67, labelBelowP: true },
-  { id: "inglewood", name: "Inglewood", blurb: "Dress-Up", x: 48, y: 61, xP: 48, yP: 61, labelBelowP: true },
-  { id: "venice", name: "Venice", blurb: "Videos", x: 22, y: 80, xP: 22, yP: 80, labelBelowP: true },
-  { id: "lax", name: "LAX", blurb: "Get the Drop", x: 43, y: 82, xP: 43, yP: 82, labelBelowP: true },
-  { id: "long-beach", name: "Long Beach", blurb: "Raw Archive", x: 86, y: 82, xP: 86, yP: 82, labelBelowP: true },
+  // x/y = % on la-map-7 (landscape); xP/yP = % on la-map-6-v (portrait).
+  { id: "laurel-canyon", name: "Laurel Canyon", blurb: "Songbook", x: 52, y: 21, xP: 20, yP: 30 },
+  { id: "weho", name: "West Hollywood", blurb: "Merch", x: 37, y: 41, xP: 22, yP: 62, labelBelowP: true },
+  { id: "hollywood", name: "Hollywood", blurb: "Music / Releases", x: 50, y: 47, xP: 46, yP: 47 },
+  { id: "silverlake", name: "Silver Lake", blurb: "The Inner Circle", x: 72, y: 40, xP: 63, yP: 39 },
+  { id: "dtla", name: "Downtown", blurb: "Cruise Night", x: 88, y: 52, xP: 74, yP: 52 },
+  { id: "lax", name: "LAX", blurb: "Get the Drop", x: 49, y: 56, xP: 60, yP: 79, labelBelowP: true },
+  { id: "santa-monica", name: "Santa Monica", blurb: "Live / Sessions", x: 14, y: 45, xP: 27, yP: 80, labelBelowP: true },
+  { id: "venice", name: "Venice", blurb: "Videos", x: 20, y: 63, xP: 16, yP: 90, labelBelowP: true },
+  { id: "malibu", name: "Malibu", blurb: "Downloads", x: 5, y: 38, xP: 9, yP: 70, labelBelowP: true },
+  { id: "beverly-hills", name: "Beverly Hills", blurb: "Press / EPK", x: 31, y: 50, xP: 15, yP: 54, labelBelowP: true },
+  { id: "koreatown", name: "Koreatown", blurb: "After Hours", x: 52, y: 58, xP: 52, yP: 66, labelBelowP: true },
+  { id: "the-valley", name: "The Valley", blurb: "The Lore", x: 33, y: 20, xP: 50, yP: 14 },
+  { id: "inglewood", name: "Inglewood", blurb: "Dress-Up", x: 57, y: 70, xP: 46, yP: 72, labelBelowP: true },
+  { id: "long-beach", name: "Long Beach", blurb: "Raw Archive", x: 84, y: 78, xP: 62, yP: 88, labelBelowP: true },
 ];
 
 // Future cities on the horizon — Truly's world keeps expanding. These distant
@@ -317,10 +316,10 @@ const MapHub: React.FC = () => {
   const resetView = () => { stopMomentum(); frameTo(50, 48, Z_START, true); };
   // Preset cameras — glide to a region of the world.
   const CAMS: { label: string; fx: number; fy: number; z: number }[] = [
-    { label: "Wide", fx: 50, fy: 50, z: 1 },
-    { label: "Hills", fx: 45, fy: 15, z: 1.7 },
-    { label: "Coast", fx: 18, fy: 70, z: 1.7 },
-    { label: "Downtown", fx: 77, fy: 44, z: 1.8 },
+    { label: "Wide", fx: 50, fy: 48, z: 1 },
+    { label: "Coast", fx: 15, fy: 52, z: 1.7 },
+    { label: "Hills", fx: 46, fy: 24, z: 1.7 },
+    { label: "Downtown", fx: 85, fy: 55, z: 1.8 },
   ];
 
   // Start focused near the heart of the map; re-center when the box resizes.
