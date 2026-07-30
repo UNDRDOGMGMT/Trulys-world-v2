@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { audit } from '@/lib/audit';
 
 interface UnlockState {
   heartsCollected: Set<string>;
@@ -28,8 +29,8 @@ export const UnlockProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch { return new Set(); }
   });
 
-  const [soundOn, setSoundOn] = useState(() => localStorage.getItem('ty-sound') === 'true');
-  const [reduceMotion, setReduceMotion] = useState(() => localStorage.getItem('ty-motion') === 'true');
+  const [soundOn, setSoundOnState] = useState(() => localStorage.getItem('ty-sound') === 'true');
+  const [reduceMotion, setReduceMotionState] = useState(() => localStorage.getItem('ty-motion') === 'true');
 
   useEffect(() => {
     localStorage.setItem('ty-hearts', JSON.stringify([...heartsCollected]));
@@ -40,10 +41,22 @@ export const UnlockProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const collectHeart = useCallback((id: string) => {
     setHeartsCollected(prev => {
+      if (prev.has(id)) return prev;
       const next = new Set(prev);
       next.add(id);
+      audit('heart.collect', { heart_id: id, total: next.size });
       return next;
     });
+  }, []);
+
+  const setSoundOn = useCallback((v: boolean) => {
+    setSoundOnState(v);
+    audit('prefs.sound', { on: v });
+  }, []);
+
+  const setReduceMotion = useCallback((v: boolean) => {
+    setReduceMotionState(v);
+    audit('prefs.motion', { reduce: v });
   }, []);
 
   const requiredHearts = 3;

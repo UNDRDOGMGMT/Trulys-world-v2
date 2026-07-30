@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMember } from '@/contexts/MemberContext';
-import { GATE_KEY } from '@/lib/gate';
+import { BYPASS_KEY, GATE_KEY } from '@/lib/gate';
 
 /**
  * Session control. Members get a points chip (→ dashboard) + Log out. Anyone
@@ -13,7 +13,11 @@ const SessionChip: React.FC<{ className?: string; style?: React.CSSProperties }>
   const { member, logOut } = useMember();
 
   const reGate = () => {
-    try { localStorage.removeItem(GATE_KEY); } catch { /* ignore */ }
+    try {
+      localStorage.removeItem(GATE_KEY);
+      sessionStorage.removeItem(BYPASS_KEY);
+    } catch { /* ignore */ }
+    logOut();
     window.location.assign('/');
   };
 

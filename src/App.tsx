@@ -76,7 +76,7 @@ class RouteErrorBoundary extends React.Component<
 
 // Full-bleed routes (the Cruise Night game) opt out of the site chrome so the
 // canvas owns the viewport — no starfield, sparkle overlays, or persistent player.
-import { GATE_KEY } from '@/lib/gate';
+import { useMember } from '@/contexts/MemberContext';
 
 const BARE_PATHS = ["/cruise-night", "/do-not-disturb", "/dear-joshua-game", "/fear-the-reaper", "/forever-game", "/save-truly", "/boy-game", "/boyfriend-island", "/trulys-pinball", "/trulys-map-pinball", "/sing", "/boutique", "/corbin-bowl", "/corbin-bowl/inside", "/corbin-bowl/arcade", "/world", "/shadows", "/selects"];
 
@@ -135,17 +135,17 @@ const AnimatedRoutes = () => {
   );
 };
 
-// Account-gated: you must be a Truly's World member (or use the backstage code)
-// to enter. MemberProvider wraps BOTH the gate and the site so the gate can
-// create accounts and the site can read them.
+// Account-gated: Supabase session + member profile (or server-validated bypass).
+// MemberProvider wraps BOTH the gate and the site so the gate can create accounts.
 const Gated = () => {
-  const [unlocked, setUnlocked] = React.useState(() => {
-    try { return localStorage.getItem(GATE_KEY) === '1'; } catch { return false; }
-  });
+  const { ready, unlocked } = useMember();
+  if (!ready) {
+    return <div className="min-h-screen bg-[#05010a]" />;
+  }
   if (!unlocked) {
     return (
       <Suspense fallback={<div className="min-h-screen bg-[#05010a]" />}>
-        <Gate onUnlock={() => setUnlocked(true)} />
+        <Gate />
       </Suspense>
     );
   }

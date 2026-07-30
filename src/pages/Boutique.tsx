@@ -8,7 +8,7 @@ import {
   shopifyConfigured, fetchProducts, createCheckout,
   type Product, type Variant, type ZoneId,
 } from "@/lib/shopify";
-
+import { audit } from "@/lib/audit";
 /**
  * TRULY'S WORLD — the West Hollywood boutique.
  *
@@ -177,12 +177,24 @@ const Boutique: React.FC = () => {
     setBag((b) => b.flatMap((l) => (l.key === key ? (l.qty + d <= 0 ? [] : [{ ...l, qty: l.qty + d }]) : [l])));
 
   const checkout = async () => {
-    if (!live) { setReserve(true); return; }   // pre-launch: take the email instead
+    if (!live) {
+      audit('boutique.reserve', {
+        lines: bag.map((l) => ({ variantId: l.variantId, qty: l.qty, name: l.name })),
+        subtotal: bag.reduce((s, l) => s + l.price * l.qty, 0),
+      });
+      setReserve(true);
+      return;
+    }
     setBusy(true);
     try {
       const url = await createCheckout(bag.map((l) => ({ variantId: l.variantId, qty: l.qty })));
+      audit('boutique.checkout', {
+        lines: bag.map((l) => ({ variantId: l.variantId, qty: l.qty, name: l.name })),
+        ok: true,
+      });
       window.location.href = url;
     } catch {
+      audit('boutique.checkout', { ok: false });
       setBusy(false);
       say("checkout hiccuped — try again");
     }
