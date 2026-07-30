@@ -34,6 +34,33 @@ const MAP_W_P = 1280, MAP_H_P = 2293;
 // District "cutout" radius — % of the clip-path diagonal reference box.
 const DISTRICT_R = 13.5;
 
+// Heart-shaped reveal for the hover "spotlight" cutout. Template heart in a 100-wide
+// box (centered on its centroid ~50,44); heartClip() scales+translates it into the
+// element's px space so the map is clipped to a heart around each waypoint.
+const HEART_PTS: (string | number)[][] = [
+  ["M", 50, 88],
+  ["C", 12, 60, 0, 40, 0, 25],
+  ["C", 0, 10, 12, 0, 25, 0],
+  ["C", 38, 0, 47, 8, 50, 18],
+  ["C", 53, 8, 62, 0, 75, 0],
+  ["C", 88, 0, 100, 10, 100, 25],
+  ["C", 100, 40, 88, 60, 50, 88],
+  ["Z"],
+];
+const heartClip = (cx: number, cy: number, r: number) => {
+  const s = r / 50; // template half-width is 50 units → r px
+  const tx = (n: number) => (cx + (n - 50) * s).toFixed(1);
+  const ty = (n: number) => (cy + (n - 44) * s).toFixed(1);
+  const d = HEART_PTS.map((cmd) => {
+    const c = cmd[0] as string;
+    if (c === "Z") return "Z";
+    const pairs: string[] = [];
+    for (let i = 1; i < cmd.length; i += 2) pairs.push(`${tx(cmd[i] as number)} ${ty(cmd[i + 1] as number)}`);
+    return c + pairs.join(" ");
+  }).join(" ");
+  return `path('${d}')`;
+};
+
 // The launch neighborhoods. x/y = % on the landscape map; xP/yP = % on the portrait map.
 // labelBelowP: on the tighter portrait map, hang the label under the pin so
 // neighboring labels don't collide (LC / WeHo / Hollywood cluster at the top).
@@ -712,7 +739,11 @@ const MapHub: React.FC = () => {
                       draggable={false}
                       className="absolute inset-0 w-full h-full object-cover select-none"
                       style={{
-                        clipPath: `circle(${DISTRICT_R}% at ${x}% ${y}%)`,
+                        clipPath: heartClip(
+                          (x / 100) * boxW,
+                          (y / 100) * boxH,
+                          (DISTRICT_R / 100) * (Math.hypot(boxW, boxH) / Math.SQRT2),
+                        ),
                         transform: on && !reduceMotion ? "scale(1.11)" : "scale(1)",
                         transformOrigin: `${x}% ${y}%`,
                         filter: on ? "brightness(1.5) saturate(1.4) contrast(1.05)" : "brightness(1) saturate(1)",
