@@ -18,6 +18,7 @@ import { useIsPortrait } from "@/hooks/useIsPortrait";
 import { playClick, startAmbient, stopAmbient } from "@/lib/audio";
 import { trackEvent } from "@/lib/analytics";
 import { shouldReduceMedia } from "@/lib/network";
+import { hlsUrlFromMp4 } from "@/lib/videoSrc";
 
 // Higgsfield inked map — immersive full-bleed, geographically-truer LA.
 // Landscape (desktop) + purpose-composed vertical portrait (mobile) assets.
@@ -343,18 +344,18 @@ const MapHub: React.FC = () => {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Warm the travel clip on hover/touch intent via <link rel="prefetch"> so the
-  // browser can cache without a full fetch() into memory. Skip on Save-Data / 2g.
+  // Warm the travel HLS master on hover/touch intent via <link rel="prefetch">.
+  // Skip on Save-Data / 2g.
   const prefetchClip = (id: string) => {
     if (prefetched.current.has(id) || shouldReduceMedia()) return;
     prefetched.current.add(id);
     const key = ASSET_KEY[id];
     if (!key) return; // no travel clip for this hood — nothing to warm
-    const href = `/world/anim/${key}-wide.mp4`;
+    const href = hlsUrlFromMp4(`/world/anim/${key}-wide.mp4`);
     if (document.querySelector(`link[data-tw-prefetch="${href}"]`)) return;
     const link = document.createElement("link");
     link.rel = "prefetch";
-    link.as = "video";
+    link.as = "fetch";
     link.href = href;
     link.setAttribute("data-tw-prefetch", href);
     document.head.appendChild(link);
