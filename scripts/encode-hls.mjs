@@ -129,6 +129,7 @@ function encodeOne(src) {
     "-hls_flags", "independent_segments",
     "-master_pl_name", "master.m3u8",
     "-var_stream_map", "v:0 v:1",
+    "-hls_fmp4_init_filename", path.join(dest, "v%v", "init.mp4"),
     "-hls_segment_filename", path.join(dest, "v%v", "seg_%03d.m4s"),
     path.join(dest, "v%v", "prog.m3u8"),
   ];
@@ -142,11 +143,18 @@ function encodeOne(src) {
   if (!fs.existsSync(master)) {
     throw new Error(`master.m3u8 missing after encode: ${base}`);
   }
-  // ffmpeg on Windows emits backslash paths in playlists — browsers need /.
+  // ffmpeg on Windows emits backslash / absolute paths in playlists — browsers need relative /.
   for (const f of walkM3u8(dest)) {
-    const text = fs.readFileSync(f, "utf8");
-    const fixed = text.replace(/\\/g, "/");
-    if (fixed !== text) fs.writeFileSync(f, fixed);
+    let text = fs.readFileSync(f, "utf8");
+    text = text.replace(/\\/g, "/");
+    // Collapse absolute EXT-X-MAP URIs to basename (e.g. init.mp4 next to prog.m3u8)
+    text = text.replace(/#EXT-X-MAP:URI="[^"]*[\/]([^"\/]+)"/g, '#EXT-X-MAP:URI="$1"');
+    fs.writeFileSync(f, text);
+  }
+  const init0 = path.join(dest, "v0", "init.mp4");
+  const init1 = path.join(dest, "v1", "init.mp4");
+  if (!fs.existsSync(init0) || !fs.existsSync(init1)) {
+    throw new Error(`init.mp4 missing after encode: ${base}`);
   }
   return { base, skipped: false };
 }
