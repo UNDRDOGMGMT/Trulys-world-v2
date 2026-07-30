@@ -34,6 +34,7 @@ const CorbinArcade = React.lazy(() => import("./pages/CorbinArcade"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 const Gate = React.lazy(() => import("./pages/Gate"));
 const Account = React.lazy(() => import("./pages/Account"));
+import GlobeGate from "./pages/GlobeGate";
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -104,7 +105,7 @@ const AnimatedRoutes = () => {
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<Index />} />
           <Route path="/map" element={<MapHub />} />
-          <Route path="/world" element={<World />} />
+          <Route path="/world" element={<GlobeGate><World /></GlobeGate>} />
           <Route path="/location/:id" element={<LocationPage />} />
           <Route path="/dear-joshua" element={<DearJoshua />} />
           <Route path="/cruise-night" element={<CruiseNight />} />
