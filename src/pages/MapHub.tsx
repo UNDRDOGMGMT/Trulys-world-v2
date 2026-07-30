@@ -109,10 +109,6 @@ const SPARKLES = [
   { x: 62, y: 55, g: "✦", d: 1.2, dur: 7.5 }, { x: 78, y: 67, g: "✧", d: 3.6, dur: 10 },
   { x: 52, y: 42, g: "♥", d: 4.6, dur: 8.6 }, { x: 33, y: 50, g: "✦", d: 6, dur: 9 },
 ];
-// Occasional shooting stars across the night sky (start %, stagger, loop length).
-const SHOOTING = [
-  { x: 16, y: 9, d: 1.5, dur: 12 }, { x: 60, y: 6, d: 6.5, dur: 15 }, { x: 40, y: 15, d: 10, dur: 18 },
-];
 // City lights flickering on — warm windows + pink neon on the buildings. x/y =
 // landscape (la-map-10), xP/yP = portrait (la-map-portrait-2), so they sit on the
 // towers on both maps. Clustered on Downtown, Koreatown, Silver Lake + WeHo/Holly.
@@ -653,26 +649,6 @@ const MapHub: React.FC = () => {
                         background: i % 2 ? "#ffd9ec" : "#ffffff",
                         boxShadow: "0 0 5px rgba(255,190,225,0.9)",
                         animationDelay: `${t.d}s`,
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* Shooting stars — an occasional streak across the night sky */}
-              {mapReady && !reduceMotion && (
-                <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 2 }} aria-hidden>
-                  {SHOOTING.map((s, i) => (
-                    <span
-                      key={`shoot-${i}`}
-                      className="map-shooting absolute"
-                      style={{
-                        left: `${s.x}%`, top: `${s.y}%`,
-                        width: 92, height: 2, borderRadius: 2,
-                        background: "linear-gradient(90deg, transparent 0%, rgba(255,220,245,0.10) 45%, #ffffff 100%)",
-                        boxShadow: "0 0 7px 1px rgba(255,235,250,0.85)",
-                        transformOrigin: "right center",
-                        animationDelay: `${s.d}s`, animationDuration: `${s.dur}s`,
                       }}
                     />
                   ))}
