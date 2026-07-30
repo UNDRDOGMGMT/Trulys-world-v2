@@ -537,8 +537,11 @@ const MapHub: React.FC = () => {
             ref={stageRef}
             className="relative"
             style={{
-              width: `max(100cqw, calc(100cqh * ${mapW} / ${mapH}))`,
-              height: `max(100cqh, calc(100cqw * ${mapH} / ${mapW}))`,
+              // Size the stage from the SAME measured cover dims the pan/clamp math
+              // uses (boxW/boxH). Container-query units drifted from these on mobile,
+              // which let the map pan off into empty gutters and broke drag/pinch.
+              width: `${boxW}px`,
+              height: `${boxH}px`,
               x: panX,
               y: panY,
               scale: zoom,
