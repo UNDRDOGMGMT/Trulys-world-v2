@@ -27,9 +27,8 @@ const TrulyList: React.FC<{
   /** Extra content rendered inside the card (e.g. gate login / passcode links). */
   footer?: React.ReactNode;
   onDone?: (d: { first: string; last: string; email: string; phone: string }) => void;
-  // fires the instant the form validates (before the Laylo POST) so account
-  // creation / site entry never depends on the capture API being reachable
-  onData?: (d: { first: string; last: string; email: string; phone: string }) => void;
+  // Called after validation, before Laylo. May be async; throw/reject to keep the form.
+  onData?: (d: { first: string; last: string; email: string; phone: string }) => void | Promise<void>;
 }> = ({ tone = 'dark', logo = false, wide = false, footer, onDone, onData }) => {
   const [first, setFirst] = useState('');
   const [last, setLast] = useState('');
@@ -46,11 +45,15 @@ const TrulyList: React.FC<{
     if (first.trim().length < 1 || last.trim().length < 1) return setErr('first and last name, please.');
     if (!EMAIL_RE.test(email.trim())) return setErr('need a real email.');
     if (digits(phone).length < 10) return setErr('need a full phone number.');
-    // hand off validated data immediately — entry/account creation is decoupled
-    // from the Laylo capture below, which is best-effort marketing.
     const captured = { first: first.trim(), last: last.trim(), email: email.trim(), phone: digits(phone) };
-    onData?.(captured);
     setState('sending'); setMsg('');
+    // Auth / account handoff first — if this fails we keep the form (don't show "you're on the list").
+    try {
+      await Promise.resolve(onData?.(captured));
+    } catch (err) {
+      setErr(err instanceof Error ? err.message : 'something broke');
+      return;
+    }
     try {
       const r = await fetch('/api/subscribe', {
         method: 'POST',
@@ -64,6 +67,7 @@ const TrulyList: React.FC<{
       if (!r.ok || !data.ok) throw new Error(data.error || 'something broke');
       setState('done'); onDone?.({ first: first.trim(), last: last.trim(), email: email.trim(), phone: digits(phone) });
     } catch (err) {
+      // List capture is best-effort once auth already succeeded (Gate will have moved on).
       setErr(err instanceof Error ? err.message : 'something broke');
     }
   };

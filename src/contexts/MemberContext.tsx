@@ -67,6 +67,18 @@ export function tierFor(points: number): { tier: Tier; next: Tier | null; toNext
 
 type OkErr = { ok: true } | { ok: false; error: string };
 
+/** Map Supabase auth errors to gate-friendly copy. */
+export function formatAuthError(message: string): string {
+  const m = (message || '').toLowerCase();
+  if (m.includes('rate limit')) {
+    return 'too many emails just now — wait a few minutes, or enter a code you already received ♥';
+  }
+  if (/signups not allowed|user not found|unable to validate/i.test(message)) {
+    return 'no account for that email — join the list first ♥';
+  }
+  return message || 'something broke';
+}
+
 const PENDING_KEY = 'tw-pending-member';
 
 export function savePendingProfile(p: PendingProfile) {
@@ -316,13 +328,7 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         shouldCreateUser: false, // login path — join uses beginJoin
       },
     });
-    if (error) {
-      // friendlier when they haven't joined yet
-      const msg = /signups not allowed|user not found|unable to validate/i.test(error.message)
-        ? 'no account for that email — join the list first ♥'
-        : error.message;
-      return { ok: false, error: msg };
-    }
+    if (error) return { ok: false, error: formatAuthError(error.message) };
     audit('auth.otp_requested', { email: e, mode: 'login' });
     return { ok: true };
   }, []);
@@ -346,7 +352,7 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         },
       },
     });
-    if (error) return { ok: false, error: error.message };
+    if (error) return { ok: false, error: formatAuthError(error.message) };
     audit('auth.otp_requested', { email, mode: 'join' });
     return { ok: true };
   }, []);

@@ -124,12 +124,19 @@ const Gate: React.FC = () => {
     setBusy(true);
     const res = await beginJoin(d);
     setBusy(false);
-    if (!res.ok) {
-      setErr(res.error);
-      return;
-    }
     setPending(d);
     setOtpEmail(d.email);
+    if (!res.ok) {
+      // Rate limit: still open OTP panel so they can type a code from an earlier email.
+      if (/rate limit|too many emails/i.test(res.error)) {
+        setOtp('');
+        setMode('otp');
+        setErr(res.error);
+        return;
+      }
+      setErr(res.error);
+      throw new Error(res.error); // TrulyList keeps the form
+    }
     setOtp('');
     setMode('otp');
   };
@@ -141,11 +148,18 @@ const Gate: React.FC = () => {
     setPending(null);
     const res = await requestOtp(loginEmail);
     setBusy(false);
+    const email = loginEmail.trim().toLowerCase();
+    setOtpEmail(email);
     if (!res.ok) {
+      if (/rate limit|too many emails/i.test(res.error)) {
+        setOtp('');
+        setMode('otp');
+        setErr(res.error);
+        return;
+      }
       setErr(res.error);
       return;
     }
-    setOtpEmail(loginEmail.trim().toLowerCase());
     setOtp('');
     setMode('otp');
   };

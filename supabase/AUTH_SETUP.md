@@ -27,7 +27,16 @@ To brand the From line:
 
 Until SMTP is set, the body still says Truly's World; only the From header stays Supabase.
 
-## 3. URL config
+## 4. Email rate limits
 
-Site URL + Redirect URLs should include your preview/prod origins. OTP entry
-does not need a redirect, but keep them correct for safety.
+Supabase’s built-in mailer is strict (easy to hit while testing). You’ll see
+`email rate limit exceeded`.
+
+What to do:
+1. Wait ~10–60 minutes, then use **resend code** (or join again)
+2. If you already received a code earlier, enter it on the gate — don’t keep
+   requesting new emails
+3. For production / heavy testing, add **custom SMTP** (higher limits + From:
+   Truly's World)
+
+Do **not** spam join — each attempt burns the shared email quota.
