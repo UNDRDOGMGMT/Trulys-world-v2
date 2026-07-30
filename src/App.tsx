@@ -7,7 +7,6 @@ import { UnlockProvider } from "@/contexts/UnlockContext";
 import { MemberProvider } from "@/contexts/MemberContext";
 import { TravelProvider } from "@/contexts/TravelContext";
 import Starfield from "@/components/Starfield";
-import PersistentPlayer from "@/components/PersistentPlayer";
 
 // Code-split pages — each loads as its own chunk
 const Index = React.lazy(() => import("./pages/Index"));
@@ -92,7 +91,6 @@ const SiteShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <div className="sparkle-overlay-2" />
       <div className="sparkle-overlay-3" />
       {children}
-      <PersistentPlayer />
     </div>
   );
 };

@@ -1,0 +1,150 @@
+{
+  "world": {
+    "w": 3600,
+    "h": 2400
+  },
+  "islands": [
+    {
+      "id": "hills",
+      "fx": 0.44,
+      "fy": 0.15,
+      "wfrac": 0.48,
+      "natW": 1500,
+      "natH": 854
+    },
+    {
+      "id": "westside",
+      "fx": 0.46,
+      "fy": 0.43,
+      "wfrac": 0.4,
+      "natW": 1500,
+      "natH": 823
+    },
+    {
+      "id": "coast",
+      "fx": 0.22,
+      "fy": 0.68,
+      "wfrac": 0.42,
+      "natW": 1500,
+      "natH": 890
+    },
+    {
+      "id": "downtown",
+      "fx": 0.85,
+      "fy": 0.4,
+      "wfrac": 0.3,
+      "natW": 1500,
+      "natH": 1151
+    },
+    {
+      "id": "inglewood",
+      "fx": 0.63,
+      "fy": 0.67,
+      "wfrac": 0.27,
+      "natW": 1500,
+      "natH": 1169
+    },
+    {
+      "id": "lax",
+      "fx": 0.51,
+      "fy": 0.87,
+      "wfrac": 0.24,
+      "natW": 1500,
+      "natH": 1160
+    },
+    {
+      "id": "longbeach",
+      "fx": 0.85,
+      "fy": 0.85,
+      "wfrac": 0.24,
+      "natW": 1500,
+      "natH": 984
+    }
+  ],
+  "pins": [
+    {
+      "id": "the-valley",
+      "island": "hills",
+      "fx": 0.344,
+      "fy": -0.0058
+    },
+    {
+      "id": "laurel-canyon",
+      "island": "hills",
+      "fx": 0.464,
+      "fy": 0.0352
+    },
+    {
+      "id": "hollywood",
+      "island": "hills",
+      "fx": 0.44,
+      "fy": 0.1828
+    },
+    {
+      "id": "west-hollywood",
+      "island": "hills",
+      "fx": 0.2768,
+      "fy": 0.191
+    },
+    {
+      "id": "silverlake",
+      "island": "hills",
+      "fx": 0.608,
+      "fy": 0.1336
+    },
+    {
+      "id": "beverly-hills",
+      "island": "westside",
+      "fx": 0.372,
+      "fy": 0.4168
+    },
+    {
+      "id": "koreatown",
+      "island": "westside",
+      "fx": 0.548,
+      "fy": 0.4498
+    },
+    {
+      "id": "malibu",
+      "island": "coast",
+      "fx": 0.052,
+      "fy": 0.6204
+    },
+    {
+      "id": "santa-monica",
+      "island": "coast",
+      "fx": 0.1948,
+      "fy": 0.6653
+    },
+    {
+      "id": "venice",
+      "island": "coast",
+      "fx": 0.2872,
+      "fy": 0.74
+    },
+    {
+      "id": "dtla",
+      "island": "downtown",
+      "fx": 0.85,
+      "fy": 0.3933
+    },
+    {
+      "id": "inglewood",
+      "island": "inglewood",
+      "fx": 0.63,
+      "fy": 0.6544
+    },
+    {
+      "id": "lax",
+      "island": "lax",
+      "fx": 0.51,
+      "fy": 0.87
+    },
+    {
+      "id": "long-beach",
+      "island": "longbeach",
+      "fx": 0.85,
+      "fy": 0.8547
+    }
+  ]
+}
