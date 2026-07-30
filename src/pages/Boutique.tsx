@@ -234,6 +234,22 @@ const Boutique: React.FC = () => {
 
         {/* ---------- street: the door ---------- */}
         {view === "street" && (
+          <>
+          {/* locked record store next door — Imposter Sindrome Records, opening soon */}
+          <button
+            onClick={() => say("Imposter Sindrome Records — opening soon ♥")}
+            aria-label="Imposter Sindrome Records — opening soon"
+            className="absolute group z-20"
+            style={isP ? { left: "50%", top: "11%", width: "50%", height: "46%" } : { left: "60%", top: "7%", width: "40%", height: "70%" }}
+          >
+            <span className="absolute inset-[7%] rounded-2xl border-2 border-transparent opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity duration-300"
+                  style={{ borderColor: "#b07bff", boxShadow: "0 0 34px #b07bff55, inset 0 0 40px #b07bff22" }} />
+            <span className="absolute left-1/2 -translate-x-1/2 bottom-[10%] flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity pointer-events-none
+                             font-mono text-[9px] tracking-[0.24em] uppercase text-[#e6dcf5] bg-black/55 rounded-full px-3 py-1.5 backdrop-blur-sm"
+                  style={{ textShadow: "0 2px 8px rgba(6,3,12,.95)" }}>
+              🔒 opening soon
+            </span>
+          </button>
           <motion.div className="absolute inset-0 flex flex-col items-center justify-end pb-[9vh] px-6 text-center"
             initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.7 }}>
             <div className="absolute inset-x-0 bottom-0 h-[62%] pointer-events-none"
@@ -256,6 +272,7 @@ const Boutique: React.FC = () => {
             </button>
             </div>
           </motion.div>
+          </>
         )}
 
         {/* ---------- room: pick a corner ---------- */}
