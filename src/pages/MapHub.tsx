@@ -141,10 +141,10 @@ const GLIMMERS = [
 // Water glints twinkling on the ocean. x/y = landscape ocean (bottom-left swirl),
 // xP/yP = portrait ocean (left side). Cool white so they read as light on water.
 const WATER = [
-  { x: 8, y: 70, xP: 6, yP: 46, d: 0 }, { x: 14, y: 78, xP: 10, yP: 55, d: 1.3 },
-  { x: 20, y: 72, xP: 5, yP: 64, d: 2.1 }, { x: 11, y: 86, xP: 12, yP: 72, d: 0.7 },
-  { x: 6, y: 80, xP: 4, yP: 80, d: 1.8 }, { x: 18, y: 84, xP: 9, yP: 88, d: 2.6 },
-  { x: 23, y: 66, xP: 14, yP: 50, d: 1.0 }, { x: 15, y: 90, xP: 7, yP: 92, d: 0.4 },
+  { x: 5, y: 74, xP: 6, yP: 44, d: 0 }, { x: 8, y: 82, xP: 4, yP: 56, d: 1.3 },
+  { x: 4, y: 88, xP: 8, yP: 66, d: 2.1 }, { x: 11, y: 90, xP: 5, yP: 74, d: 0.7 },
+  { x: 7, y: 78, xP: 3, yP: 82, d: 1.8 }, { x: 3, y: 84, xP: 9, yP: 88, d: 2.6 },
+  { x: 9, y: 86, xP: 4, yP: 50, d: 1.0 }, { x: 13, y: 92, xP: 7, yP: 92, d: 0.4 },
 ];
 
 const pageVariants = {
@@ -699,29 +699,15 @@ const MapHub: React.FC = () => {
                 </div>
               )}
 
-              {/* ── Placed FX: ferris wheel, spider, rainbow flow, ocean, moon, spotlight ── */}
+              {/* ── Placed FX: spider, ocean, moon, Hollywood spotlight ── */}
               {mapReady && (() => {
                 const P = isPortrait;
                 // feature centers (% of the map box) per orientation
-                const ferris = P ? { x: 13, y: 48, s: 7 } : { x: 13, y: 60, s: 6 };
                 const spider = P ? { x: 14, y: 6 } : { x: 14, y: 8 };
-                const rainbow = P ? { x: 50, y: 43, w: 18, h: 3.2, r: -20 } : { x: 40, y: 49, w: 16, h: 2.8, r: -26 };
                 const moon = P ? { x: 67, y: 5, s: 7 } : { x: 60, y: 6, s: 6 };
                 const holly = P ? { x: 71, y: 26, w: 24, h: 12 } : { x: 53, y: 25, w: 20, h: 9 };
-                const WHEEL_DOTS = 10;
                 return (
                   <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 4 }} aria-hidden>
-                    {/* Ferris wheel — rotating ring of lights */}
-                    <div className="absolute" style={{ left: `${ferris.x}%`, top: `${ferris.y}%`, width: `${ferris.s}%`, aspectRatio: "1", transform: "translate(-50%,-50%)" }}>
-                      <div className={reduceMotion ? "" : "map-spin"} style={{ position: "absolute", inset: 0 }}>
-                        {Array.from({ length: WHEEL_DOTS }).map((_, i) => {
-                          const a = (i / WHEEL_DOTS) * Math.PI * 2;
-                          return <span key={i} style={{ position: "absolute", left: `${50 + Math.cos(a) * 47}%`, top: `${50 + Math.sin(a) * 47}%`, width: 3, height: 3, borderRadius: "50%", background: "#ffe3f1", boxShadow: "0 0 5px 1px #ff9fd6", transform: "translate(-50%,-50%)", mixBlendMode: "screen" }} />;
-                        })}
-                        <span style={{ position: "absolute", left: "50%", top: "50%", width: 3, height: 3, borderRadius: "50%", background: "#fff", boxShadow: "0 0 5px 1px #ff9fd6", transform: "translate(-50%,-50%)" }} />
-                      </div>
-                    </div>
-
                     {/* Spider — gentle dangle on its thread */}
                     <div className="absolute" style={{ left: `${spider.x}%`, top: `${spider.y}%`, transform: "translate(-50%,0)" }}>
                       <div className={reduceMotion ? "" : "map-spider"}>
@@ -734,11 +720,6 @@ const MapHub: React.FC = () => {
                           <ellipse cx="17" cy="18.5" rx="4" ry="4.4" fill="#3a1f45" stroke="#c98fd8" strokeWidth="1" />
                         </svg>
                       </div>
-                    </div>
-
-                    {/* Rainbow road — a light runs along it right → left */}
-                    <div className="absolute overflow-hidden" style={{ left: `${rainbow.x}%`, top: `${rainbow.y}%`, width: `${rainbow.w}%`, height: `${rainbow.h}%`, transform: `translate(-50%,-50%) rotate(${rainbow.r}deg)`, borderRadius: 999 }}>
-                      <div className={reduceMotion ? "" : "map-rainbow-sheen"} style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, transparent 32%, rgba(255,255,255,0.85) 50%, transparent 68%)", mixBlendMode: "screen" }} />
                     </div>
 
                     {/* Moon — breathing halo */}
