@@ -93,6 +93,12 @@ export default async function handler(req, res) {
     return res.status(429).json({ ok: false, error: 'too many tries - wait a bit' });
   }
 
+  // reject oversized bodies early — this endpoint only ever needs a few small
+  // strings, so a multi-KB POST is either a mistake or an abuse attempt.
+  if (Number(req.headers['content-length'] || 0) > 10_000) {
+    return res.status(413).json({ ok: false, error: 'too large' });
+  }
+
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
   const name = String(body?.name ?? '').trim();
@@ -122,11 +128,16 @@ export default async function handler(req, res) {
   };
 
   let stored = false;
+  // bound the upstream call so a slow/hung Laylo can't hold this serverless
+  // invocation open and burn concurrency during a traffic spike.
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), 8000);
   try {
     const r = await fetch(LAYLO_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Referer: 'https://embed.laylo.com/' },
       body: JSON.stringify(payload),
+      signal: ac.signal,
     });
     const data = await r.json().catch(() => null);
     stored = !!(r.ok && data && data.success);
@@ -135,8 +146,10 @@ export default async function handler(req, res) {
       return res.status(502).json({ ok: false, error: 'list unavailable, try again' });
     }
   } catch (err) {
-    console.error('[subscribe] laylo error', err);
+    console.error('[subscribe] laylo error', err?.name === 'AbortError' ? 'timeout' : err);
     return res.status(502).json({ ok: false, error: 'list unavailable, try again' });
+  } finally {
+    clearTimeout(timer);
   }
 
   // optional secondary sink — best-effort, never blocks the response
