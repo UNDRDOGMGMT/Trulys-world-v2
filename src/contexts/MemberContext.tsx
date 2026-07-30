@@ -5,13 +5,8 @@ import { audit } from '@/lib/audit';
 import { supabase, supabaseConfigured } from '@/lib/supabase';
 
 /**
- * Truly's World membership — Supabase email OTP (6-digit code) + members / plays.
- *
- * Join: save profile to localStorage + auth user_metadata → email OTP →
- * verifyOtp → upsert members from pending/metadata (no re-type).
- *
- * Emails only contain a code when the Supabase **Magic Link** template uses
- * {{ .Token }} and NOT {{ .ConfirmationURL }} — see supabase/AUTH_SETUP.md.
+ * Truly's World membership — signup via email OTP, then set a password;
+ * login via password (or OTP fallback). See supabase/AUTH_SETUP.md.
  */
 
 export interface GamePlay {
@@ -76,6 +71,12 @@ export function formatAuthError(message: string): string {
   if (/signups not allowed|user not found|unable to validate/i.test(message)) {
     return 'no account for that email — join the list first ♥';
   }
+  if (/invalid login|invalid credentials|email not confirmed/i.test(m)) {
+    return 'wrong email or password ♥';
+  }
+  if (/password should be|password.*at least|weak password/i.test(m)) {
+    return 'password must be at least 8 characters';
+  }
   return message || 'something broke';
 }
 
@@ -103,8 +104,12 @@ export function loadPendingProfile(): PendingProfile | null {
 export function clearPendingProfile() {
   try {
     localStorage.removeItem(PENDING_KEY);
-    sessionStorage.removeItem(PENDING_KEY); // clear legacy key
+    sessionStorage.removeItem(PENDING_KEY);
   } catch { /* ignore */ }
+}
+
+function hasPasswordSet(meta?: Record<string, unknown> | null): boolean {
+  return meta?.password_set === true || meta?.password_set === 'true';
 }
 
 function profileFromMetadata(user: { email?: string | null; user_metadata?: Record<string, unknown> }): PendingProfile | null {
@@ -124,7 +129,6 @@ function resolvePending(user?: { email?: string | null; user_metadata?: Record<s
     const fromMeta = profileFromMetadata(user);
     if (fromMeta?.first && fromMeta?.last) return fromMeta;
   }
-  // merge: metadata email + partial stored
   if (stored && user) {
     const meta = profileFromMetadata(user);
     return {
@@ -143,11 +147,15 @@ interface MemberState {
   ready: boolean;
   unlocked: boolean;
   needsProfile: boolean;
+  /** Session + member row exist but password not set yet. */
+  needsPassword: boolean;
   sessionEmail: string | null;
   requestOtp: (email: string) => Promise<OkErr>;
-  verifyOtp: (email: string, token: string) => Promise<OkErr & { hasProfile?: boolean }>;
+  verifyOtp: (email: string, token: string) => Promise<OkErr & { hasProfile?: boolean; needsPassword?: boolean }>;
   completeProfile: (d: PendingProfile) => Promise<OkErr>;
   beginJoin: (d: PendingProfile) => Promise<OkErr>;
+  setPassword: (password: string) => Promise<OkErr>;
+  signInWithPassword: (email: string, password: string) => Promise<OkErr>;
   signUp: (d: PendingProfile) => Member;
   logIn: (email: string) => boolean;
   logOut: () => void;
@@ -219,6 +227,7 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [ready, setReady] = useState(false);
   const [bypass, setBypass] = useState(readBypass);
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
+  const [passwordReady, setPasswordReady] = useState(false);
   const finishingRef = useRef(false);
 
   const refreshMember = useCallback(async (userId: string) => {
@@ -258,6 +267,7 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   ) => {
     const email = (user?.email || '').toLowerCase() || null;
     setSessionEmail(email);
+    setPasswordReady(hasPasswordSet(user?.user_metadata));
     let m = await refreshMember(userId);
     if (m) {
       clearPendingProfile();
@@ -302,11 +312,13 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (!session?.user) {
         setMember(null);
         setSessionEmail(null);
+        setPasswordReady(false);
         return;
       }
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
         void settleSession(session.user.id, session.user);
       } else {
+        setPasswordReady(hasPasswordSet(session.user.user_metadata));
         void refreshMember(session.user.id);
       }
     });
@@ -325,7 +337,7 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const { error } = await supabase.auth.signInWithOtp({
       email: e,
       options: {
-        shouldCreateUser: false, // login path — join uses beginJoin
+        shouldCreateUser: false,
       },
     });
     if (error) return { ok: false, error: formatAuthError(error.message) };
@@ -344,7 +356,6 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       email,
       options: {
         shouldCreateUser: true,
-        // Survives verify even if localStorage is cleared — used to auto-finish members row
         data: {
           first: profile.first.trim(),
           last: profile.last.trim(),
@@ -357,7 +368,7 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return { ok: true };
   }, []);
 
-  const verifyOtp = useCallback(async (email: string, token: string): Promise<OkErr & { hasProfile?: boolean }> => {
+  const verifyOtp = useCallback(async (email: string, token: string): Promise<OkErr & { hasProfile?: boolean; needsPassword?: boolean }> => {
     if (!supabaseConfigured) {
       return { ok: false, error: 'auth not configured' };
     }
@@ -371,12 +382,13 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       type: 'email',
     });
     if (error || !data.session?.user) {
-      return { ok: false, error: error?.message || 'invalid code' };
+      return { ok: false, error: formatAuthError(error?.message || 'invalid code') };
     }
     audit('auth.otp_verified', { email: e });
     const m = await settleSession(data.session.user.id, data.session.user);
     clearLegacyGate();
-    return { ok: true, hasProfile: !!m };
+    const needsPw = !!m && !hasPasswordSet(data.session.user.user_metadata);
+    return { ok: true, hasProfile: !!m, needsPassword: needsPw };
   }, [settleSession]);
 
   const completeProfile = useCallback(async (d: PendingProfile): Promise<OkErr> => {
@@ -386,6 +398,45 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     savePendingProfile({ ...d, email: d.email.trim().toLowerCase() });
     return upsertProfile(d, session.user.id);
   }, [upsertProfile]);
+
+  const setPassword = useCallback(async (password: string): Promise<OkErr> => {
+    if (!supabaseConfigured) return { ok: false, error: 'auth not configured' };
+    if (password.length < 8) return { ok: false, error: 'password must be at least 8 characters' };
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return { ok: false, error: 'confirm your email first' };
+    const { data, error } = await supabase.auth.updateUser({
+      password,
+      data: { password_set: true },
+    });
+    if (error) return { ok: false, error: formatAuthError(error.message) };
+    setPasswordReady(true);
+    audit('auth.password_set', { email: session.user.email });
+    if (data.user) await settleSession(data.user.id, data.user);
+    return { ok: true };
+  }, [settleSession]);
+
+  const signInWithPassword = useCallback(async (email: string, password: string): Promise<OkErr> => {
+    if (!supabaseConfigured) {
+      return { ok: false, error: 'auth not configured — set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY' };
+    }
+    const e = email.trim().toLowerCase();
+    if (!e || !password) return { ok: false, error: 'email and password required' };
+    const { data, error } = await supabase.auth.signInWithPassword({ email: e, password });
+    if (error || !data.session?.user) {
+      return { ok: false, error: formatAuthError(error?.message || 'wrong email or password') };
+    }
+    // Password login implies they have a password; stamp metadata if missing (older accounts).
+    if (!hasPasswordSet(data.session.user.user_metadata)) {
+      await supabase.auth.updateUser({ data: { password_set: true } });
+    }
+    audit('auth.password_login', { email: e });
+    await settleSession(data.session.user.id, {
+      ...data.session.user,
+      user_metadata: { ...data.session.user.user_metadata, password_set: true },
+    });
+    clearLegacyGate();
+    return { ok: true };
+  }, [settleSession]);
 
   const signUp = useCallback((d: PendingProfile): Member => {
     const now = Date.now();
@@ -406,6 +457,7 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setBypass(false);
     setMember(null);
     setSessionEmail(null);
+    setPasswordReady(false);
     if (supabaseConfigured) void supabase.auth.signOut();
   }, []);
 
@@ -446,10 +498,10 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => { setAwardHook(award); return () => setAwardHook(null); }, [award]);
 
-  // PRE-LAUNCH: only the staff bypass opens the site. Fans can still sign up
-  // (member/account is created for launch) but do NOT get in. Flip LAUNCHED at go-live.
-  const unlocked = bypass || (LAUNCHED && !!member);
+  // PRE-LAUNCH: only staff bypass opens the site. Flip LAUNCHED at go-live.
+  const unlocked = bypass || (LAUNCHED && !!member && passwordReady);
   const needsProfile = !!sessionEmail && !member && !bypass;
+  const needsPassword = !!sessionEmail && !!member && !passwordReady && !bypass;
 
   return (
     <Ctx.Provider value={{
@@ -458,11 +510,14 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       ready,
       unlocked,
       needsProfile,
+      needsPassword,
       sessionEmail,
       requestOtp,
       verifyOtp,
       completeProfile,
       beginJoin,
+      setPassword,
+      signInWithPassword,
       signUp,
       logIn,
       logOut,

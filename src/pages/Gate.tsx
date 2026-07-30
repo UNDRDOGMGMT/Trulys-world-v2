@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import TrulyList from '@/components/TrulyList';
 import { useMember, loadPendingProfile, type PendingProfile } from '@/contexts/MemberContext';
+import { LAUNCHED } from '@/lib/gate';
 
 /**
- * Gate auth: enter the list → 6-digit email code → unlock.
- * Profile (name/phone) is kept in localStorage + Supabase user_metadata so
- * verify never asks them to re-type.
+ * Gate auth: join → OTP → set password → (unlock if launched).
+ * Login: email + password, or email me a code (OTP fallback).
  *
  * LAUNCH = 12:00am ET on July 31 2026 (= 9:00pm PT July 30).
  */
@@ -64,7 +64,7 @@ const Countdown: React.FC<{ className?: string; style?: React.CSSProperties }> =
   return <div className={className} style={style}><Clock parts={[dd, hh, mm, ss]} /></div>;
 };
 
-type Mode = 'join' | 'login' | 'code' | 'otp' | 'finish';
+type Mode = 'join' | 'login' | 'code' | 'otp' | 'finish' | 'setPassword' | 'waitlist';
 
 const inputCls =
   'rounded-full border-2 border-[#f0b4e4]/55 bg-black/45 px-4 py-2 text-center font-display text-sm text-[#ffd9f2] outline-none backdrop-blur-sm placeholder:text-[#f0b4e4]/45 focus:border-[#f0b4e4]';
@@ -74,13 +74,14 @@ const btnCls =
 
 const Gate: React.FC = () => {
   const {
-    beginJoin, requestOtp, verifyOtp, completeProfile, enableBypass,
-    needsProfile, sessionEmail,
+    beginJoin, requestOtp, verifyOtp, completeProfile, setPassword, signInWithPassword, enableBypass,
+    needsProfile, needsPassword, sessionEmail, member,
   } = useMember();
-  const [pw, setPw] = useState('');
+  const [bypassCode, setBypassCode] = useState('');
   const [denied, setDenied] = useState(false);
   const [mode, setMode] = useState<Mode>(() => (loadPendingProfile() ? 'otp' : 'join'));
   const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [otpEmail, setOtpEmail] = useState(() => loadPendingProfile()?.email ?? '');
   const [pending, setPending] = useState<PendingProfile | null>(() => loadPendingProfile());
@@ -89,9 +90,11 @@ const Gate: React.FC = () => {
   const [finishFirst, setFinishFirst] = useState('');
   const [finishLast, setFinishLast] = useState('');
   const [finishPhone, setFinishPhone] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const grainRef = useRef<HTMLCanvasElement>(null);
 
-  // Rare fallback: session exists but name/phone never saved (old attempts)
+  // Rare fallback: session exists but name/phone never saved
   useEffect(() => {
     if (!needsProfile) return;
     const p = loadPendingProfile();
@@ -99,7 +102,6 @@ const Gate: React.FC = () => {
       setFinishFirst(p.first);
       setFinishLast(p.last);
       setFinishPhone(p.phone);
-      // auto-finish when we already have the data
       void (async () => {
         setBusy(true);
         const res = await completeProfile({
@@ -119,6 +121,18 @@ const Gate: React.FC = () => {
     setMode('finish');
   }, [needsProfile, sessionEmail, completeProfile]);
 
+  // After profile exists, require password before unlock / waitlist
+  useEffect(() => {
+    if (needsPassword) setMode('setPassword');
+  }, [needsPassword]);
+
+  // Pre-launch: member + password ready but site still locked
+  useEffect(() => {
+    if (!LAUNCHED && member && !needsPassword && !needsProfile && mode === 'setPassword') {
+      setMode('waitlist');
+    }
+  }, [member, needsPassword, needsProfile, mode]);
+
   const startJoin = async (d: PendingProfile) => {
     setErr('');
     setBusy(true);
@@ -127,7 +141,6 @@ const Gate: React.FC = () => {
     setPending(d);
     setOtpEmail(d.email);
     if (!res.ok) {
-      // Rate limit: still open OTP panel so they can type a code from an earlier email.
       if (/rate limit|too many emails/i.test(res.error)) {
         setOtp('');
         setMode('otp');
@@ -135,14 +148,28 @@ const Gate: React.FC = () => {
         return;
       }
       setErr(res.error);
-      throw new Error(res.error); // TrulyList keeps the form
+      throw new Error(res.error);
     }
     setOtp('');
     setMode('otp');
   };
 
-  const doLoginRequest = async (e: React.FormEvent) => {
+  const doPasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErr('');
+    setBusy(true);
+    setPending(null);
+    const res = await signInWithPassword(loginEmail, loginPassword);
+    setBusy(false);
+    if (!res.ok) {
+      setErr(res.error);
+      return;
+    }
+    // unlocked via provider when LAUNCHED; else waitlist
+    if (!LAUNCHED) setMode('waitlist');
+  };
+
+  const doLoginOtpRequest = async () => {
     setErr('');
     setBusy(true);
     setPending(null);
@@ -189,12 +216,20 @@ const Gate: React.FC = () => {
           setFinishPhone(p.phone);
           setMode('finish');
           setErr(done.error);
+          return;
         }
+        setMode('setPassword');
         return;
       }
       setMode('finish');
       setErr('almost there — add your name to finish ♥');
+      return;
     }
+    if (res.needsPassword) {
+      setMode('setPassword');
+      return;
+    }
+    if (!LAUNCHED) setMode('waitlist');
   };
 
   const doFinishProfile = async (e: React.FormEvent) => {
@@ -217,7 +252,35 @@ const Gate: React.FC = () => {
       phone: finishPhone.replace(/\D/g, ''),
     });
     setBusy(false);
-    if (!res.ok) setErr(res.error);
+    if (!res.ok) {
+      setErr(res.error);
+      return;
+    }
+    setMode('setPassword');
+  };
+
+  const doSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr('');
+    if (newPassword.length < 8) {
+      setErr('password must be at least 8 characters');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setErr('passwords must match');
+      return;
+    }
+    setBusy(true);
+    const res = await setPassword(newPassword);
+    setBusy(false);
+    if (!res.ok) {
+      setErr(res.error);
+      return;
+    }
+    setNewPassword('');
+    setConfirmPassword('');
+    if (!LAUNCHED) setMode('waitlist');
+    // else provider unlocks
   };
 
   const submitBypass = async (e: React.FormEvent) => {
@@ -229,12 +292,12 @@ const Gate: React.FC = () => {
       const r = await fetch('/api/gate-bypass', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: pw.trim() }),
+        body: JSON.stringify({ code: bypassCode.trim() }),
       });
       const data = await r.json().catch(() => ({}));
       if (!r.ok || !data.ok) {
         setDenied(true);
-        setPw('');
+        setBypassCode('');
         setTimeout(() => setDenied(false), 1400);
       } else {
         enableBypass();
@@ -345,10 +408,55 @@ const Gate: React.FC = () => {
       <input value={finishPhone} onChange={(e) => setFinishPhone(e.target.value)} placeholder="phone"
         type="tel" inputMode="tel" aria-label="Phone" className={`w-full max-w-xs ${inputCls}`} style={inputShadow} />
       <button type="submit" disabled={busy} className={btnCls} style={inputShadow}>
-        {busy ? '…' : 'enter the world'}
+        {busy ? '…' : 'continue'}
       </button>
       <span className="min-h-4 font-whimsy text-xs text-red-300">{err}</span>
     </form>
+  );
+
+  const setPasswordPanel = (
+    <form onSubmit={doSetPassword} className="flex flex-col items-center gap-2">
+      <p className="font-whimsy text-sm text-[#ffd9f2]">create your password</p>
+      <p className="max-w-xs text-center font-display text-[10px] uppercase tracking-[0.2em] text-[#f0b4e4]/75">
+        you’ll use this next time — no email code needed
+      </p>
+      <input
+        value={newPassword}
+        onChange={(e) => { setNewPassword(e.target.value); setErr(''); }}
+        type="password"
+        autoComplete="new-password"
+        placeholder="password (8+ characters)"
+        aria-label="Password"
+        className={`w-full max-w-xs ${inputCls}`}
+        style={inputShadow}
+      />
+      <input
+        value={confirmPassword}
+        onChange={(e) => { setConfirmPassword(e.target.value); setErr(''); }}
+        type="password"
+        autoComplete="new-password"
+        placeholder="confirm password"
+        aria-label="Confirm password"
+        className={`w-full max-w-xs ${inputCls}`}
+        style={inputShadow}
+      />
+      <button type="submit" disabled={busy} className={btnCls} style={inputShadow}>
+        {busy ? '…' : LAUNCHED ? 'enter the world' : 'save password'}
+      </button>
+      <span className="min-h-4 font-whimsy text-xs text-red-300">{err}</span>
+    </form>
+  );
+
+  const waitlistPanel = (
+    <div className="flex flex-col items-center gap-2">
+      <p className="font-whimsy text-lg text-[#f0b4e4]">{"you\u2019re on the list \u2665\uFE0E"}</p>
+      <p className="mt-1.5 font-display text-[11px] uppercase tracking-[0.28em] text-[#f0b4e4]/70">
+        SEE YA REAL SOON :)
+      </p>
+      <p className="max-w-xs text-center font-display text-[10px] uppercase tracking-[0.2em] text-[#f0b4e4]/55">
+        your password is saved — log in when we open
+      </p>
+    </div>
   );
 
   const accessRow = (
@@ -366,15 +474,26 @@ const Gate: React.FC = () => {
       </div>
 
       {mode === 'login' && (
-        <form onSubmit={doLoginRequest} className="flex flex-col items-center gap-1.5">
-          <div className="flex items-center gap-2">
-            <input value={loginEmail} onChange={(e) => { setLoginEmail(e.target.value); setErr(''); }}
-              placeholder="your email" type="email" inputMode="email" aria-label="Member email"
-              className={`w-52 ${inputCls}`} style={inputShadow} />
-            <button type="submit" disabled={busy} className={btnCls} style={inputShadow}>
-              {busy ? '…' : 'send code'}
-            </button>
-          </div>
+        <form onSubmit={doPasswordLogin} className="flex w-full max-w-sm flex-col items-center gap-1.5">
+          <input value={loginEmail} onChange={(e) => { setLoginEmail(e.target.value); setErr(''); }}
+            placeholder="your email" type="email" inputMode="email" aria-label="Member email"
+            autoComplete="email"
+            className={`w-full ${inputCls}`} style={inputShadow} />
+          <input value={loginPassword} onChange={(e) => { setLoginPassword(e.target.value); setErr(''); }}
+            placeholder="password" type="password" aria-label="Password"
+            autoComplete="current-password"
+            className={`w-full ${inputCls}`} style={inputShadow} />
+          <button type="submit" disabled={busy} className={`w-full ${btnCls}`} style={inputShadow}>
+            {busy ? '…' : 'log in'}
+          </button>
+          <button
+            type="button"
+            disabled={busy || !loginEmail.trim()}
+            className="font-display text-[9px] uppercase tracking-[0.28em] text-[#f0b4e4]/70 hover:text-[#ffd9f2] disabled:opacity-40"
+            onClick={() => void doLoginOtpRequest()}
+          >
+            email me a code instead
+          </button>
           <span className="min-h-4 font-whimsy text-xs text-red-300">{err}</span>
         </form>
       )}
@@ -382,7 +501,7 @@ const Gate: React.FC = () => {
       {mode === 'code' && (
         <form onSubmit={submitBypass} className="flex flex-col items-center gap-1.5">
           <div className="flex items-center gap-2">
-            <input value={pw} onChange={(e) => setPw(e.target.value)} placeholder="passcode" aria-label="Passcode" autoCapitalize="characters"
+            <input value={bypassCode} onChange={(e) => setBypassCode(e.target.value)} placeholder="passcode" aria-label="Passcode" autoCapitalize="characters"
               className={`w-44 tracking-[0.2em] ${inputCls} ${denied ? '!border-red-400' : ''}`}
               style={{ ...inputShadow, boxShadow: '0 0 18px rgba(240,180,228,0.22), inset 0 0 12px rgba(240,180,228,0.08)' }} />
             <button type="submit" disabled={busy} className={btnCls} style={inputShadow}>enter</button>
@@ -412,6 +531,10 @@ const Gate: React.FC = () => {
     )
   ) : mode === 'finish' ? (
     card(finishPanel)
+  ) : mode === 'setPassword' ? (
+    card(setPasswordPanel)
+  ) : mode === 'waitlist' ? (
+    card(waitlistPanel)
   ) : (
     <TrulyList tone="dark" wide onData={startJoin} footer={accessRow} />
   );
