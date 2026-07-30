@@ -23,13 +23,13 @@ import { shouldReduceMedia } from "@/lib/network";
 // Landscape (desktop) + purpose-composed vertical portrait (mobile) assets.
 // The detailed illustrated LA map (the look/feel that was live before the
 // redesign). Landscape (desktop) + purpose-composed portrait (mobile).
-const MAP_SRC = "/world/maps/la-map-9.jpg";
+const MAP_SRC = "/world/maps/la-map-10.jpg";
 const MAP_W = 2752, MAP_H = 1536;
 // Mobile gets a purpose-built PORTRAIT recomposition of the same art (same
 // districts + neon-ink style, stacked vertically) so it fills a phone screen
 // instead of showing a cropped slice of the landscape map.
-const MAP_SRC_P = "/world/maps/la-map-portrait.jpg";
-const MAP_W_P = 1280, MAP_H_P = 2293;
+const MAP_SRC_P = "/world/maps/la-map-portrait-2.jpg";
+const MAP_W_P = 1280, MAP_H_P = 1714;
 
 // District "cutout" radius — % of the clip-path diagonal reference box.
 const DISTRICT_R = 13.5;
@@ -75,20 +75,20 @@ const HeartMark: React.FC<{ className?: string; style?: React.CSSProperties }> =
 );
 const WAYPOINTS: Waypoint[] = [
   // x/y = % on la-map-7 (landscape); xP/yP = % on la-map-6-v (portrait).
-  { id: "malibu", name: "Malibu", blurb: "Downloads", x: 10, y: 30, xP: 7, yP: 21, labelBelowP: true },
-  { id: "santa-monica", name: "Santa Monica", blurb: "Live / Sessions", x: 13, y: 62, xP: 11, yP: 47, labelBelowP: true },
-  { id: "venice", name: "Venice", blurb: "Videos", x: 27, y: 71, xP: 15, yP: 66, labelBelowP: true },
-  { id: "the-valley", name: "The Valley", blurb: "The EP Arcade", x: 38, y: 15, xP: 42, yP: 14 },
-  { id: "laurel-canyon", name: "Laurel Canyon", blurb: "Songbook", x: 43, y: 33, xP: 47, yP: 25 },
-  { id: "weho", name: "West Hollywood", blurb: "Merch", x: 34, y: 44, xP: 52, yP: 37, labelBelowP: true },
-  { id: "beverly-hills", name: "Beverly Hills", blurb: "Press / EPK", x: 26, y: 48, xP: 39, yP: 35, labelBelowP: true },
-  { id: "hollywood", name: "Hollywood", blurb: "Music / Releases", x: 52, y: 46, xP: 73, yP: 30 },
-  { id: "koreatown", name: "Koreatown", blurb: "After Hours", x: 56, y: 59, xP: 60, yP: 62, labelBelowP: true },
-  { id: "silverlake", name: "Silver Lake", blurb: "The Inner Circle", x: 70, y: 48, xP: 50, yP: 52 },
-  { id: "dtla", name: "Downtown", blurb: "Cruise Night", x: 88, y: 52, xP: 80, yP: 60 },
-  { id: "lax", name: "LAX", blurb: "Get the Drop", x: 44, y: 78, xP: 26, yP: 78, labelBelowP: true },
-  { id: "inglewood", name: "Inglewood", blurb: "Dress-Up", x: 56, y: 81, xP: 56, yP: 80, labelBelowP: true },
-  { id: "long-beach", name: "Long Beach", blurb: "B-Sides", x: 85, y: 90, xP: 82, yP: 91, labelBelowP: true },
+  { id: "malibu", name: "Malibu", blurb: "Downloads", x: 10, y: 30, xP: 7, yP: 22, labelBelowP: true },
+  { id: "santa-monica", name: "Santa Monica", blurb: "Live / Sessions", x: 13, y: 62, xP: 11, yP: 51, labelBelowP: true },
+  { id: "venice", name: "Venice", blurb: "Videos", x: 27, y: 71, xP: 14, yP: 62, labelBelowP: true },
+  { id: "the-valley", name: "The Valley", blurb: "The EP Arcade", x: 38, y: 15, xP: 38, yP: 15 },
+  { id: "laurel-canyon", name: "Laurel Canyon", blurb: "Songbook", x: 46, y: 31, xP: 43, yP: 24 },
+  { id: "weho", name: "West Hollywood", blurb: "Merch", x: 40, y: 48, xP: 40, yP: 40, labelBelowP: true },
+  { id: "beverly-hills", name: "Beverly Hills", blurb: "Press / EPK", x: 25, y: 43, xP: 28, yP: 37, labelBelowP: true },
+  { id: "hollywood", name: "Hollywood", blurb: "Music / Releases", x: 51, y: 48, xP: 63, yP: 40 },
+  { id: "koreatown", name: "Koreatown", blurb: "After Hours", x: 56, y: 59, xP: 50, yP: 62, labelBelowP: true },
+  { id: "silverlake", name: "Silver Lake", blurb: "The Inner Circle", x: 70, y: 48, xP: 62, yP: 52 },
+  { id: "dtla", name: "Downtown", blurb: "Cruise Night", x: 88, y: 52, xP: 82, yP: 60 },
+  { id: "lax", name: "LAX", blurb: "Get the Drop", x: 44, y: 78, xP: 34, yP: 82, labelBelowP: true },
+  { id: "inglewood", name: "Inglewood", blurb: "Dress-Up", x: 56, y: 81, xP: 55, yP: 82, labelBelowP: true },
+  { id: "long-beach", name: "Long Beach", blurb: "B-Sides", x: 85, y: 90, xP: 82, yP: 92, labelBelowP: true },
 ];
 
 // Future cities on the horizon — Truly's world keeps expanding. These distant
