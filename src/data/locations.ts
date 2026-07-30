@@ -53,7 +53,7 @@ export interface EnvView {
   hotspots?: EnvHotspot[];
   /** Optional launch action for this POV (e.g. start the Cruise Night game from Street Level).
    *  `shop: true` marks a non-game destination (e.g. The Store) so it's never framed as an arcade game. */
-  action?: { label: string; to: string; shop?: boolean };
+  action?: { label: string; to: string; shop?: boolean; download?: boolean };
 }
 
 /** An explorable neighborhood: opens on `start`, click hotspots to change POV. */
@@ -282,16 +282,16 @@ export const locations: LocationData[] = [
     xPortrait: 76, yPortrait: 44,
     headline: 'THE INNER CIRCLE.',
     body: "Bring your versions — covers, edits, all of it. We see you.",
-    cta: { label: 'JOIN DISCORD', href: 'https://discord.gg/trulyoung' },
+    cta: { label: 'JOIN DISCORD', href: 'https://discord.com/invite/HxJqex8aE' },
     extras: [
-      { label: 'Submit your cover / edit →', href: 'https://discord.gg/trulyoung' },
+      { label: 'Submit your cover / edit →', href: 'https://discord.com/invite/HxJqex8aE' },
       { label: 'Follow on Instagram →', href: 'https://www.instagram.com/trulyoung' },
     ],
     backgroundImage: '/world/maps/silverlake-aerial.jpg',
     environment: {
       start: 'aerial',
       views: [
-        { id: 'aerial', label: 'The Reservoir', src: '/world/maps/silverlake-aerial.jpg', srcPortrait: '/world/maps/silverlake-aerial-v.jpg', video: '/world/anim/silverlake-aerial-cine.mp4', action: { label: '📷 Dear Joshua Selects', to: '/selects' }, hotspots: [
+        { id: 'aerial', label: 'The Reservoir', src: '/world/maps/silverlake-aerial.jpg', srcPortrait: '/world/maps/silverlake-aerial-v.jpg', video: '/world/anim/silverlake-aerial-cine.mp4', action: { label: 'Download The Dear Joshua Campaign', to: '/selects', download: true }, hotspots: [
           { x: 14, y: 42, to: 'stairs', label: 'The Stairs' },
           { x: 55, y: 84, to: 'eastside', label: 'The Eastside' },
           { x: 86, y: 66, to: 'closeup', label: 'Close-up' },
@@ -364,7 +364,7 @@ export const locations: LocationData[] = [
     showLabel: true,
     headline: 'DOWNLOADS.',
     body: "Wallpapers, icons, and photos — pieces of Truly's World for your world.",
-    cta: { label: 'DEAR JOSHUA SELECTS →', href: '/selects' },
+    cta: { label: 'DOWNLOAD THE DEAR JOSHUA CAMPAIGN →', href: '/selects' },
     extras: [
       { label: 'Tap any photo to save it ♥' },
     ],

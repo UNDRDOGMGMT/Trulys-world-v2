@@ -257,7 +257,7 @@ const LocationPage: React.FC = () => {
     // every POV in this hood that launches a game/experience — each surfaced as an
     // always-visible callout (a hood can host more than one, e.g. DTLA = Cruise
     // Night + Dear Joshua), so none stay hidden behind a POV you have to find.
-    const gameViews = env.views.filter((v) => v.action && !v.action.shop);
+    const gameViews = env.views.filter((v) => v.action && !v.action.shop && !v.action.download);
     const showCine = !!(view.video && !(isPortrait && view.srcPortrait) && !shouldReduceMedia());
 
     return (
@@ -398,7 +398,7 @@ const LocationPage: React.FC = () => {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.96 }}
                     >
-                      {view.action.shop ? "✦" : "▶"} {view.action.label}
+                      {view.action.shop || view.action.download ? "✦" : "▶"} {view.action.label}
                     </motion.button>
                   )}
                   {/* scroll cue — there's a story below the fold */}

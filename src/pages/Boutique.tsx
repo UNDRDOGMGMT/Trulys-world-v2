@@ -24,6 +24,11 @@ import { audit } from "@/lib/audit";
 
 type View = "street" | "room" | ZoneId;
 
+// Pre-launch: the Store interior is locked — nobody previews the room before the
+// drop. Flip to true at launch to let people step inside. Until then "step inside"
+// just says "opening soon" and the door stays shut.
+const STORE_OPEN = false;
+
 interface Zone {
   id: ZoneId; label: string; kicker: string; tint: string;
   /** hotspot rect as % of the viewport — landscape, then the portrait plate */
@@ -263,12 +268,12 @@ const Boutique: React.FC = () => {
               THE STORE
             </h1>
             <p className="font-mono text-[clamp(11px,1.6vw,14px)] text-[#d3c4ea] max-w-[38ch] leading-relaxed mt-3">
-              Her shop is a room, not a website. Push the door.
+              {STORE_OPEN ? "Her shop is a room, not a website. Push the door." : "Her shop is a room, not a website. The doors open soon ♥"}
             </p>
-            <button onClick={() => setView("room")}
+            <button onClick={() => (STORE_OPEN ? setView("room") : say("The Store — opening soon ♥"))}
               className="mt-6 font-display text-sm sm:text-base tracking-[0.12em] text-[#2a1730] bg-[#ffcf7a] rounded-full px-9 py-3.5
                          shadow-[0_0_28px_rgba(255,207,122,.5)] hover:-translate-y-0.5 hover:shadow-[0_0_40px_rgba(255,207,122,.85)] transition-all">
-              ▸ step inside
+              {STORE_OPEN ? "▸ step inside" : "🔒 opening soon"}
             </button>
             </div>
           </motion.div>
