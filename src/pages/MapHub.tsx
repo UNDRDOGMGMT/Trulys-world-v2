@@ -354,20 +354,6 @@ const MapHub: React.FC = () => {
   const START_Z = isPortrait ? Z_MIN : Z_START;
   const START_FY = isPortrait ? 50 : 48;
   const resetView = () => { stopMomentum(); frameTo(50, START_FY, START_Z, true); };
-  // Preset cameras — glide to a region of the world (portrait art has its own).
-  const CAMS: { label: string; fx: number; fy: number; z: number }[] = isPortrait
-    ? [
-        { label: "Wide", fx: 50, fy: 50, z: Z_MIN },
-        { label: "Coast", fx: 14, fy: 55, z: 1.5 },
-        { label: "Hills", fx: 55, fy: 20, z: 1.5 },
-        { label: "Downtown", fx: 74, fy: 62, z: 1.6 },
-      ]
-    : [
-        { label: "Wide", fx: 50, fy: 48, z: 1 },
-        { label: "Coast", fx: 15, fy: 52, z: 1.7 },
-        { label: "Hills", fx: 46, fy: 24, z: 1.7 },
-        { label: "Downtown", fx: 85, fy: 55, z: 1.8 },
-      ];
 
   // Start focused near the heart of the map; re-center when the box resizes.
   useEffect(() => {
@@ -554,19 +540,9 @@ const MapHub: React.FC = () => {
             <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at center, transparent 30%, rgba(7,2,12,0.75) 100%)" }} />
           </div>
 
-          {/* Camera controls — preset regions + zoom (hidden in place mode) */}
+          {/* Camera controls — zoom (hidden in place mode) */}
           {!placeMode && (
             <>
-              <div className="pointer-events-none absolute inset-x-0 top-3 z-30 flex justify-center px-3">
-                <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-pink/30 bg-black/55 px-1.5 py-1 backdrop-blur-sm">
-                  {CAMS.map((c) => (
-                    <button key={c.label} onClick={() => frameTo(c.fx, c.fy, c.z)}
-                      className="rounded-full px-3 py-1 font-display text-[10px] uppercase tracking-[0.14em] text-cream/80 hover:text-white hover:bg-pink/25 transition-colors">
-                      {c.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
               <div className="pointer-events-none absolute right-3 top-1/2 z-30 flex -translate-y-1/2 flex-col gap-1.5">
                 <button onClick={() => nudgeZoom(1)} aria-label="Zoom in" className="pointer-events-auto h-9 w-9 rounded-full border border-pink/30 bg-black/55 font-display text-lg leading-none text-cream/90 backdrop-blur-sm hover:text-white hover:border-pink/60 transition-colors">+</button>
                 <button onClick={() => nudgeZoom(-1)} aria-label="Zoom out" className="pointer-events-auto h-9 w-9 rounded-full border border-pink/30 bg-black/55 font-display text-lg leading-none text-cream/90 backdrop-blur-sm hover:text-white hover:border-pink/60 transition-colors">−</button>
