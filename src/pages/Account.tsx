@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import PageMeta from '@/components/PageMeta';
@@ -7,13 +7,25 @@ import { useMember } from '@/contexts/MemberContext';
 const Account: React.FC = () => {
   const navigate = useNavigate();
   const { member, logOut } = useMember();
+  const [signingOut, setSigningOut] = useState(false);
 
-  // not signed in → the gate owns access; send them home
+  const handleLogOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await logOut();
+      navigate('/', { replace: true });
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
+  // not signed in → send them to the join / login gate
   if (!member) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-5 bg-background text-center px-6">
         <span className="font-whimsy text-xl text-pink-light glitter-glow">✦ members only ✦</span>
-        <button onClick={() => navigate('/')} className="btn-retro px-8 py-3 text-sm">✧ join truly’s world ✧</button>
+        <button onClick={() => navigate('/join')} className="btn-retro px-8 py-3 text-sm">✧ join truly’s world ✧</button>
       </div>
     );
   }
@@ -26,7 +38,14 @@ const Account: React.FC = () => {
         <div className="absolute top-0 inset-x-0 z-30 flex items-center justify-between px-4 py-3"
           style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}>
           <button onClick={() => navigate('/map')} className="font-display text-[11px] uppercase tracking-[0.14em] text-cream/85 hover:text-white bg-black/45 border border-white/20 rounded-full px-3 py-1.5 backdrop-blur-sm">← Map</button>
-          <button onClick={() => { logOut(); window.location.assign('/'); }} className="font-display text-[11px] uppercase tracking-[0.14em] text-cream/70 hover:text-white bg-black/45 border border-white/15 rounded-full px-3 py-1.5 backdrop-blur-sm">Log out</button>
+          <button
+            type="button"
+            disabled={signingOut}
+            onClick={() => void handleLogOut()}
+            className="font-display text-[11px] uppercase tracking-[0.14em] text-cream/70 hover:text-white bg-black/45 border border-white/15 rounded-full px-3 py-1.5 backdrop-blur-sm disabled:opacity-50"
+          >
+            {signingOut ? '…' : 'Log out'}
+          </button>
         </div>
 
         <div className="relative z-10 max-w-3xl mx-auto px-4 pt-20 pb-10">
