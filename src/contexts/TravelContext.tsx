@@ -4,11 +4,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { locations } from "@/data/locations";
 import { trackEvent } from "@/lib/analytics";
 import { shouldReduceMedia } from "@/lib/network";
+import { resolveVideoSrc } from "@/lib/videoSrc";
+import { useHlsVideo } from "@/hooks/useHlsVideo";
 
 /**
  * Cinematic "travel" between the map and a neighborhood — mirrors the production
- * site: clicking a city plays a full-screen {key}-wide.mp4 push-in, then drops
- * you into the neighborhood. Escape / SKIP / a 7.2s fallback all complete it.
+ * site: clicking a city plays a full-screen {key}-wide push-in (HLS with MP4
+ * fallback), then drops you into the neighborhood. Escape / SKIP / a 7.2s
+ * fallback all complete it.
  */
 interface TravelCtx {
   travelTo: (id: string) => void;
@@ -43,11 +46,14 @@ export const ASSET_KEY: Record<string, string> = {
 
 export const TravelProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
-  const [clip, setClip] = useState<{ src: string; poster: string; name: string } | null>(null);
+  const [clip, setClip] = useState<{ mp4: string; poster: string; name: string } | null>(null);
   const targetRef = useRef<string | null>(null);
   const doneRef = useRef(true);
   const fbRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const vidRef = useRef<HTMLVideoElement | null>(null);
+
+  const resolved = clip ? resolveVideoSrc(clip.mp4) : null;
+  useHlsVideo(vidRef, resolved?.src ?? null, resolved?.fallback ?? null);
 
   const finish = useCallback(() => {
     if (doneRef.current) return;
@@ -67,18 +73,9 @@ export const TravelProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     targetRef.current = id;
     doneRef.current = false;
     const name = locations.find((l) => l.id === id)?.name ?? id;
-    setClip({ src: `/world/anim/${key}-wide.mp4`, poster: `/world/anim/${key}-wide-poster.jpg`, name });
+    setClip({ mp4: `/world/anim/${key}-wide.mp4`, poster: `/world/anim/${key}-wide-poster.jpg`, name });
     fbRef.current = setTimeout(finish, 7200);
   }, [navigate, finish]);
-
-  // play the travel clip once it mounts; if autoplay is blocked the fallback timer still lands us
-  useEffect(() => {
-    if (clip && vidRef.current) {
-      vidRef.current.currentTime = 0;
-      const p = vidRef.current.play();
-      if (p && (p as Promise<void>).catch) (p as Promise<void>).catch(() => {});
-    }
-  }, [clip]);
 
   // Escape to skip
   useEffect(() => {
@@ -102,7 +99,6 @@ export const TravelProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           >
             <video
               ref={vidRef}
-              src={clip.src}
               poster={clip.poster}
               muted
               playsInline
