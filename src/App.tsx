@@ -15,6 +15,7 @@ const MapHub = React.lazy(() => import("./pages/MapHub"));
 const World = React.lazy(() => import("./pages/World"));
 const LocationPage = React.lazy(() => import("./pages/LocationPage"));
 const DearJoshua = React.lazy(() => import("./pages/DearJoshua"));
+const VistaTheater = React.lazy(() => import("./pages/VistaTheater"));
 const CruiseNight = React.lazy(() => import("./pages/CruiseNight"));
 const DoNotDisturb = React.lazy(() => import("./pages/DoNotDisturb"));
 const DearJoshuaGame = React.lazy(() => import("./pages/DearJoshuaGame"));
@@ -79,7 +80,7 @@ class RouteErrorBoundary extends React.Component<
 // canvas owns the viewport — no starfield, sparkle overlays, or persistent player.
 import { useMember } from '@/contexts/MemberContext';
 
-const BARE_PATHS = ["/cruise-night", "/do-not-disturb", "/dear-joshua-game", "/fear-the-reaper", "/forever-game", "/save-truly", "/boy-game", "/boyfriend-island", "/trulys-pinball", "/trulys-map-pinball", "/karaoke", "/boutique", "/corbin-bowl", "/corbin-bowl/inside", "/corbin-bowl/arcade", "/world", "/shadows", "/selects", "/join"];
+const BARE_PATHS = ["/cruise-night", "/do-not-disturb", "/dear-joshua-game", "/fear-the-reaper", "/forever-game", "/save-truly", "/boy-game", "/boyfriend-island", "/trulys-pinball", "/trulys-map-pinball", "/karaoke", "/boutique", "/corbin-bowl", "/corbin-bowl/inside", "/corbin-bowl/arcade", "/world", "/shadows", "/selects", "/join", "/vista"];
 
 // Login wall for member-only routes (waypoints, games, EP, account). Public
 // pages (map, landing, Shadows, Store) don't use this. Sends logged-out visitors
@@ -143,6 +144,7 @@ const AnimatedRoutes = () => {
           {/* ── Member-only (login required): waypoints, games, EP, account ── */}
           <Route path="/location/:id" element={<RequireAuth><LocationPage /></RequireAuth>} />
           <Route path="/dear-joshua" element={<RequireAuth><DearJoshua /></RequireAuth>} />
+          <Route path="/vista" element={<RequireAuth><VistaTheater /></RequireAuth>} />
           <Route path="/cruise-night" element={<RequireAuth><CruiseNight /></RequireAuth>} />
           <Route path="/do-not-disturb" element={<RequireAuth><DoNotDisturb /></RequireAuth>} />
           <Route path="/dear-joshua-game" element={<RequireAuth><DearJoshuaGame /></RequireAuth>} />
