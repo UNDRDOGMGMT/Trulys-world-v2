@@ -16,4 +16,4 @@ export const BYPASS_KEY = 'tw-gate-bypass';
  * but it does NOT open the site — the only thing that opens it is the
  * server-validated staff bypass. Flip to true at launch to let members in.
  */
-export const LAUNCHED = false;
+export const LAUNCHED = true;
