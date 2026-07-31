@@ -192,7 +192,7 @@ const TrulyList: React.FC<{
               sign up for all things Truly's World
             </p>
             <p className="mt-1 font-display text-[9px] uppercase tracking-[0.3em] text-[#f0b4e4]/55">
-              the drop, the merch, the shows — before the algorithm decides
+              new music, drops, and show news first
             </p>
           </div>
         )}

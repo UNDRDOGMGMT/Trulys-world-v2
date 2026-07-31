@@ -16,7 +16,7 @@ const CorbinInside: React.FC = () => {
     <>
       <PageMeta
         title="Corbin Bowl — Inside — TRULYS WORLD"
-        description="Inside Corbin Bowl: the lanes glow, the neon hums, and the arcade waits down the walkway."
+        description="Inside Corbin Bowl — the Dear Joshua arcade."
       />
       <div className="fixed inset-0 overflow-hidden bg-[#150a22]">
         <motion.div
