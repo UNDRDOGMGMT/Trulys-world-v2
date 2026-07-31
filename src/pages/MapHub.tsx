@@ -162,6 +162,7 @@ const MapHub: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);   // mobile hamburger nav
   const [active, setActive] = useState<string | null>(null);       // hovered (desktop) / selected (touch)
   const [diving, setDiving] = useState<Waypoint | null>(null);     // mid dive-in zoom
+  const [gateFor, setGateFor] = useState<Waypoint | null>(null);   // guest tapped a locked waypoint → account prompt
   const prefetched = useRef<Set<string>>(new Set());
   const clearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const diveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -456,9 +457,10 @@ const MapHub: React.FC = () => {
   const onPinActivate = (wp: Waypoint) => {
     if (placeMode) return;                       // placement tool owns the pins
     if (didPan.current) { didPan.current = false; return; } // was a pan-drag, not a tap
-    // The map is public; entering a waypoint needs a login. Send guests to /join,
-    // remembering the district they wanted so we can drop them back after signup.
-    if (!unlocked) { trackEvent("waypoint_gated", { location: wp.id }); navigate("/join", { state: { from: `/location/${wp.id}` } }); return; }
+    // The map is public; entering a waypoint needs a login. Guests get a friendly
+    // "create an account" prompt (which remembers the district they wanted) rather
+    // than an abrupt redirect — the modal's CTA sends them to /join.
+    if (!unlocked) { trackEvent("waypoint_gated", { location: wp.id }); setGateFor(wp); return; }
     dive(wp);
   };
 
@@ -1007,6 +1009,72 @@ const MapHub: React.FC = () => {
           </button>
         </div>
       )}
+
+      {/* GUEST GATE — tapped a locked waypoint without an account */}
+      <AnimatePresence>
+        {gateFor && (
+          <motion.div
+            className="fixed inset-0 z-[130] flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+              onClick={() => setGateFor(null)}
+            />
+            <motion.div
+              className="relative w-full max-w-[360px] rounded-3xl border-2 border-pink/40 bg-[#0b0410]/95 glitter-border px-6 pt-6 pb-5 text-center shadow-[0_0_60px_rgba(255,120,190,0.25)]"
+              initial={{ scale: 0.9, y: 16, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.92, y: 12, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 320, damping: 26 }}
+            >
+              <button
+                onClick={() => setGateFor(null)}
+                aria-label="Close"
+                className="absolute right-3 top-3 h-8 w-8 rounded-full border border-white/20 text-cream/70 text-lg leading-none hover:text-white"
+              >
+                ✕
+              </button>
+
+              <div className="text-3xl" aria-hidden>💗</div>
+              <h2 className="mt-2 font-display text-[22px] leading-tight chrome-text-pink">
+                This door needs a key
+              </h2>
+              <p className="mt-2 font-body text-[13.5px] leading-snug text-cream/80">
+                <span className="text-pink-light">{gateFor.name}</span> is for members. Create your free
+                account to unlock every neighborhood, game, and secret in Truly&rsquo;s world.
+              </p>
+
+              <ul className="mx-auto mt-4 flex max-w-[240px] flex-col gap-1.5 text-left font-body text-[12.5px] text-cream/75">
+                <li className="flex items-center gap-2"><span className="text-pink">✦</span> All the waypoints &amp; games</li>
+                <li className="flex items-center gap-2"><span className="text-pink">✦</span> First to hear drops &amp; show news</li>
+                <li className="flex items-center gap-2"><span className="text-pink">✦</span> Free — takes 30 seconds</li>
+              </ul>
+
+              <button
+                onClick={() => navigate("/join", { state: { from: `/location/${gateFor.id}` } })}
+                className="mt-5 w-full rounded-full border-2 border-pink/60 bg-pink/15 px-5 py-3 font-display text-[13px] uppercase tracking-[0.16em] text-white transition-colors hover:bg-pink/25 hover:border-pink"
+              >
+                Create your free account →
+              </button>
+              <button
+                onClick={() => navigate("/join", { state: { from: `/location/${gateFor.id}` } })}
+                className="mt-2 w-full font-body text-[12.5px] text-cream/60 underline decoration-pink/40 underline-offset-4 hover:text-cream/90"
+              >
+                Already a member? Log in
+              </button>
+              <button
+                onClick={() => setGateFor(null)}
+                className="mt-3 w-full font-whimsy text-[12px] text-pink-light/70 hover:text-pink-light"
+              >
+                Keep exploring the map
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 };
