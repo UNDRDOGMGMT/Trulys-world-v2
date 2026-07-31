@@ -15,6 +15,7 @@ const GLOBE_PW = "trulysworldduh";
 const GlobeGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
   const [unlocked, setUnlocked] = useState(() => {
+    if (import.meta.env.DEV) return true; // localhost: no password while building
     try { return localStorage.getItem(GLOBE_KEY) === "1"; } catch { return false; }
   });
   const [pw, setPw] = useState("");

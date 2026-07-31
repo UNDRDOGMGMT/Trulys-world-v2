@@ -533,7 +533,9 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => { setAwardHook(award); return () => setAwardHook(null); }, [award]);
 
   // PRE-LAUNCH: only staff bypass opens the site. Flip LAUNCHED at go-live.
-  const unlocked = bypass || (LAUNCHED && !!member && passwordReady);
+  // DEV (localhost `npm run dev`): auto-unlock so building never hits the login
+  // wall. import.meta.env.DEV is false in production builds, so this never ships.
+  const unlocked = import.meta.env.DEV || bypass || (LAUNCHED && !!member && passwordReady);
   const needsProfile = !!sessionEmail && !member && !bypass;
   const needsPassword = !!sessionEmail && !!member && !passwordReady && !bypass;
 

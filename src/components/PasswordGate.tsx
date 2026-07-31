@@ -38,6 +38,7 @@ const PasswordGate: React.FC<Props> = ({
 }) => {
   const navigate = useNavigate();
   const [unlocked, setUnlocked] = useState(() => {
+    if (import.meta.env.DEV) return true; // localhost: never gate while building
     try { return localStorage.getItem(storageKey) === "1"; } catch { return false; }
   });
   const [pw, setPw] = useState("");
