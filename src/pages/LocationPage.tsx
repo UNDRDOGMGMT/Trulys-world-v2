@@ -282,15 +282,15 @@ const LocationPage: React.FC = () => {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.7, ease: "easeOut" }}
               >
-                {/* Mobile: contain = the whole environment scene, fully zoomed out
-                    (cover cropped it into a zoomed-in slice). Desktop keeps cover. */}
-                <img src={isPortrait && view.srcPortrait ? view.srcPortrait : view.src} alt={`${loc.name} — ${view.label}`} className={`absolute inset-0 w-full h-full ${isPortrait ? "object-contain" : "object-cover"}`} />
+                {/* Mobile: cover at scale 1.0 = fills the whole screen seamlessly
+                    (no letterbox) at the least-zoomed level, using the portrait art. */}
+                <img src={isPortrait && view.srcPortrait ? view.srcPortrait : view.src} alt={`${loc.name} — ${view.label}`} className="absolute inset-0 w-full h-full object-cover" />
               </motion.div>
             </AnimatePresence>
             {/* single reused cine element (desktop / non–Save-Data) — sits above still, below UI */}
             <video
               ref={cineRef}
-              className={`absolute inset-0 w-full h-full ${isPortrait ? "object-contain" : "object-cover"} pointer-events-none`}
+              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
               style={{ opacity: showCine ? 1 : 0, zIndex: 1 }}
               muted
               loop

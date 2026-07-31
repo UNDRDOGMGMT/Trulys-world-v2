@@ -432,7 +432,13 @@
      get cut — especially at small mobile sizes. box-decoration-break keeps the
      gradient continuous if a heading wraps. */
   line-height: 1.22;
+  /* Griffy caps have flourishes that overhang left/right + tall tops/deep tails;
+     background-clip:text clips the gradient to the glyph box, so pad on all sides
+     (H's left curl was getting cut). Negative margin cancels the layout shift so
+     alignment/centering is unchanged. */
   padding-block: 0.22em;
+  padding-inline: 0.16em;
+  margin-inline: -0.16em;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
   filter:
