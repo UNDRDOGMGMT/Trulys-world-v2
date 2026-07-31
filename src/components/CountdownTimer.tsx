@@ -65,13 +65,9 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ targetDate, label, onCo
     return () => clearInterval(interval);
   }, [targetDate, onComplete]);
 
-  if (!timeLeft) {
-    return (
-      <div className="text-center">
-        <div className="stamp-text text-sm !rotate-0">✦ Out Now ✦</div>
-      </div>
-    );
-  }
+  // At/after the target (Shadows drop — 9pm PT / midnight ET) the countdown is
+  // removed entirely rather than swapped for a stamp.
+  if (!timeLeft) return null;
 
   return (
     <div className="flex flex-col items-center gap-3">
