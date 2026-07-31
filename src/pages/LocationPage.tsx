@@ -7,6 +7,8 @@ import Shape from "@/components/Shape";
 import { useIsPortrait } from "@/hooks/useIsPortrait";
 import { trackEvent } from "@/lib/analytics";
 import { shouldReduceMedia } from "@/lib/network";
+import { resolveVideoSrc } from "@/lib/videoSrc";
+import { useHlsVideo } from "@/hooks/useHlsVideo";
 import TrulyList from "@/components/TrulyList";
 
 /**
@@ -216,24 +218,10 @@ const LocationPage: React.FC = () => {
     });
   }, [env, isPortrait]);
 
-  // Single reused <video> — swap src on POV change instead of mounting a new element.
-  useEffect(() => {
-    const el = cineRef.current;
-    if (!el || !env) return;
-    const view = env.views.find((v) => v.id === viewId) ?? env.views[0];
-    const useCine = !!(view?.video && !(isPortrait && view.srcPortrait) && !shouldReduceMedia());
-    if (!useCine || !view.video) {
-      el.pause();
-      el.removeAttribute("src");
-      el.load();
-      return;
-    }
-    if (el.getAttribute("src") !== view.video) {
-      el.src = view.video;
-    }
-    const p = el.play();
-    if (p && (p as Promise<void>).catch) (p as Promise<void>).catch(() => {});
-  }, [env, viewId, isPortrait]);
+  const activeView = env ? (env.views.find((v) => v.id === viewId) ?? env.views[0]) : undefined;
+  const useCine = !!(activeView?.video && !(isPortrait && activeView.srcPortrait) && !shouldReduceMedia());
+  const cineResolved = useCine && activeView?.video ? resolveVideoSrc(activeView.video) : null;
+  useHlsVideo(cineRef, cineResolved?.src ?? null, cineResolved?.fallback ?? null);
 
   if (!loc) {
     return (
