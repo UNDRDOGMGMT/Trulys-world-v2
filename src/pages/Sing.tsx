@@ -25,7 +25,7 @@ const Sing: React.FC = () => {
           </div>
         )}
         <iframe
-          src="/sing.html"
+          src="/g/sing.html"
           title="SING — Dear Joshua Karaoke"
           className={`w-full h-full border-0 block transition-opacity duration-500 ${ready ? "opacity-100" : "opacity-0"}`}
           allow="microphone; autoplay"

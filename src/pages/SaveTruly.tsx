@@ -25,7 +25,7 @@ const SaveTruly: React.FC = () => {
           </div>
         )}
         <iframe
-          src="/save-truly.html"
+          src="/g/save-truly.html"
           title="Save Truly — climb the scaffold"
           className={`w-full h-full border-0 block transition-opacity duration-500 ${ready ? "opacity-100" : "opacity-0"}`}
           allow="autoplay"

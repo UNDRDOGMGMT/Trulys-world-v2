@@ -25,7 +25,7 @@ const TrulysPinball: React.FC = () => {
           </div>
         )}
         <iframe
-          src="/trulys-pinball.html"
+          src="/g/trulys-pinball.html"
           title="Truly's Pinball — Dear Joshua Edition"
           className={`w-full h-full border-0 block transition-opacity duration-500 ${ready ? "opacity-100" : "opacity-0"}`}
           allow="autoplay"

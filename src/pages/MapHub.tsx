@@ -382,9 +382,9 @@ const MapHub: React.FC = () => {
     stopMomentum();
     zoomAt(zoomRef.current * (dir > 0 ? 1.35 : 1 / 1.35), { x: 0, y: 0 }, true);
   };
-  // Portrait (mobile) opens fully zoomed out so the whole vertical map reads;
-  // landscape opens a touch zoomed in on the heart of the map.
-  const START_Z = isPortrait ? Z_MIN : Z_START;
+  // Open fully zoomed out on both — desktop + mobile land on the whole-map view
+  // (fills the screen at min zoom); users pinch/scroll in from there.
+  const START_Z = Z_MIN;
   const START_FY = isPortrait ? 50 : 48;
   const resetView = () => { stopMomentum(); frameTo(50, START_FY, START_Z, true); };
 

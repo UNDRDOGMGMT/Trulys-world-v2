@@ -25,7 +25,7 @@ const DoNotDisturb: React.FC = () => {
           </div>
         )}
         <iframe
-          src="/do-not-disturb.html"
+          src="/g/do-not-disturb.html"
           title="Do Not Disturb — a Truly Young night at the Chateau"
           className={`w-full h-full border-0 block transition-opacity duration-500 ${ready ? "opacity-100" : "opacity-0"}`}
           allow="autoplay"

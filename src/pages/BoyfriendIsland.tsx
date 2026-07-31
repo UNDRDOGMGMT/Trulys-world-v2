@@ -25,7 +25,7 @@ const BoyfriendIsland: React.FC = () => {
           </div>
         )}
         <iframe
-          src="/boyfriend-island.html"
+          src="/g/boyfriend-island.html"
           title="Boyfriend Island — slice the red flags"
           className={`w-full h-full border-0 block transition-opacity duration-500 ${ready ? "opacity-100" : "opacity-0"}`}
           allow="autoplay"

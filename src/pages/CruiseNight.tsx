@@ -27,7 +27,7 @@ const CruiseNight: React.FC = () => {
           </div>
         )}
         <iframe
-          src="/cruise-night.html"
+          src="/g/cruise-night.html"
           title="Cruise Night — a Truly Young late-nite drive"
           className={`w-full h-full border-0 block transition-opacity duration-500 ${ready ? "opacity-100" : "opacity-0"}`}
           allow="autoplay"

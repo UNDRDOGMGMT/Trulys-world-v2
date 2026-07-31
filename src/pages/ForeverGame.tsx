@@ -24,7 +24,7 @@ const ForeverGame: React.FC = () => {
           </div>
         )}
         <iframe
-          src="/forever-game.html"
+          src="/g/forever-game.html"
           title="Forever — two truths and a lie"
           className={`w-full h-full border-0 block transition-opacity duration-500 ${ready ? "opacity-100" : "opacity-0"}`}
           allow="autoplay"

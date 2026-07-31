@@ -25,7 +25,7 @@ const FearTheReaper: React.FC = () => {
           </div>
         )}
         <iframe
-          src="/fear-the-reaper.html"
+          src="/g/fear-the-reaper.html"
           title="Fear The Reaper — dodge her"
           className={`w-full h-full border-0 block transition-opacity duration-500 ${ready ? "opacity-100" : "opacity-0"}`}
           allow="autoplay"

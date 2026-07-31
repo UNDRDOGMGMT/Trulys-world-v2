@@ -25,7 +25,7 @@ const DearJoshuaGame: React.FC = () => {
           </div>
         )}
         <iframe
-          src="/dear-joshua-game.html"
+          src="/g/dear-joshua-game.html"
           title="Dear Joshua — type her letter"
           className={`w-full h-full border-0 block transition-opacity duration-500 ${ready ? "opacity-100" : "opacity-0"}`}
           allow="autoplay"

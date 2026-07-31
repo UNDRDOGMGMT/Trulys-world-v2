@@ -24,7 +24,7 @@ const BoyGame: React.FC = () => {
           </div>
         )}
         <iframe
-          src="/boy-game.html?v=joshua2"
+          src="/g/boy-game.html?v=joshua2"
           title="Boy — turn him into one"
           className={`w-full h-full border-0 block transition-opacity duration-500 ${ready ? "opacity-100" : "opacity-0"}`}
           allow="autoplay"
