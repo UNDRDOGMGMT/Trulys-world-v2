@@ -81,7 +81,7 @@ const MailingList: React.FC = () => (
  * haven't built yet — those render as "coming soon" rather than dropping a fan on
  * the 404. Add a path here the moment its route lands in App.tsx and the CTA lights up.
  */
-const LIVE_ROUTES = new Set(["/", "/map", "/world", "/dear-joshua", "/cruise-night", "/do-not-disturb", "/trulys-pinball", "/trulys-map-pinball", "/sing", "/corbin-bowl", "/boutique", "/shadows", "/selects"]);
+const LIVE_ROUTES = new Set(["/", "/map", "/world", "/dear-joshua", "/cruise-night", "/do-not-disturb", "/trulys-pinball", "/trulys-map-pinball", "/karaoke", "/corbin-bowl", "/boutique", "/shadows", "/selects"]);
 
 const ctaIsLive = (href?: string) => {
   if (!href) return false;

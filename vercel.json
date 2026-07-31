@@ -1,4 +1,5 @@
 {
+  "redirects": [{ "source": "/sing", "destination": "/karaoke", "permanent": false }],
   "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }],
   "headers": [
     {

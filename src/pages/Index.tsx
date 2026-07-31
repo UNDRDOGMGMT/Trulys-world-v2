@@ -138,7 +138,7 @@ const Index: React.FC = () => {
               <span>&#10047;</span> Shadows — out 7.31 <span>&#10047;</span>
             </button>
             <button
-              onClick={() => navigate("/sing")}
+              onClick={() => navigate("/karaoke")}
               className="font-whimsy text-[13px] text-pink-light hover:text-white glitter-glow transition-colors"
             >
               ♪ sing it yourself →

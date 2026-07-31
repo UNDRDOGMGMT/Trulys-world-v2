@@ -79,7 +79,7 @@ class RouteErrorBoundary extends React.Component<
 // canvas owns the viewport — no starfield, sparkle overlays, or persistent player.
 import { useMember } from '@/contexts/MemberContext';
 
-const BARE_PATHS = ["/cruise-night", "/do-not-disturb", "/dear-joshua-game", "/fear-the-reaper", "/forever-game", "/save-truly", "/boy-game", "/boyfriend-island", "/trulys-pinball", "/trulys-map-pinball", "/sing", "/boutique", "/corbin-bowl", "/corbin-bowl/inside", "/corbin-bowl/arcade", "/world", "/shadows", "/selects", "/join"];
+const BARE_PATHS = ["/cruise-night", "/do-not-disturb", "/dear-joshua-game", "/fear-the-reaper", "/forever-game", "/save-truly", "/boy-game", "/boyfriend-island", "/trulys-pinball", "/trulys-map-pinball", "/karaoke", "/boutique", "/corbin-bowl", "/corbin-bowl/inside", "/corbin-bowl/arcade", "/world", "/shadows", "/selects", "/join"];
 
 // Login wall for member-only routes (waypoints, games, EP, account). Public
 // pages (map, landing, Shadows, Store) don't use this. Sends logged-out visitors
@@ -153,7 +153,7 @@ const AnimatedRoutes = () => {
           <Route path="/boyfriend-island" element={<RequireAuth><BoyfriendIsland /></RequireAuth>} />
           <Route path="/trulys-pinball" element={<RequireAuth><TrulysPinball /></RequireAuth>} />
           <Route path="/trulys-map-pinball" element={<RequireAuth><TrulysMapPinball /></RequireAuth>} />
-          <Route path="/sing" element={<RequireAuth><Sing /></RequireAuth>} />
+          <Route path="/karaoke" element={<RequireAuth><Sing /></RequireAuth>} />
           <Route path="/selects" element={<RequireAuth><Selects /></RequireAuth>} />
           <Route path="/corbin-bowl" element={<RequireAuth><CorbinBowl /></RequireAuth>} />
           <Route path="/corbin-bowl/inside" element={<RequireAuth><CorbinInside /></RequireAuth>} />

@@ -189,7 +189,7 @@ export const locations: LocationData[] = [
         { id: 'aerial', label: 'The Rooftops', src: '/world/maps/ktown-aerial.jpg', srcPortrait: '/world/maps/ktown-aerial-v.jpg', video: '/world/anim/ktown-aerial-cine.mp4', hotspots: [
           { x: 76, y: 52, to: 'night', label: 'After Hours' },
         ] },
-        { id: 'night', label: 'After Hours', src: '/world/maps/ktown-night.jpg', srcPortrait: '/world/maps/ktown-night-v.jpg', action: { label: '♪ Sing Karaoke', to: '/sing' } },
+        { id: 'night', label: 'After Hours', src: '/world/maps/ktown-night.jpg', srcPortrait: '/world/maps/ktown-night-v.jpg', action: { label: '♪ Sing Karaoke', to: '/karaoke' } },
       ],
     },
   },

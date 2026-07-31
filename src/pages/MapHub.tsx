@@ -533,7 +533,7 @@ const MapHub: React.FC = () => {
                 {[
                   { label: "◉ The Globe", to: "/world" },
                   { label: "✦ Shadows", to: "/shadows" },
-                  { label: "♪ Sing", to: "/sing" },
+                  { label: "♪ Sing", to: "/karaoke" },
                   ...(member ? [{ label: `♦ Your World · ${member.points.toLocaleString()} pts`, to: "/account" }] : []),
                 ].map((it) => (
                   <button key={it.to} onClick={() => { setMenuOpen(false); navigate(it.to); }}
