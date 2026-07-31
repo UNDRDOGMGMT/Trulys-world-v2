@@ -5,8 +5,8 @@ import PageMeta from "@/components/PageMeta";
 
 /**
  * The Vista Theatre interior — a cinematic walk-in that dollies from the street,
- * through the lobby, down the hall, and into the auditorium, where the music
- * video plays fitted to the screen. Reached from Hollywood → The Vista.
+ * through the lobby, and into the auditorium, where the music video plays fitted
+ * to the screen. Reached from Hollywood → The Vista.
  *
  * To go live, set VIDEO_ID to Truly's YouTube video id (the part after `v=` /
  * `youtu.be/`). Empty string shows a "coming soon" screen.
@@ -15,12 +15,11 @@ const VIDEO_ID = "";
 
 type Scene = { id: string; src: string; ms: number; caption?: string };
 
-// The walk-in. Each still is shot in one-point perspective so a slow forward
-// scale reads as walking through it. Last scene (auditorium) is the destination.
+// The walk-in. Each still is one-point perspective so a slow forward scale reads
+// as walking through it. Last scene (auditorium) is the destination.
 const SCENES: Scene[] = [
-  { id: "exterior", src: "/world/maps/hw-vista.jpg",            ms: 1700, caption: "The Vista" },
+  { id: "exterior", src: "/world/theater/vista-exterior.jpg",   ms: 1900 },
   { id: "lobby",    src: "/world/theater/vista-lobby.jpg",      ms: 2400 },
-  { id: "hall",     src: "/world/theater/vista-hall.jpg",       ms: 2400 },
   { id: "theater",  src: "/world/theater/vista-auditorium.jpg", ms: 0 },
 ];
 
@@ -28,6 +27,9 @@ const SCENES: Scene[] = [
 // The iframe fills this exactly; YouTube letterboxes internally against black,
 // so it blends with the screen and the video reads as a perfect fit.
 const SCREEN = { leftPct: 35.9, topPct: 34.4, widthPct: 30.0, heightPct: 30.2 };
+// The auditorium arrives zoomed toward the screen (like sitting a few rows back).
+const THEATER_ZOOM = 1.42;
+const SCREEN_ORIGIN = `${SCREEN.leftPct + SCREEN.widthPct / 2}% ${SCREEN.topPct + SCREEN.heightPct / 2}%`;
 
 const VistaTheater: React.FC = () => {
   const navigate = useNavigate();
@@ -50,7 +52,7 @@ const VistaTheater: React.FC = () => {
     setIdx(SCENES.length - 1);
   }, []);
 
-  // preload the interior stills so the walk-in never flashes empty
+  // preload the stills so the walk-in never flashes empty
   useEffect(() => {
     SCENES.forEach((s) => { const im = new Image(); im.src = s.src; });
   }, []);
@@ -59,16 +61,17 @@ const VistaTheater: React.FC = () => {
     <>
       <PageMeta title="The Vista — TRULYS WORLD" description="Inside the Vista Theatre. The music video, on the big screen." />
       <main className="fixed inset-0 overflow-hidden bg-black text-white select-none">
-        {/* the moving image */}
+        {/* the moving scene — image + (in the theater) the screen, scaled together */}
         <AnimatePresence mode="popLayout">
           <motion.div
             key={scene.id}
             className="absolute inset-0"
-            initial={{ scale: idx === 0 ? 1.02 : 1.12, opacity: 0 }}
-            animate={{ scale: atTheater ? 1.0 : 1.22, opacity: 1 }}
-            exit={{ scale: 1.38, opacity: 0 }}
+            style={{ transformOrigin: atTheater ? SCREEN_ORIGIN : "center" }}
+            initial={{ scale: atTheater ? THEATER_ZOOM * 0.9 : idx === 0 ? 1.02 : 1.12, opacity: 0 }}
+            animate={{ scale: atTheater ? THEATER_ZOOM : 1.22, opacity: 1 }}
+            exit={{ scale: 1.4, opacity: 0 }}
             transition={{
-              scale: { duration: atTheater ? 1.1 : scene.ms / 1000, ease: atTheater ? [0.16, 1, 0.3, 1] : "linear" },
+              scale: { duration: atTheater ? 1.3 : scene.ms / 1000, ease: atTheater ? [0.16, 1, 0.3, 1] : "linear" },
               opacity: { duration: 0.6, ease: "easeOut" },
             }}
           >
@@ -76,60 +79,60 @@ const VistaTheater: React.FC = () => {
             {/* forward-motion vignette */}
             <div className="pointer-events-none absolute inset-0"
                  style={{ boxShadow: "inset 0 0 180px 40px rgba(0,0,0,0.65)" }} />
-          </motion.div>
-        </AnimatePresence>
 
-        {/* THEATER SCREEN — the video fitted to the auditorium's blank screen */}
-        {atTheater && (
-          <motion.div
-            data-screen
-            className="absolute z-20 overflow-hidden bg-black"
-            style={{
-              left: `${SCREEN.leftPct}%`, top: `${SCREEN.topPct}%`,
-              width: `${SCREEN.widthPct}%`, height: `${SCREEN.heightPct}%`,
-              boxShadow: playing ? "0 0 60px 14px rgba(255,79,163,0.4)" : "none",
-            }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.9, duration: 0.7 }}
-          >
-            {!VIDEO_ID ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-                <span className="font-display text-[clamp(8px,1.2vw,13px)] uppercase tracking-[0.24em] text-pink-light/85">Music Video</span>
-                <span className="font-whimsy text-[clamp(9px,1.5vw,16px)] text-pink-light/55">coming soon ♥</span>
-              </div>
-            ) : playing ? (
-              <iframe
-                className="absolute inset-0 h-full w-full"
-                src={`https://www.youtube-nocookie.com/embed/${VIDEO_ID}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
-                title="Music Video"
-                allow="accelerometer; autoplay; encrypted-media; picture-in-picture"
-                allowFullScreen
-              />
-            ) : (
-              <button
-                onClick={() => setPlaying(true)}
-                className="group absolute inset-0 flex flex-col items-center justify-center gap-1.5"
-                aria-label="Play the music video"
-              >
-                <span className="flex h-[26%] min-h-[34px] aspect-square items-center justify-center rounded-full border-2 border-pink/70 bg-black/40 text-pink-light backdrop-blur-sm transition-transform group-hover:scale-110">
-                  <span className="translate-x-[1px] text-[clamp(12px,2.6vw,22px)] leading-none">▶</span>
-                </span>
-                <span className="font-display text-[clamp(7px,1vw,10px)] uppercase tracking-[0.22em] text-pink-light/90">Play the music video</span>
-              </button>
+            {atTheater && (
+              <>
+                {/* house-lights dim when the film rolls (screen sits above at z-20) */}
+                {playing && <div className="pointer-events-none absolute inset-0 z-10 bg-black/55" />}
+
+                {/* THEATER SCREEN — the video fitted to the auditorium's blank screen */}
+                <motion.div
+                  data-screen
+                  className="absolute z-20 overflow-hidden bg-black"
+                  style={{
+                    left: `${SCREEN.leftPct}%`, top: `${SCREEN.topPct}%`,
+                    width: `${SCREEN.widthPct}%`, height: `${SCREEN.heightPct}%`,
+                    boxShadow: playing ? "0 0 60px 14px rgba(255,79,163,0.4)" : "none",
+                  }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.7, duration: 0.7 }}
+                >
+                  {!VIDEO_ID ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+                      <span className="font-display text-[clamp(8px,1vw,12px)] uppercase tracking-[0.24em] text-pink-light/85">Music Video</span>
+                      <span className="font-whimsy text-[clamp(9px,1.3vw,15px)] text-pink-light/55">coming soon ♥</span>
+                    </div>
+                  ) : playing ? (
+                    <iframe
+                      className="absolute inset-0 h-full w-full"
+                      src={`https://www.youtube-nocookie.com/embed/${VIDEO_ID}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
+                      title="Music Video"
+                      allow="accelerometer; autoplay; encrypted-media; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <button
+                      onClick={() => setPlaying(true)}
+                      className="group absolute inset-0 flex flex-col items-center justify-center gap-1.5"
+                      aria-label="Play the music video"
+                    >
+                      <span className="flex h-[24%] min-h-[30px] aspect-square items-center justify-center rounded-full border-2 border-pink/70 bg-black/40 text-pink-light backdrop-blur-sm transition-transform group-hover:scale-110">
+                        <span className="translate-x-[1px] text-[clamp(11px,2vw,20px)] leading-none">▶</span>
+                      </span>
+                      <span className="font-display text-[clamp(6px,0.8vw,9px)] uppercase tracking-[0.22em] text-pink-light/90">Play the music video</span>
+                    </button>
+                  )}
+                </motion.div>
+              </>
             )}
           </motion.div>
-        )}
-
-        {/* house-lights dim when the film rolls (screen sits above this at z-20) */}
-        {atTheater && playing && (
-          <div className="pointer-events-none absolute inset-0 z-10 bg-black/55 transition-opacity duration-1000" />
-        )}
+        </AnimatePresence>
 
         {/* back */}
         <button
           onClick={() => navigate("/location/hollywood")}
-          className="absolute left-3 top-3 z-30 rounded-full border border-pink/40 bg-black/50 px-3.5 py-1.5 font-display text-[10px] uppercase tracking-[0.16em] text-pink-light/85 backdrop-blur-sm hover:text-white"
+          className="absolute left-3 z-30 rounded-full border border-pink/40 bg-black/50 px-3.5 py-1.5 font-display text-[10px] uppercase tracking-[0.16em] text-pink-light/85 backdrop-blur-sm hover:text-white"
           style={{ top: "max(0.75rem, env(safe-area-inset-top))" }}
         >
           ← Hollywood
