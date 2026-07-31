@@ -156,7 +156,7 @@ const MapHub: React.FC = () => {
   const { travelTo } = useTravel();
   const navigate = useNavigate();
   const isPortrait = useIsPortrait();
-  const { member } = useMember();
+  const { member, unlocked } = useMember();
   const reduceMotion = useReducedMotion();
   const [mapReady, setMapReady] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);   // mobile hamburger nav
@@ -456,6 +456,9 @@ const MapHub: React.FC = () => {
   const onPinActivate = (wp: Waypoint) => {
     if (placeMode) return;                       // placement tool owns the pins
     if (didPan.current) { didPan.current = false; return; } // was a pan-drag, not a tap
+    // The map is public; entering a waypoint needs a login. Send guests to /join,
+    // remembering the district they wanted so we can drop them back after signup.
+    if (!unlocked) { trackEvent("waypoint_gated", { location: wp.id }); navigate("/join", { state: { from: `/location/${wp.id}` } }); return; }
     dive(wp);
   };
 

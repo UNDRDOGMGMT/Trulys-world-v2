@@ -1,11 +1,12 @@
 import React, { Suspense } from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { UnlockProvider } from "@/contexts/UnlockContext";
 import { MemberProvider } from "@/contexts/MemberContext";
 import { TravelProvider } from "@/contexts/TravelContext";
+import { LAUNCHED } from "@/lib/gate";
 import Starfield from "@/components/Starfield";
 
 // Code-split pages — each loads as its own chunk
@@ -78,7 +79,38 @@ class RouteErrorBoundary extends React.Component<
 // canvas owns the viewport — no starfield, sparkle overlays, or persistent player.
 import { useMember } from '@/contexts/MemberContext';
 
-const BARE_PATHS = ["/cruise-night", "/do-not-disturb", "/dear-joshua-game", "/fear-the-reaper", "/forever-game", "/save-truly", "/boy-game", "/boyfriend-island", "/trulys-pinball", "/trulys-map-pinball", "/sing", "/boutique", "/corbin-bowl", "/corbin-bowl/inside", "/corbin-bowl/arcade", "/world", "/shadows", "/selects"];
+const BARE_PATHS = ["/cruise-night", "/do-not-disturb", "/dear-joshua-game", "/fear-the-reaper", "/forever-game", "/save-truly", "/boy-game", "/boyfriend-island", "/trulys-pinball", "/trulys-map-pinball", "/sing", "/boutique", "/corbin-bowl", "/corbin-bowl/inside", "/corbin-bowl/arcade", "/world", "/shadows", "/selects", "/join"];
+
+// Login wall for member-only routes (waypoints, games, EP, account). Public
+// pages (map, landing, Shadows, Store) don't use this. Sends logged-out visitors
+// to /join and remembers where they were headed.
+const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { ready, unlocked } = useMember();
+  const location = useLocation();
+  if (!ready) return <div className="min-h-screen bg-[#05010a]" />;
+  if (!unlocked) return <Navigate to="/join" state={{ from: location.pathname + location.search }} replace />;
+  return <>{children}</>;
+};
+
+// The /join page — signup / login. Once the account exists (or staff bypass),
+// bounce back to wherever they were trying to go (default: the map).
+const JoinRoute: React.FC = () => {
+  const { ready, unlocked } = useMember();
+  const navigate = useNavigate();
+  const location = useLocation();
+  React.useEffect(() => {
+    if (ready && unlocked) {
+      const from = (location.state as { from?: string } | null)?.from || "/map";
+      navigate(from, { replace: true });
+    }
+  }, [ready, unlocked, navigate, location.state]);
+  if (!ready || unlocked) return <div className="min-h-screen bg-[#05010a]" />;
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#05010a]" />}>
+      <Gate />
+    </Suspense>
+  );
+};
 
 const SiteShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
@@ -103,29 +135,33 @@ const AnimatedRoutes = () => {
     <Suspense fallback={<PageLoader />}>
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
+          {/* ── Public (no account): map, landing, Shadows single, the Store ── */}
           <Route path="/" element={<Index />} />
           <Route path="/map" element={<MapHub />} />
-          <Route path="/world" element={<GlobeGate><World /></GlobeGate>} />
-          <Route path="/location/:id" element={<LocationPage />} />
-          <Route path="/dear-joshua" element={<DearJoshua />} />
-          <Route path="/cruise-night" element={<CruiseNight />} />
-          <Route path="/do-not-disturb" element={<DoNotDisturb />} />
-          <Route path="/dear-joshua-game" element={<DearJoshuaGame />} />
-          <Route path="/fear-the-reaper" element={<FearTheReaper />} />
-          <Route path="/forever-game" element={<ForeverGame />} />
-          <Route path="/save-truly" element={<SaveTruly />} />
-          <Route path="/boy-game" element={<BoyGame />} />
-          <Route path="/boyfriend-island" element={<BoyfriendIsland />} />
-          <Route path="/trulys-pinball" element={<TrulysPinball />} />
-          <Route path="/trulys-map-pinball" element={<TrulysMapPinball />} />
-          <Route path="/sing" element={<Sing />} />
           <Route path="/shadows" element={<Shadows />} />
           <Route path="/boutique" element={<Boutique />} />
-          <Route path="/selects" element={<Selects />} />
-          <Route path="/corbin-bowl" element={<CorbinBowl />} />
-          <Route path="/corbin-bowl/inside" element={<CorbinInside />} />
-          <Route path="/corbin-bowl/arcade" element={<CorbinArcade />} />
-          <Route path="/account" element={<Account />} />
+          <Route path="/world" element={<GlobeGate><World /></GlobeGate>} />
+          <Route path="/join" element={<JoinRoute />} />
+
+          {/* ── Member-only (login required): waypoints, games, EP, account ── */}
+          <Route path="/location/:id" element={<RequireAuth><LocationPage /></RequireAuth>} />
+          <Route path="/dear-joshua" element={<RequireAuth><DearJoshua /></RequireAuth>} />
+          <Route path="/cruise-night" element={<RequireAuth><CruiseNight /></RequireAuth>} />
+          <Route path="/do-not-disturb" element={<RequireAuth><DoNotDisturb /></RequireAuth>} />
+          <Route path="/dear-joshua-game" element={<RequireAuth><DearJoshuaGame /></RequireAuth>} />
+          <Route path="/fear-the-reaper" element={<RequireAuth><FearTheReaper /></RequireAuth>} />
+          <Route path="/forever-game" element={<RequireAuth><ForeverGame /></RequireAuth>} />
+          <Route path="/save-truly" element={<RequireAuth><SaveTruly /></RequireAuth>} />
+          <Route path="/boy-game" element={<RequireAuth><BoyGame /></RequireAuth>} />
+          <Route path="/boyfriend-island" element={<RequireAuth><BoyfriendIsland /></RequireAuth>} />
+          <Route path="/trulys-pinball" element={<RequireAuth><TrulysPinball /></RequireAuth>} />
+          <Route path="/trulys-map-pinball" element={<RequireAuth><TrulysMapPinball /></RequireAuth>} />
+          <Route path="/sing" element={<RequireAuth><Sing /></RequireAuth>} />
+          <Route path="/selects" element={<RequireAuth><Selects /></RequireAuth>} />
+          <Route path="/corbin-bowl" element={<RequireAuth><CorbinBowl /></RequireAuth>} />
+          <Route path="/corbin-bowl/inside" element={<RequireAuth><CorbinInside /></RequireAuth>} />
+          <Route path="/corbin-bowl/arcade" element={<RequireAuth><CorbinArcade /></RequireAuth>} />
+          <Route path="/account" element={<RequireAuth><Account /></RequireAuth>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>
@@ -134,14 +170,20 @@ const AnimatedRoutes = () => {
   );
 };
 
-// Account-gated: Supabase session + member profile (or server-validated bypass).
-// MemberProvider wraps BOTH the gate and the site so the gate can create accounts.
+// Two modes, switched by LAUNCHED in src/lib/gate.ts:
+//   PRE-LAUNCH  (LAUNCHED=false): the ENTIRE site sits behind the staff code —
+//     only a server-validated bypass gets in. Sign-ups are captured but can't
+//     enter. (Flip LAUNCHED to true at go-live.)
+//   LAUNCHED    (LAUNCHED=true): public model — map, landing, Shadows + the Store
+//     are open to everyone; waypoints/games/EP/account require a login (RequireAuth
+//     bounces logged-out visitors to /join). Staff bypass still grants full access.
 const Gated = () => {
   const { ready, unlocked } = useMember();
   if (!ready) {
     return <div className="min-h-screen bg-[#05010a]" />;
   }
-  if (!unlocked) {
+  // Pre-launch curtain: whole site behind the staff code until we flip LAUNCHED.
+  if (!LAUNCHED && !unlocked) {
     return (
       <Suspense fallback={<div className="min-h-screen bg-[#05010a]" />}>
         <Gate />
