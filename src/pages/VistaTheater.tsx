@@ -8,9 +8,10 @@ import PageMeta from "@/components/PageMeta";
  * through the lobby, down the hall, and into the auditorium, where the music
  * video plays fitted to the screen. Reached from Hollywood → The Vista.
  *
- * To swap the video, change VIDEO_ID (currently the Dear Joshua-era music video).
+ * To go live, set VIDEO_ID to Truly's YouTube video id (the part after `v=` /
+ * `youtu.be/`). Empty string shows a "coming soon" screen.
  */
-const VIDEO_ID = "xJ8TIvTZK14";
+const VIDEO_ID = "";
 
 type Scene = { id: string; src: string; ms: number; caption?: string };
 
@@ -92,7 +93,12 @@ const VistaTheater: React.FC = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.9, duration: 0.7 }}
           >
-            {playing ? (
+            {!VIDEO_ID ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+                <span className="font-display text-[clamp(8px,1.2vw,13px)] uppercase tracking-[0.24em] text-pink-light/85">Music Video</span>
+                <span className="font-whimsy text-[clamp(9px,1.5vw,16px)] text-pink-light/55">coming soon ♥</span>
+              </div>
+            ) : playing ? (
               <iframe
                 className="absolute inset-0 h-full w-full"
                 src={`https://www.youtube-nocookie.com/embed/${VIDEO_ID}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
