@@ -253,8 +253,8 @@ export const locations: LocationData[] = [
     x: 30, y: 65,
     xPortrait: 22, yPortrait: 58,
     headline: 'VIDEOS',
-    body: "Music videos. Dear Joshua out August 21.",
-    cta: { label: 'WATCH ON YOUTUBE', href: 'https://www.youtube.com/watch?v=xJ8TIvTZK14' },
+    body: "Music videos — coming soon.",
+    cta: { label: 'FOLLOW ON INSTAGRAM →', href: 'https://www.instagram.com/trulyoung' },
     backgroundImage: '/world/maps/ven-canals.jpg',
     environment: {
       start: 'canals',
@@ -269,9 +269,6 @@ export const locations: LocationData[] = [
         { id: 'detail', label: 'Canal Detail', src: '/world/maps/ven-c1.jpg', srcPortrait: '/world/maps/ven-c1-v.jpg' },
       ],
     },
-    embeds: [
-      { type: 'youtube', url: 'https://www.youtube.com/embed/xJ8TIvTZK14?si=1MvngWd_LjOBSklR', title: 'Music Video' },
-    ],
   },
   {
     id: 'silverlake',
