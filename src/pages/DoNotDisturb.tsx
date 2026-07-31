@@ -13,7 +13,7 @@ const DoNotDisturb: React.FC = () => {
     <>
       <PageMeta
         title="Do Not Disturb — TRULYS WORLD"
-        description="A night above Sunset at the Chateau Marmont. Keep the paparazzi and the bad exes out — never the cat."
+        description="Do Not Disturb — a game set at the Chateau Marmont."
       />
       <div className="fixed inset-0 bg-black">
         {/* loading state — visible until the game boots */}

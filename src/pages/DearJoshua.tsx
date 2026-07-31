@@ -6,6 +6,7 @@ import Logo from "@/components/Logo";
 import MarqueeStrip from "@/components/MarqueeStrip";
 import Shape from "@/components/Shape";
 import EPPlayer from "@/components/EPPlayer";
+import PasswordGate from "@/components/PasswordGate";
 import frontCover from "@/assets/dear-joshua-front.webp";
 import backCover from "@/assets/dear-joshua-back.webp";
 
@@ -86,8 +87,15 @@ const DearJoshua: React.FC = () => {
             </motion.button>
           </div>
 
-          {/* Dynamic audio-reactive player */}
-          <EPPlayer />
+          {/* Dynamic audio-reactive player — held behind a password until the EP drops */}
+          <PasswordGate
+            storageKey="tw-player-unlock"
+            lockIcon="🎧"
+            title="Dear Joshua — Aug 21"
+            subtitle="The player unlocks on release. Ask Truly for the password."
+          >
+            <EPPlayer />
+          </PasswordGate>
 
           {/* Type-along lyric game — type her letter to Joshua */}
           <div className="mt-10 flex flex-col items-center gap-3">

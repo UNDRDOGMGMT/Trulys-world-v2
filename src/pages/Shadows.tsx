@@ -28,7 +28,7 @@ const Shadows: React.FC = () => {
     <>
       <PageMeta
         title="SHADOWS — TRULYS WORLD"
-        description="Shadows by Truly Young. Out July 31, 2026. Get notified the moment it drops."
+        description="Shadows by Truly Young — out now."
       />
       <main className="relative min-h-[100dvh] w-full overflow-hidden bg-[#0a0510] text-white grain-overlay">
         {/* full-bleed hero */}
@@ -116,7 +116,7 @@ const Shadows: React.FC = () => {
           >
             {!notify ? (
               <button onClick={() => setNotify(true)} className="btn-retro shimmer-sweep text-base px-10 py-3.5">
-                <span>&#10047;</span> Notify Me at Drop <span>&#10047;</span>
+                <span>&#10047;</span> Get Release Updates <span>&#10047;</span>
               </button>
             ) : (
               <div className="w-full rounded-2xl border-2 border-pink/25 bg-black/45 backdrop-blur-sm p-4 glitter-border">
@@ -152,7 +152,7 @@ const Shadows: React.FC = () => {
               <div className="w-full h-[3px] rounded-full bg-white/15 overflow-hidden">
                 <div className="h-full bg-pink shadow-[0_0_8px_rgba(255,79,163,0.6)]" style={{ width: `${prog}%` }} />
               </div>
-              <p className="font-whimsy text-[11px] text-white/40">a first listen ~ before it's out everywhere</p>
+              <p className="font-whimsy text-[11px] text-white/40">Listen to Shadows</p>
             </div>
           </motion.div>
         </div>

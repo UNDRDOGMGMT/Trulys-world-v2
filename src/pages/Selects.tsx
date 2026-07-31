@@ -33,7 +33,7 @@ const Selects: React.FC = () => {
     <>
       <PageMeta
         title="Dear Joshua · Selects — Photos by Amber Asaly — TRULYS WORLD"
-        description="The Dear Joshua photo board, shot by Amber Asaly. Free to download from Truly's inner circle in Silver Lake."
+        description="The Dear Joshua photo board, shot by Amber Asaly. Free to download."
       />
       <main className="relative min-h-[100dvh] w-full bg-[#0a0510] text-white grain-overlay">
         {/* header */}
@@ -60,7 +60,7 @@ const Selects: React.FC = () => {
         </header>
 
         <p className="px-5 pt-4 text-center font-whimsy text-[12px] text-white/50">
-          the inner circle · tap any frame to download ♥
+          tap any photo to download
         </p>
 
         {/* masonry board */}

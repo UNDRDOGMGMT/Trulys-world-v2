@@ -216,7 +216,7 @@ const Boutique: React.FC = () => {
     <>
       <PageMeta
         title="The Store — TRULYS WORLD"
-        description="The Store — Truly's World's vintage record shop on a West Hollywood side street. Push the door, flip the crates, take something home."
+        description="The Store — Truly's World merch and records."
       />
       <div className="fixed inset-0 overflow-hidden bg-[#0c0618] text-[#f2ead8] select-none">
         {/* ---------- the room itself ---------- */}

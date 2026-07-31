@@ -15,7 +15,7 @@ const CruiseNight: React.FC = () => {
     <>
       <PageMeta
         title="Cruise Night — TRULYS WORLD"
-        description="A Truly Young late-nite drive through Los Angeles. Black Macan, plate TRULY — pick a route, collect the tapes, dodge traffic."
+        description="Cruise Night — a driving game through Los Angeles."
       />
       <div className="fixed inset-0 bg-black">
         {/* loading state — visible until the game boots */}

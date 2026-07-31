@@ -26,7 +26,7 @@ const CorbinBowl: React.FC = () => {
     <>
       <PageMeta
         title="Corbin Bowl — The Dear Joshua Arcade — TRULYS WORLD"
-        description="Ventura Blvd, 3am. Corbin Bowl, reborn in Truly's world — every song on Dear Joshua is a playable arcade cabinet inside. Push the doors open."
+        description="Corbin Bowl — every Dear Joshua track as a playable arcade game."
       />
       <div className="fixed inset-0 overflow-hidden bg-[#1a0a24]">
         {/* establishing shot — slow neon drift, brightening as you step in */}
