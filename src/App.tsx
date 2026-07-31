@@ -93,17 +93,14 @@ const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 // The /join page — signup / login. Once the account exists (or staff bypass),
-// bounce back to wherever they were trying to go (default: the map).
+// always drop the user on the flat map so they land in the world and pick where
+// to go (rather than back on whatever waypoint they tapped to trigger login).
 const JoinRoute: React.FC = () => {
   const { ready, unlocked } = useMember();
   const navigate = useNavigate();
-  const location = useLocation();
   React.useEffect(() => {
-    if (ready && unlocked) {
-      const from = (location.state as { from?: string } | null)?.from || "/map";
-      navigate(from, { replace: true });
-    }
-  }, [ready, unlocked, navigate, location.state]);
+    if (ready && unlocked) navigate("/map", { replace: true });
+  }, [ready, unlocked, navigate]);
   if (!ready || unlocked) return <div className="min-h-screen bg-[#05010a]" />;
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#05010a]" />}>
