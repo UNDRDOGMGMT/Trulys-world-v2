@@ -34,6 +34,7 @@ const VistaTheater: React.FC = () => {
   // phase 0..CLIPS.length-1 = playing that clip; phase === CLIPS.length = seated in the theater
   const [phase, setPhase] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [fading, setFading] = useState(false); // dip-to-black between beats
   const vids = useRef<(HTMLVideoElement | null)[]>([]);
 
   const seated = phase >= CLIPS.length;
@@ -47,7 +48,14 @@ const VistaTheater: React.FC = () => {
     });
   }, [phase]);
 
-  const skip = useCallback(() => setPhase(CLIPS.length), []);
+  // advance to the next beat through a short black dip (like a dark doorway),
+  // so the scene change never morphs on screen
+  const goTo = useCallback((next: number) => {
+    setFading(true);
+    window.setTimeout(() => { setPhase(next); setFading(false); }, 420);
+  }, []);
+
+  const skip = useCallback(() => goTo(CLIPS.length), [goTo]);
 
   return (
     <>
@@ -62,8 +70,8 @@ const VistaTheater: React.FC = () => {
             muted
             playsInline
             preload="auto"
-            onEnded={() => setPhase((p) => (p === i ? i + 1 : p))}
-            className="absolute inset-0 h-full w-full object-cover transition-opacity duration-300"
+            onEnded={() => { if (phase === i) goTo(i + 1); }}
+            className="absolute inset-0 h-full w-full object-cover"
             style={{ opacity: !seated && phase === i ? 1 : 0, zIndex: !seated && phase === i ? 1 : 0 }}
           />
         ))}
@@ -133,6 +141,12 @@ const VistaTheater: React.FC = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* dip-to-black between beats (hides the scene change) */}
+        <div
+          className="pointer-events-none absolute inset-0 z-40 bg-black transition-opacity duration-[400ms] ease-in-out"
+          style={{ opacity: fading ? 1 : 0 }}
+        />
 
         {/* back */}
         <button
