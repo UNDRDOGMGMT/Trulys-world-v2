@@ -109,7 +109,7 @@ export const locations: LocationData[] = [
           { x: 85, y: 62, to: 'closeup', label: 'The Theatre' },
         ] },
         { id: 'boulevard', label: 'The Boulevard', src: '/world/maps/hw-street.jpg', srcPortrait: '/world/maps/hw-street-v.jpg', video: '/world/anim/hw-street-cine.mp4', action: { label: 'Save Truly', to: '/save-truly' } },
-        { id: 'vista', label: 'The Vista', src: '/world/maps/hw-vista.jpg', action: { label: 'Enter the Vista', to: '/vista' } },
+        { id: 'vista', label: 'The Vista', src: '/world/theater/vista-exterior.jpg', action: { label: 'Enter the Vista', to: '/vista' } },
         { id: 'closeup', label: 'The Theatre', src: '/world/maps/hw-c3.jpg', srcPortrait: '/world/maps/hw-c3-v.jpg', video: '/world/anim/hw-c3-cine.mp4' },
       ],
     },

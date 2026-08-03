@@ -54,13 +54,9 @@ const VistaTheater: React.FC = () => {
     window.setTimeout(() => { setPhase(next); setFading(false); }, 420);
   }, []);
 
-  // when a clip ends: dip into the next room, but the final clip already ends on
-  // the auditorium still, so seat instantly (frame-matched, no black flash)
+  // when a clip ends, dip to black into the next room (or into the seated still)
   const onClipEnd = useCallback((i: number) => {
-    if (i !== phase) return;
-    const next = i + 1;
-    if (next >= CLIPS.length) setPhase(next);
-    else goTo(next);
+    if (i === phase) goTo(i + 1);
   }, [phase, goTo]);
 
   const skip = useCallback(() => goTo(CLIPS.length), [goTo]);
