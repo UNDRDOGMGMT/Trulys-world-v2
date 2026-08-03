@@ -98,7 +98,10 @@ export const locations: LocationData[] = [
     headline: 'SHADOWS — OUT NOW',
     body: "Shadows out now. Dear Joshua — the EP — out August 21. One LA show August 8, location TBA.",
     cta: { label: 'LISTEN / SAVE', href: 'https://open.spotify.com/artist/6Hqu0lCYGK2QO1vp4rwDMS' },
-    extras: [{ label: 'FOLLOW ON SPOTIFY →', href: 'https://open.spotify.com/artist/6Hqu0lCYGK2QO1vp4rwDMS' }],
+    extras: [
+      { label: '✦ RSVP for the LA show · Aug 8 →', href: '/rsvp' },
+      { label: 'FOLLOW ON SPOTIFY →', href: 'https://open.spotify.com/artist/6Hqu0lCYGK2QO1vp4rwDMS' },
+    ],
     backgroundImage: '/world/maps/hw-aerial.jpg',
     environment: {
       start: 'aerial',
