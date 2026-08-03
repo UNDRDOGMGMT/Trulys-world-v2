@@ -4,37 +4,37 @@ import { motion, AnimatePresence } from "framer-motion";
 import PageMeta from "@/components/PageMeta";
 
 /**
- * The Vista Theatre — a cinematic walk-in built from real footage: the camera
- * travels off the street through the lobby and into the auditorium (two Higgsfield
- * image-to-video clips whose end frames match the next scene, so the joins are
- * seamless), then rests on the auditorium still where the music video plays.
+ * The Vista Theatre — a cinematic walk-in built from real footage. Three
+ * forward-dolly clips (Higgsfield image-to-video, each a wide→tight push of the
+ * SAME scene so the camera truly travels without morphing): street push-in,
+ * lobby glide, auditorium approach. Fade-to-black between the room changes; the
+ * last clip ends exactly on the auditorium still where the music video lives.
  * Reached from Hollywood → The Vista.
  *
  * To go live, set VIDEO_ID to Truly's YouTube video id. Empty = "coming soon".
  */
 const VIDEO_ID = "";
 
-// Walk-in clips, in order. Each ends on the next scene's first frame.
+// Walk-in clips, in order.
 const CLIPS = [
-  "/world/theater/vista-walk-1.mp4", // street → lobby
-  "/world/theater/vista-walk-2.mp4", // lobby → auditorium
+  "/world/theater/vista-walk-1.mp4", // street push-in
+  "/world/theater/vista-walk-2.mp4", // lobby glide
+  "/world/theater/vista-walk-3.mp4", // auditorium approach
 ];
-// Destination still (matches the last clip's final frame) — where the screen lives.
-const AUDITORIUM = "/world/theater/vista-auditorium.jpg";
+// Destination still — the exact frame clip 3 ends on. Holds the screen.
+const AUDITORIUM = "/world/theater/vista-auditorium-tight.jpg";
 
-// The blank black screen rectangle inside the auditorium art, as % of the frame.
-// The iframe fills this exactly; YouTube letterboxes internally against black, so
-// it blends with the screen and the video reads as a perfect fit.
-const SCREEN = { leftPct: 35.9, topPct: 34.4, widthPct: 30.0, heightPct: 30.2 };
-const THEATER_ZOOM = 1.6;
-const SCREEN_ORIGIN = `${SCREEN.leftPct + SCREEN.widthPct / 2}% ${SCREEN.topPct + SCREEN.heightPct / 2}%`;
+// The blank black screen rectangle inside the tight auditorium still, as % of
+// the frame. The iframe fills this exactly; YouTube letterboxes internally
+// against black, so it blends and the video reads as a perfect fit.
+const SCREEN = { leftPct: 26.0, topPct: 25.8, widthPct: 48.0, heightPct: 48.3 };
 
 const VistaTheater: React.FC = () => {
   const navigate = useNavigate();
-  // phase 0..CLIPS.length-1 = playing that clip; phase === CLIPS.length = seated in the theater
+  // phase 0..CLIPS.length-1 = playing that clip; phase === CLIPS.length = seated
   const [phase, setPhase] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const [fading, setFading] = useState(false); // dip-to-black between beats
+  const [fading, setFading] = useState(false); // dip-to-black between room changes
   const vids = useRef<(HTMLVideoElement | null)[]>([]);
 
   const seated = phase >= CLIPS.length;
@@ -48,12 +48,20 @@ const VistaTheater: React.FC = () => {
     });
   }, [phase]);
 
-  // advance to the next beat through a short black dip (like a dark doorway),
-  // so the scene change never morphs on screen
+  // advance through a short black dip (a dark doorway) so room changes never cut hard
   const goTo = useCallback((next: number) => {
     setFading(true);
     window.setTimeout(() => { setPhase(next); setFading(false); }, 420);
   }, []);
+
+  // when a clip ends: dip into the next room, but the final clip already ends on
+  // the auditorium still, so seat instantly (frame-matched, no black flash)
+  const onClipEnd = useCallback((i: number) => {
+    if (i !== phase) return;
+    const next = i + 1;
+    if (next >= CLIPS.length) setPhase(next);
+    else goTo(next);
+  }, [phase, goTo]);
 
   const skip = useCallback(() => goTo(CLIPS.length), [goTo]);
 
@@ -70,7 +78,7 @@ const VistaTheater: React.FC = () => {
             muted
             playsInline
             preload="auto"
-            onEnded={() => { if (phase === i) goTo(i + 1); }}
+            onEnded={() => onClipEnd(i)}
             className="absolute inset-0 h-full w-full object-cover"
             style={{ opacity: !seated && phase === i ? 1 : 0, zIndex: !seated && phase === i ? 1 : 0 }}
           />
@@ -79,22 +87,21 @@ const VistaTheater: React.FC = () => {
         {/* forward-motion vignette over the footage */}
         {!seated && (
           <div className="pointer-events-none absolute inset-0 z-[2]"
-               style={{ boxShadow: "inset 0 0 180px 40px rgba(0,0,0,0.6)" }} />
+               style={{ boxShadow: "inset 0 0 180px 40px rgba(0,0,0,0.55)" }} />
         )}
 
-        {/* SEATED — auditorium still, zoomed toward the screen, with the video */}
+        {/* SEATED — auditorium still (the clip's final frame) with the video screen */}
         <AnimatePresence>
           {seated && (
             <motion.div
               className="absolute inset-0 z-[3]"
-              style={{ transformOrigin: SCREEN_ORIGIN }}
-              initial={{ scale: 1.0, opacity: 0 }}
-              animate={{ scale: THEATER_ZOOM, opacity: 1 }}
-              transition={{ scale: { duration: 1.4, ease: [0.16, 1, 0.3, 1] }, opacity: { duration: 0.5 } }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
             >
               <img src={AUDITORIUM} alt="" className="h-full w-full object-cover" draggable={false} />
               <div className="pointer-events-none absolute inset-0"
-                   style={{ boxShadow: "inset 0 0 180px 40px rgba(0,0,0,0.6)" }} />
+                   style={{ boxShadow: "inset 0 0 180px 40px rgba(0,0,0,0.5)" }} />
 
               {/* house-lights dim when the film rolls (screen sits above at z-20) */}
               {playing && <div className="pointer-events-none absolute inset-0 z-10 bg-black/55" />}
@@ -110,12 +117,12 @@ const VistaTheater: React.FC = () => {
                 }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.9, duration: 0.7 }}
+                transition={{ delay: 0.5, duration: 0.7 }}
               >
                 {!VIDEO_ID ? (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-                    <span className="font-display text-[clamp(8px,1vw,12px)] uppercase tracking-[0.24em] text-pink-light/85">Music Video</span>
-                    <span className="font-whimsy text-[clamp(9px,1.3vw,15px)] text-pink-light/55">coming soon ♥</span>
+                    <span className="font-display text-[clamp(9px,1.1vw,14px)] uppercase tracking-[0.24em] text-pink-light/85">Music Video</span>
+                    <span className="font-whimsy text-[clamp(10px,1.5vw,17px)] text-pink-light/55">coming soon ♥</span>
                   </div>
                 ) : playing ? (
                   <iframe
@@ -128,13 +135,13 @@ const VistaTheater: React.FC = () => {
                 ) : (
                   <button
                     onClick={() => setPlaying(true)}
-                    className="group absolute inset-0 flex flex-col items-center justify-center gap-1.5"
+                    className="group absolute inset-0 flex flex-col items-center justify-center gap-2"
                     aria-label="Play the music video"
                   >
-                    <span className="flex h-[24%] min-h-[30px] aspect-square items-center justify-center rounded-full border-2 border-pink/70 bg-black/40 text-pink-light backdrop-blur-sm transition-transform group-hover:scale-110">
-                      <span className="translate-x-[1px] text-[clamp(11px,2vw,20px)] leading-none">▶</span>
+                    <span className="flex h-[22%] min-h-[36px] aspect-square items-center justify-center rounded-full border-2 border-pink/70 bg-black/40 text-pink-light backdrop-blur-sm transition-transform group-hover:scale-110">
+                      <span className="translate-x-[1px] text-[clamp(14px,2vw,24px)] leading-none">▶</span>
                     </span>
-                    <span className="font-display text-[clamp(6px,0.8vw,9px)] uppercase tracking-[0.22em] text-pink-light/90">Play the music video</span>
+                    <span className="font-display text-[clamp(7px,0.85vw,10px)] uppercase tracking-[0.22em] text-pink-light/90">Play the music video</span>
                   </button>
                 )}
               </motion.div>
@@ -142,7 +149,7 @@ const VistaTheater: React.FC = () => {
           )}
         </AnimatePresence>
 
-        {/* dip-to-black between beats (hides the scene change) */}
+        {/* dip-to-black between rooms (hides the scene change) */}
         <div
           className="pointer-events-none absolute inset-0 z-40 bg-black transition-opacity duration-[400ms] ease-in-out"
           style={{ opacity: fading ? 1 : 0 }}
