@@ -15,23 +15,22 @@ import PageMeta from "@/components/PageMeta";
  */
 const VIDEO_ID = "590TcADz1us";
 
-// Walk-in clips, in order.
+// Walk-in clips, in order. (No in-theater push-in — we cut straight from the
+// lobby to the seated view with the screen.)
 const CLIPS = [
   "/world/theater/vista-walk-1.mp4", // street push-in
   "/world/theater/vista-walk-2.mp4", // lobby glide
-  "/world/theater/vista-walk-3.mp4", // auditorium approach
 ];
-// Destination still — the exact frame clip 3 ends on. Holds the screen.
-const AUDITORIUM = "/world/theater/vista-auditorium-tight.jpg";
+// Destination still — the seated auditorium with the curtains open around the screen.
+const AUDITORIUM = "/world/theater/vista-auditorium.jpg";
 
-// The blank black screen rectangle inside the tight auditorium still, as % of
-// the frame. The iframe fills this exactly; YouTube letterboxes internally
-// against black, so it blends and the video reads as a perfect fit.
-// Native pixel size of the tight auditorium still — the seated stage locks to this
-// aspect so the screen overlay stays put and the screen rect stays true 16:9.
-const AUD_W = 1720;
-const AUD_H = 960;
-const SCREEN = { leftPct: 26.0, topPct: 25.8, widthPct: 48.0, heightPct: 48.3 };
+// Native pixel size of the auditorium still — the seated stage locks to this aspect
+// so the screen overlay stays put on the art at any window size.
+const AUD_W = 2752;
+const AUD_H = 1536;
+// The blank black screen rectangle inside the art (measured — perfectly centered),
+// as % of the frame. The iframe fills this and sits cleanly inside the curtains.
+const SCREEN = { leftPct: 31.2, topPct: 32.0, widthPct: 37.6, heightPct: 38.6 };
 
 const VistaTheater: React.FC = () => {
   const navigate = useNavigate();
