@@ -13,7 +13,7 @@ import PageMeta from "@/components/PageMeta";
  *
  * To go live, set VIDEO_ID to Truly's YouTube video id. Empty = "coming soon".
  */
-const VIDEO_ID = "";
+const VIDEO_ID = "590TcADz1us";
 
 // Walk-in clips, in order.
 const CLIPS = [
