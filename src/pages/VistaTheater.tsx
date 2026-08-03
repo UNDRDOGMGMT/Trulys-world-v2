@@ -103,8 +103,11 @@ const VistaTheater: React.FC = () => {
               transition={{ duration: 0.5 }}
             >
               <div
-                className="relative max-h-full max-w-full"
-                style={{ aspectRatio: `${AUD_W} / ${AUD_H}`, width: `min(100%, calc(100dvh * ${AUD_W} / ${AUD_H}))` }}
+                className="relative"
+                style={{
+                  width: `min(100vw, calc(100dvh * ${AUD_W} / ${AUD_H}))`,
+                  height: `min(100dvh, calc(100vw * ${AUD_H} / ${AUD_W}))`,
+                }}
               >
                 <img src={AUDITORIUM} alt="" className="absolute inset-0 h-full w-full object-cover" draggable={false} />
                 <div className="pointer-events-none absolute inset-0"
