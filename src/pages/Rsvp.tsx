@@ -34,45 +34,48 @@ const Rsvp: React.FC = () => {
     setBusy(true);
     try {
       const guestsN = Math.max(0, Math.min(10, parseInt(guests, 10) || 0));
+      let emailOk = false;
+      let dbOk = false;
 
-      // 1) email hi@trulys.world (Web3Forms) — best-effort
+      // 1) email hi@trulys.world (Web3Forms). Use FormData (a "simple" request) so
+      // the browser skips the JSON preflight that their endpoint rejects with CORS.
       if (WEB3FORMS_KEY) {
         try {
-          await fetch("https://api.web3forms.com/submit", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Accept: "application/json" },
-            body: JSON.stringify({
-              access_key: WEB3FORMS_KEY,
-              subject: `New RSVP — Aug 8 LA — ${name.trim()}`,
-              from_name: "Truly's World RSVP",
-              replyto: email.trim(),
-              "Event": EVENT_LABEL,
-              "Name": name.trim(),
-              "Email": email.trim(),
-              "Guests (plus)": String(guestsN),
-              "Phone / IG": contact.trim() || "—",
-              "Note": note.trim() || "—",
-              botcheck: false,
-            }),
-          });
-        } catch { /* email is best-effort; the Supabase record below is the source of truth */ }
+          const fd = new FormData();
+          fd.append("access_key", WEB3FORMS_KEY);
+          fd.append("subject", `New RSVP — Aug 8 LA — ${name.trim()}`);
+          fd.append("from_name", "Truly's World RSVP");
+          fd.append("replyto", email.trim());
+          fd.append("Event", EVENT_LABEL);
+          fd.append("Name", name.trim());
+          fd.append("Email", email.trim());
+          fd.append("Guests (plus)", String(guestsN));
+          fd.append("Phone / IG", contact.trim() || "—");
+          fd.append("Note", note.trim() || "—");
+          fd.append("botcheck", "");
+          const r = await fetch("https://api.web3forms.com/submit", { method: "POST", body: fd });
+          const j = await r.json().catch(() => null);
+          emailOk = !!(j && j.success);
+        } catch { /* fall back to the DB record */ }
       }
 
       // 2) durable record for the approval list
       if (supabaseConfigured) {
-        const { error } = await supabase.from("rsvps").insert({
-          name: name.trim(),
-          email: email.trim(),
-          guests: guestsN,
-          contact: contact.trim(),
-          note: note.trim(),
-          event: "aug-8-la",
-        });
-        if (error) throw error;
-      } else if (!WEB3FORMS_KEY) {
-        throw new Error("RSVP isn't wired up yet — check back soon ♥");
+        try {
+          const { error } = await supabase.from("rsvps").insert({
+            name: name.trim(),
+            email: email.trim(),
+            guests: guestsN,
+            contact: contact.trim(),
+            note: note.trim(),
+            event: "aug-8-la",
+          });
+          dbOk = !error;
+        } catch { /* fall back to the email */ }
       }
 
+      // succeed if EITHER path captured the RSVP
+      if (!emailOk && !dbOk) throw new Error("Couldn't send your RSVP — please try again in a moment.");
       setDone(true);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Something glitched — try again in a sec.");
