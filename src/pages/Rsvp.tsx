@@ -90,9 +90,20 @@ const Rsvp: React.FC = () => {
       <main className="relative min-h-[100dvh] w-full bg-background grain-overlay flex flex-col items-center px-5 py-10">
         <div className="pink-aura absolute left-1/2 top-24 -translate-x-1/2 h-72 w-72" aria-hidden />
 
-        <button onClick={() => navigate("/")} aria-label="Home" className="relative z-10 mb-6">
+        <button onClick={() => navigate("/")} aria-label="Home" className="relative z-10 mb-5">
           <Logo size="md" />
         </button>
+
+        {/* show flier */}
+        <motion.img
+          src="/world/theater/rsvp-flier.jpg"
+          alt="Hollywood's Favorite: Truly Young + the Ex Boyfriends — Live in Concert · 8/8 · 8PM · on Sunset Blvd"
+          className="relative z-10 mb-6 w-full max-w-md rounded-2xl border-2 border-pink/30 shadow-[0_0_44px_rgba(255,79,163,0.28)]"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55 }}
+          draggable={false}
+        />
 
         <motion.div
           className="relative z-10 w-full max-w-md rounded-3xl border-2 border-pink/30 bg-black/55 backdrop-blur-md glitter-border px-6 py-8"
@@ -103,8 +114,8 @@ const Rsvp: React.FC = () => {
               <div className="text-4xl mb-3" aria-hidden>💌</div>
               <h1 className="chrome-text-pink font-display text-3xl leading-none mb-3">You're on the list</h1>
               <p className="font-body text-sm text-cream/80 leading-snug">
-                RSVPs are approved by hand. If you're in, we'll email you the confirmation and the
-                location before the show. Keep an eye on your inbox ♥
+                Your RSVP is <span className="text-pink-light">pending</span>. Approved confirmations —
+                with the venue address — will be sent out later this week. Keep an eye on your inbox ♥
               </p>
               <button onClick={() => navigate("/map")} className="btn-retro shimmer-sweep mt-7 text-sm">
                 ✦ Explore Truly's World ✦
@@ -149,7 +160,7 @@ const Rsvp: React.FC = () => {
                   {busy ? "Sending…" : "✦ Request RSVP ✦"}
                 </button>
                 <p className="text-center font-body text-[11px] text-cream/45 mt-1">
-                  Requests are reviewed by hand — approval + location come by email.
+                  Reviewed by hand — approvals + venue address are emailed later this week.
                 </p>
               </form>
             </>
