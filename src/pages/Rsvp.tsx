@@ -178,6 +178,9 @@ const Rsvp: React.FC = () => {
                 <button type="submit" disabled={busy} className="btn-retro shimmer-sweep text-sm py-3 disabled:opacity-60">
                   {busy ? "Sending…" : "✦ Request RSVP ✦"}
                 </button>
+                <p className="text-center font-body text-[11px] text-pink-light/70 mt-2">
+                  Anyone under 18 must be accompanied by a parent or legal guardian.
+                </p>
                 <p className="text-center font-body text-[11px] text-cream/45 mt-1">
                   Reviewed by hand — approvals + venue address are emailed later this week.
                 </p>

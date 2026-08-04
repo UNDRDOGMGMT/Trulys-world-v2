@@ -48,7 +48,10 @@ const Tickets: React.FC = () => {
           >
             <span>&#10047;</span> RSVP <span>&#10047;</span>
           </button>
-          <p className="font-body text-[11px] text-cream/45 mt-3">
+          <p className="font-body text-[11px] text-pink-light/70 mt-3">
+            Anyone under 18 must be accompanied by a parent or legal guardian.
+          </p>
+          <p className="font-body text-[11px] text-cream/45 mt-1">
             Approved confirmations + venue address emailed later this week.
           </p>
         </motion.div>
