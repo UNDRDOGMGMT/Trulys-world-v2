@@ -178,7 +178,7 @@ interface MemberState {
   signInWithPassword: (email: string, password: string) => Promise<OkErr>;
   signUp: (d: PendingProfile) => Member;
   logIn: (email: string) => boolean;
-  logOut: () => void;
+  logOut: () => Promise<void>;
   award: (game: string, label: string, points: number) => void;
   redeem: (rewardId: string) => void;
   enableBypass: () => void;
@@ -483,7 +483,7 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const logIn = useCallback((_email: string) => false, []);
 
-  const logOut = useCallback(() => {
+  const logOut = useCallback(async () => {
     audit('auth.logout', {});
     try { sessionStorage.removeItem(BYPASS_KEY); } catch { /* ignore */ }
     clearPendingProfile();
@@ -492,7 +492,11 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setMember(null);
     setSessionEmail(null);
     setPasswordReady(false);
-    if (supabaseConfigured) void supabase.auth.signOut();
+    // Await signOut so a hard navigation / remount cannot restore the
+    // persisted session via getSession() before storage is cleared.
+    if (supabaseConfigured) {
+      try { await supabase.auth.signOut(); } catch { /* ignore */ }
+    }
   }, []);
 
   const award = useCallback((game: string, label: string, points: number) => {
