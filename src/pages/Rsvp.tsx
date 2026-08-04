@@ -18,7 +18,8 @@ const EVENT_LABEL = "Truly Young — Live · August 8 · Los Angeles";
 
 const Rsvp: React.FC = () => {
   const navigate = useNavigate();
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [guests, setGuests] = useState("0");
   const [contact, setContact] = useState("");
@@ -30,9 +31,12 @@ const Rsvp: React.FC = () => {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(null);
-    if (!name.trim() || !email.trim()) { setErr("Name and email are required ♥"); return; }
+    if (!firstName.trim() || !lastName.trim() || !email.trim()) { setErr("First name, last name, and email are required ♥"); return; }
     setBusy(true);
     try {
+      const first = firstName.trim();
+      const last = lastName.trim();
+      const fullName = `${first} ${last}`;
       const guestsN = Math.max(0, Math.min(10, parseInt(guests, 10) || 0));
       let emailOk = false;
       let dbOk = false;
@@ -43,11 +47,12 @@ const Rsvp: React.FC = () => {
         try {
           const fd = new FormData();
           fd.append("access_key", WEB3FORMS_KEY);
-          fd.append("subject", `New RSVP — Aug 8 LA — ${name.trim()}`);
+          fd.append("subject", `New RSVP — Aug 8 LA — ${fullName}`);
           fd.append("from_name", "Truly's World RSVP");
           fd.append("replyto", email.trim());
           fd.append("Event", EVENT_LABEL);
-          fd.append("Name", name.trim());
+          fd.append("First Name", first);
+          fd.append("Last Name", last);
           fd.append("Email", email.trim());
           fd.append("Guests (plus)", String(guestsN));
           fd.append("Phone / IG", contact.trim() || "—");
@@ -63,7 +68,7 @@ const Rsvp: React.FC = () => {
       if (supabaseConfigured) {
         try {
           const { error } = await supabase.from("rsvps").insert({
-            name: name.trim(),
+            name: fullName,
             email: email.trim(),
             guests: guestsN,
             contact: contact.trim(),
@@ -83,7 +88,7 @@ const Rsvp: React.FC = () => {
         await fetch("/api/rsvp-ack", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: name.trim(), email: email.trim(), guests: guestsN }),
+          body: JSON.stringify({ name: first, email: email.trim(), guests: guestsN }),
         });
       } catch { /* fan ack is best-effort */ }
 
@@ -146,7 +151,10 @@ const Rsvp: React.FC = () => {
               </div>
 
               <form onSubmit={submit} className="flex flex-col gap-3">
-                <Field label="Name" value={name} onChange={setName} placeholder="Your name" required />
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="First name" value={firstName} onChange={setFirstName} placeholder="First" required />
+                  <Field label="Last name" value={lastName} onChange={setLastName} placeholder="Last" required />
+                </div>
                 <Field label="Email" value={email} onChange={setEmail} placeholder="you@email.com" type="email" required />
                 <div className="flex flex-col gap-1">
                   <label className="font-display text-[10px] uppercase tracking-[0.18em] text-pink-light/80">Bringing anyone?</label>
