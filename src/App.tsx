@@ -17,6 +17,7 @@ const LocationPage = React.lazy(() => import("./pages/LocationPage"));
 const DearJoshua = React.lazy(() => import("./pages/DearJoshua"));
 const VistaTheater = React.lazy(() => import("./pages/VistaTheater"));
 const Rsvp = React.lazy(() => import("./pages/Rsvp"));
+const Tickets = React.lazy(() => import("./pages/Tickets"));
 const CruiseNight = React.lazy(() => import("./pages/CruiseNight"));
 const DoNotDisturb = React.lazy(() => import("./pages/DoNotDisturb"));
 const DearJoshuaGame = React.lazy(() => import("./pages/DearJoshuaGame"));
@@ -81,7 +82,7 @@ class RouteErrorBoundary extends React.Component<
 // canvas owns the viewport — no starfield, sparkle overlays, or persistent player.
 import { useMember } from '@/contexts/MemberContext';
 
-const BARE_PATHS = ["/cruise-night", "/do-not-disturb", "/dear-joshua-game", "/fear-the-reaper", "/forever-game", "/save-truly", "/boy-game", "/boyfriend-island", "/trulys-pinball", "/trulys-map-pinball", "/karaoke", "/boutique", "/corbin-bowl", "/corbin-bowl/inside", "/corbin-bowl/arcade", "/world", "/shadows", "/selects", "/join", "/vista", "/rsvp"];
+const BARE_PATHS = ["/cruise-night", "/do-not-disturb", "/dear-joshua-game", "/fear-the-reaper", "/forever-game", "/save-truly", "/boy-game", "/boyfriend-island", "/trulys-pinball", "/trulys-map-pinball", "/karaoke", "/boutique", "/corbin-bowl", "/corbin-bowl/inside", "/corbin-bowl/arcade", "/world", "/shadows", "/selects", "/join", "/vista", "/rsvp", "/tickets"];
 
 // Login wall for member-only routes (waypoints, games, EP, account). Public
 // pages (map, landing, Shadows, Store) don't use this. Sends logged-out visitors
@@ -142,6 +143,7 @@ const AnimatedRoutes = () => {
           <Route path="/world" element={<GlobeGate><World /></GlobeGate>} />
           <Route path="/join" element={<JoinRoute />} />
           <Route path="/rsvp" element={<Rsvp />} />
+          <Route path="/tickets" element={<Tickets />} />
 
           {/* ── Member-only (login required): waypoints, games, EP, account ── */}
           <Route path="/location/:id" element={<RequireAuth><LocationPage /></RequireAuth>} />

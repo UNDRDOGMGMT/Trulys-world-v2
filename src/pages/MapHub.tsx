@@ -64,7 +64,7 @@ const heartClip = (cx: number, cy: number, r: number) => {
 // The launch neighborhoods. x/y = % on the landscape map; xP/yP = % on the portrait map.
 // labelBelowP: on the tighter portrait map, hang the label under the pin so
 // neighboring labels don't collide (LC / WeHo / Hollywood cluster at the top).
-interface Waypoint { id: string; name: string; blurb: string; x: number; y: number; xP: number; yP: number; labelBelowP?: boolean; }
+interface Waypoint { id: string; name: string; blurb: string; x: number; y: number; xP: number; yP: number; labelBelowP?: boolean; to?: string; }
 
 // Heart-shaped waypoint marker — fill = currentColor, stroke/glow via style so it
 // scales and lights up like the old dot did (on-brand for Truly's World hearts).
@@ -81,6 +81,7 @@ const WAYPOINTS: Waypoint[] = [
   { id: "the-valley", name: "The Valley", blurb: "The EP Arcade", x: 38, y: 15, xP: 38, yP: 15 },
   { id: "laurel-canyon", name: "Laurel Canyon", blurb: "Listen", x: 46, y: 31, xP: 43, yP: 24 },
   { id: "weho", name: "West Hollywood", blurb: "Merch", x: 40, y: 48, xP: 40, yP: 40, labelBelowP: true },
+  { id: "concert", name: "Concert Tickets", blurb: "Concert Tickets", x: 33, y: 56, xP: 30, yP: 47, to: "/tickets", labelBelowP: true },
   { id: "beverly-hills", name: "Beverly Hills", blurb: "Press / EPK", x: 25, y: 43, xP: 28, yP: 37, labelBelowP: true },
   { id: "hollywood", name: "Hollywood", blurb: "Music / Releases", x: 51, y: 48, xP: 63, yP: 40 },
   { id: "koreatown", name: "Koreatown", blurb: "Karaoke", x: 56, y: 59, xP: 50, yP: 62, labelBelowP: true },
@@ -457,6 +458,8 @@ const MapHub: React.FC = () => {
   const onPinActivate = (wp: Waypoint) => {
     if (placeMode) return;                       // placement tool owns the pins
     if (didPan.current) { didPan.current = false; return; } // was a pan-drag, not a tap
+    // Direct-link pins (e.g. Concert Tickets) are public — go straight there, no gate.
+    if (wp.to) { trackEvent("waypoint_link", { location: wp.id, to: wp.to }); navigate(wp.to); return; }
     // The map is public; entering a waypoint needs a login. Guests get a friendly
     // "create an account" prompt (which remembers the district they wanted) rather
     // than an abrupt redirect — the modal's CTA sends them to /join.
