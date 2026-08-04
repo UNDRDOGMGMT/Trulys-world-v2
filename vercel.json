@@ -1,6 +1,10 @@
 {
   "redirects": [{ "source": "/sing", "destination": "/karaoke", "permanent": false }],
-  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }],
+  "rewrites": [
+    { "source": "/tickets", "destination": "/tickets.html" },
+    { "source": "/rsvp", "destination": "/rsvp.html" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "/:g(sing|boy-game|boyfriend-island|cruise-night|dear-joshua-game|do-not-disturb|fear-the-reaper|forever-game|save-truly|trulys-map-pinball|trulys-pinball)",
