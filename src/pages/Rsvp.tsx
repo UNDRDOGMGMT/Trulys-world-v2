@@ -76,6 +76,17 @@ const Rsvp: React.FC = () => {
 
       // succeed if EITHER path captured the RSVP
       if (!emailOk && !dbOk) throw new Error("Couldn't send your RSVP — please try again in a moment.");
+
+      // 3) auto-confirmation to the fan ("your RSVP is pending"), from hi@trulys.world.
+      // Best-effort: no-ops until Resend is configured, and never blocks success.
+      try {
+        await fetch("/api/rsvp-ack", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: name.trim(), email: email.trim(), guests: guestsN }),
+        });
+      } catch { /* fan ack is best-effort */ }
+
       setDone(true);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Something glitched — try again in a sec.");
