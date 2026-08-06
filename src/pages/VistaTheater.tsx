@@ -51,6 +51,14 @@ const VistaTheater: React.FC = () => {
     });
   }, [phase]);
 
+  // close the full-screen player on Escape
+  useEffect(() => {
+    if (!playing) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setPlaying(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [playing]);
+
   // advance through a short black dip (a dark doorway) so room changes never cut hard
   const goTo = useCallback((next: number) => {
     setFading(true);
@@ -133,15 +141,6 @@ const VistaTheater: React.FC = () => {
                       <span className="font-display text-[clamp(9px,1.1vw,14px)] uppercase tracking-[0.24em] text-pink-light/85">Music Video</span>
                       <span className="font-whimsy text-[clamp(10px,1.5vw,17px)] text-pink-light/55">coming soon ♥</span>
                     </div>
-                  ) : playing ? (
-                    <iframe
-                      className="absolute inset-0 h-full w-full"
-                      src={`https://www.youtube-nocookie.com/embed/${VIDEO_ID}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
-                      title="Music Video"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      referrerPolicy="strict-origin-when-cross-origin"
-                      allowFullScreen
-                    />
                   ) : (
                     <button
                       onClick={() => setPlaying(true)}
@@ -184,6 +183,45 @@ const VistaTheater: React.FC = () => {
             Skip to seats ⏭
           </button>
         )}
+
+        {/* FULL-SCREEN PLAYER — opens on tap so the video is big + watchable on any
+            device (native YouTube controls = reliable playback on web AND mobile). */}
+        <AnimatePresence>
+          {playing && VIDEO_ID && (
+            <motion.div
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-sm px-3"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              onClick={() => setPlaying(false)}
+            >
+              <div
+                className="relative w-full"
+                style={{ maxWidth: "min(100vw, calc(100dvh * 16 / 9), 1100px)" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="relative w-full overflow-hidden rounded-lg bg-black"
+                     style={{ aspectRatio: "16 / 9", boxShadow: "0 0 70px 10px rgba(255,79,163,0.35)" }}>
+                  <iframe
+                    className="absolute inset-0 h-full w-full"
+                    src={`https://www.youtube.com/embed/${VIDEO_ID}?autoplay=1&playsinline=1&rel=0&modestbranding=1`}
+                    title="Music Video"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    allowFullScreen
+                  />
+                </div>
+              </div>
+              <button
+                onClick={() => setPlaying(false)}
+                aria-label="Close video"
+                className="absolute right-4 z-[61] flex h-10 w-10 items-center justify-center rounded-full border border-pink/50 bg-black/60 text-lg text-pink-light backdrop-blur-sm hover:text-white"
+                style={{ top: "max(1rem, env(safe-area-inset-top))" }}
+              >
+                ✕
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </>
   );
