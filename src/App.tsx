@@ -41,7 +41,6 @@ const ExMansion = React.lazy(() => import("./pages/ExMansion"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 const Gate = React.lazy(() => import("./pages/Gate"));
 const Account = React.lazy(() => import("./pages/Account"));
-import GlobeGate from "./pages/GlobeGate";
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -157,7 +156,7 @@ const AnimatedRoutes = () => {
           <Route path="/map" element={<MapHub />} />
           <Route path="/shadows" element={<Shadows />} />
           <Route path="/boutique" element={<Boutique />} />
-          <Route path="/world" element={<GlobeGate><World /></GlobeGate>} />
+          <Route path="/world" element={<World />} />
           <Route path="/join" element={<JoinRoute />} />
           <Route path="/rsvp" element={<Rsvp />} />
           <Route path="/tickets" element={<Tickets />} />

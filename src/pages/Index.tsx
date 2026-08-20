@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useUnlock } from "@/contexts/UnlockContext";
+import { useMember } from "@/contexts/MemberContext";
 import { useIsPortrait } from "@/hooks/useIsPortrait";
 import MarqueeStrip from "@/components/MarqueeStrip";
 import CountdownTimer from "@/components/CountdownTimer";
@@ -11,9 +12,10 @@ import Shape from "@/components/Shape";
 import HandDrawnFrame from "@/components/HandDrawnFrame";
 import PageMeta from "@/components/PageMeta";
 
-// Shadows. The whole world is gated to this drop.
-// 12:00am ET, July 31 2026 (matches the arm-gate LAUNCH in Gate.tsx).
-const SHADOWS_RELEASE = new Date("2026-07-31T00:00:00-04:00");
+// Tonight's drop. After midnight ET the countdown renders nothing and the
+// OUT NOW button carries the block.
+const EP_RELEASE = new Date("2026-08-21T00:00:00-04:00");
+const EP_OUT = Date.now() >= EP_RELEASE.getTime();
 
 const pageVariants = {
   initial: { opacity: 0 },
@@ -24,6 +26,7 @@ const pageVariants = {
 const Index: React.FC = () => {
   const navigate = useNavigate();
   const { soundOn, setSoundOn, reduceMotion, setReduceMotion } = useUnlock();
+  const { member } = useMember();
   const isPortrait = useIsPortrait();
   const [mapReady, setMapReady] = useState(false);
 
@@ -124,18 +127,50 @@ const Index: React.FC = () => {
             </motion.button>
           </motion.div>
 
+          {/* the free-account pitch — front and center for logged-out visitors */}
+          {!member && (
+            <motion.div
+              className="mb-8 flex flex-col items-center"
+              initial={reduceMotion ? undefined : { opacity: 0, y: 14 }}
+              animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+              transition={{ delay: 0.8, duration: 0.5 }}
+            >
+              <motion.button
+                onClick={() => navigate("/join")}
+                className="btn-retro shimmer-sweep text-base px-10 py-3 relative"
+                style={{ boxShadow: "0 0 22px rgba(255,79,163,0.55), 0 0 50px rgba(255,79,163,0.25)" }}
+                animate={reduceMotion ? undefined : { scale: [1, 1.035, 1] }}
+                transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                whileHover={reduceMotion ? undefined : { scale: 1.06 }}
+                whileTap={reduceMotion ? undefined : { scale: 0.95 }}
+                aria-label="Sign up for a free account"
+              >
+                ♥ SIGN UP FREE ♥
+              </motion.button>
+              <p className="font-whimsy text-[12px] text-pink-light/85 mt-2">
+                a free account unlocks the games, the EP rooms &amp; the vault
+              </p>
+            </motion.div>
+          )}
+
           <motion.div
             className="mb-8 flex flex-col items-center gap-2"
             initial={reduceMotion ? undefined : { opacity: 0, y: 10 }}
             animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
             transition={{ delay: 0.85, duration: 0.5 }}
           >
-            <CountdownTimer targetDate={SHADOWS_RELEASE} label="Shadows Drops In" />
+            <CountdownTimer targetDate={EP_RELEASE} label="Dear Joshua — the EP — Drops In" />
             <button
-              onClick={() => navigate("/shadows")}
+              onClick={() => navigate("/dear-joshua")}
               className="btn-retro shimmer-sweep text-[13px] px-6 py-2 mt-1"
             >
-              <span>&#10047;</span> Shadows — out 7.31 <span>&#10047;</span>
+              <span>&#10047;</span> {EP_OUT ? "Dear Joshua — OUT NOW" : "Dear Joshua — out 8.21"} <span>&#10047;</span>
+            </button>
+            <button
+              onClick={() => navigate("/shadows")}
+              className="font-whimsy text-[13px] text-pink-light hover:text-white glitter-glow transition-colors"
+            >
+              ✧ Shadows — out now →
             </button>
             <button
               onClick={() => navigate("/karaoke")}
