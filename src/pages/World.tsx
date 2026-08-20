@@ -18,8 +18,8 @@ import palmData from "@/data/palms.json";
  * Standalone /world route — coexists with the flat /map.
  */
 
-const CLOUD_TEX = "/world/maps/world-clouds.jpg";
-const MOON_TEX = "/world/moon-face.png";
+const CLOUD_TEX = "/world/maps/world-clouds-2.jpg";
+const MOON_TEX = "/world/moon-2.png"; // faceless crescent (nano-banana edit of moon-face.png)
 
 interface Pin { id: string; name: string; lat: number; lon: number; }
 // The 14 districts in their LA-accurate RELATIVE geography (coast west, Downtown
@@ -42,8 +42,11 @@ const PINS: Pin[] = [
   { id: "dtla",          name: "Downtown",      lat: 10.8,  lon: 57.6 },
   { id: "inglewood",     name: "Inglewood",     lat: -18,   lon: 28.8 },
   { id: "long-beach",    name: "Long Beach",    lat: -14.4, lon: 79.2 },
-  // a little world of its own, moored off the south pole
-  { id: "boyfriend-island", name: "Boyfriend Island", lat: -55, lon: 18 },
+  // her Disneyland — southeast of Downtown, inland of Long Beach
+  { id: "trulyland",     name: "Trulyland",     lat: -5, lon: 95 },
+  // a little world of its own — anchored in the eye of the south-pole whirlpool
+  // (-89 not -90: the exact antipode makes setFromUnitVectors degenerate)
+  { id: "boyfriend-island", name: "Boyfriend Island", lat: -89, lon: 18 },
 ];
 
 const R = 1;
@@ -87,7 +90,13 @@ const Atmosphere: React.FC = () => {
 // One cohesive illustrated LA map (Higgsfield), wrapped on the sphere. Ocean is
 // drawn all around the island so poles + seam land in open water — no stretch,
 // no fade. Offset in x so the LA continent faces the camera by default.
-const LA_TEX = "/world/maps/world-la.jpg";
+// world-la-4 is a nano-banana image-to-image repaint of world-la.jpg in the
+// flat map's neon-midnight palette: SAME continent silhouette and street
+// layout, so the PINS lat/lon and world-ocean-mask.png stay valid. Post passes
+// (all rebuilt from _archive/globe-raw/globe-v1.png): seam crossfade, pole
+// calm, a procedural whirlpool spiraling into the SOUTH pole (Boyfriend
+// Island anchors in its eye) and a lilac moon-pool at the north.
+const LA_TEX = "/world/maps/world-la-5.jpg";
 const PlanetMesh: React.FC<{ small: boolean }> = ({ small }) => {
   const tex = useTexture(LA_TEX);
   useMemo(() => {
@@ -132,8 +141,11 @@ const AnimatedOcean: React.FC<{ small: boolean }> = ({ small }) => {
           w += 0.6 * sin(p.x*0.5 - time*0.31 + p.y*0.7);
           w += 0.35 * sin(p.y*1.7 + time*0.24);
           float gl = smoothstep(0.5, 1.0, w*0.5 + 0.5);
-          vec3 col = mix(vec3(0.42,0.38,0.72), vec3(0.86,0.82,1.0), gl);
-          gl_FragColor = vec4(col, m * gl * 0.20);
+          vec3 col = mix(vec3(0.55,0.30,0.68), vec3(1.0,0.78,0.95), gl);
+          // fade the glints at both poles — the sine grid pinches into petals
+          // there, and the south pole's baked whirlpool owns that water anyway
+          float pole = smoothstep(0.27, 0.40, vUv.y) * (1.0 - smoothstep(0.72, 0.88, vUv.y));
+          gl_FragColor = vec4(col, m * gl * 0.20 * pole);
         }`,
     });
   }, [mask]);
@@ -147,12 +159,15 @@ const AnimatedOcean: React.FC<{ small: boolean }> = ({ small }) => {
   );
 };
 
+const IS_TOUCH = typeof window !== "undefined" && window.matchMedia("(hover: none)").matches;
+
 const CityPin: React.FC<{
   pin: Pin;
   active: boolean;
+  small: boolean;
   onHover: (id: string | null) => void;
   onSelect: (id: string) => void;
-}> = ({ pin, active, onHover, onSelect }) => {
+}> = ({ pin, active, small, onHover, onSelect }) => {
   // float the marker/label clear above the 3D landmark that sits on this spot
   const pos = toVec3(pin.lat, pin.lon, R + 0.13);
   const labelPos = toVec3(pin.lat, pin.lon, R + 0.21);
@@ -193,35 +208,42 @@ const CityPin: React.FC<{
       >
         <sphereGeometry args={[active ? 0.02 : 0.012, 16, 16]} />
         <meshBasicMaterial color={active ? "#ffffff" : "#ff8ec8"} toneMapped={false} />
+        {IS_TOUCH && (
+          <mesh>
+            <sphereGeometry args={[0.06, 8, 8]} />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+          </mesh>
+        )}
       </mesh>
-      {/* label — occluded when it rotates behind the globe */}
-      <Html
-        position={labelPos}
-        center
-        occlude
-        distanceFactor={2.4}
-        style={{ pointerEvents: "auto", transition: "opacity 0.2s" }}
-      >
-        <button
-          onMouseEnter={() => onHover(pin.id)}
-          onMouseLeave={() => onHover(null)}
-          onClick={() => onSelect(pin.id)}
-          className="select-none whitespace-nowrap font-sans font-extrabold uppercase tracking-[0.12em] transition-all"
-          style={{
-            fontSize: active ? 15 : 12,
-            color: active ? "#ffffff" : "#ffd9ec",
-            textShadow: active
-              ? "0 0 10px rgba(255,79,163,1), 0 0 22px rgba(255,79,163,0.8), 0 1px 2px #000"
-              : "0 0 6px rgba(255,79,163,0.9), 0 1px 2px rgba(0,0,0,0.9)",
-            cursor: "pointer",
-            background: "none",
-            border: "none",
-            padding: "4px 6px",
-          }}
+      {/* label — a hover tooltip: shows only for the waypoint under the cursor.
+          No drei occlude here: rays to the label cross the ring plane, which
+          made occlude hide every label; hover already implies "facing us". */}
+      {active && (
+        <Html
+          position={labelPos}
+          center
+          distanceFactor={2.4}
+          style={{ pointerEvents: "auto", transition: "opacity 0.2s" }}
         >
-          {pin.name}
-        </button>
-      </Html>
+          <button
+            onMouseEnter={() => onHover(pin.id)}
+            onMouseLeave={() => onHover(null)}
+            onClick={() => onSelect(pin.id)}
+            className="select-none whitespace-nowrap font-sans font-extrabold uppercase tracking-[0.12em] transition-all"
+            style={{
+              fontSize: small ? 28 : 22,
+              color: "#ffffff",
+              textShadow: "0 0 12px rgba(255,79,163,1), 0 0 28px rgba(255,79,163,0.85), 0 2px 3px #000",
+              cursor: "pointer",
+              background: "none",
+              border: "none",
+              padding: "5px 8px",
+            }}
+          >
+            {pin.name}
+          </button>
+        </Html>
+      )}
     </group>
   );
 };
@@ -235,7 +257,58 @@ const Clouds: React.FC = () => {
   return (
     <mesh ref={ref} scale={1.035}>
       <sphereGeometry args={[R, 48, 48]} />
-      <meshBasicMaterial map={tex} transparent opacity={0.42} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+      <meshBasicMaterial map={tex} color="#ffb9de" transparent opacity={0.34} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+    </mesh>
+  );
+};
+
+// Rings of Saturn in Truly's palette — fine concentric bands like the grooves
+// of a glowing vinyl record, hot pink at the inner edge cooling to lilac at the
+// outer, with two division gaps. Additive and depth-occluded by the planet, so
+// the far side ducks behind the globe like a real ring plane.
+const SaturnRings: React.FC = () => {
+  const matRef = useRef<THREE.ShaderMaterial>(null);
+  const mat = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        transparent: true,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        uniforms: { time: { value: 0 } },
+        vertexShader:
+          "varying vec2 vP; void main(){ vP = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }",
+        fragmentShader: `
+          uniform float time; varying vec2 vP;
+          void main(){
+            float r = length(vP);
+            // groove field: incommensurate frequencies so the banding feels
+            // organic, with a slow radial shimmer breathing through it
+            float b = 0.5
+              + 0.26 * sin(r * 46.0)
+              + 0.16 * sin(r * 77.0 + 1.7)
+              + 0.10 * sin(r * 123.0 + 4.2)
+              + 0.06 * sin(r * 9.0 - time * 0.25);
+            b = smoothstep(0.28, 0.95, b);
+            // two division gaps (the Cassini moments)
+            float g1 = 1.0 - 0.85 * (1.0 - smoothstep(0.035, 0.09, abs(r - 1.86)));
+            float g2 = 1.0 - 0.7  * (1.0 - smoothstep(0.05,  0.12, abs(r - 2.28)));
+            // ring plane extent: crisp inner edge, feathered outer
+            float env = smoothstep(1.42, 1.50, r) * (1.0 - smoothstep(2.45, 2.80, r));
+            vec3 hot   = vec3(1.0, 0.31, 0.64);
+            vec3 lilac = vec3(0.62, 0.55, 1.0);
+            vec3 col = mix(hot, lilac, smoothstep(1.45, 2.65, r));
+            float a = b * g1 * g2 * env;
+            gl_FragColor = vec4(col, 1.0) * (a * 0.34 + a * a * 0.22);
+          }`,
+      }),
+    []
+  );
+  useFrame((_, dt) => { if (matRef.current) matRef.current.uniforms.time.value += dt; });
+  return (
+    <mesh rotation={[-Math.PI / 2 + 0.30, 0, 0.10]}>
+      <ringGeometry args={[1.35, 2.85, 180, 48]} />
+      <primitive object={mat} ref={matRef} attach="material" />
     </mesh>
   );
 };
@@ -467,6 +540,16 @@ const Palms: React.FC<{ small: boolean }> = ({ small }) => {
 
 const Globe: React.FC<{ onSelect: (id: string) => void; small: boolean }> = ({ onSelect, small }) => {
   const [hovered, setHovered] = useState<string | null>(null);
+  const armedRef = useRef<string | null>(null);
+  // touch: tap once to see the city name, tap again to enter
+  const handleSelect = (id: string) => {
+    if (IS_TOUCH && armedRef.current !== id) {
+      armedRef.current = id;
+      setHovered(id);
+      return;
+    }
+    onSelect(id);
+  };
   return (
     <>
       {/* soft ambient + warm key + cool rim so the neon 3D landmarks read as forms */}
@@ -482,11 +565,12 @@ const Globe: React.FC<{ onSelect: (id: string) => void; small: boolean }> = ({ o
         <Moon />
       </Suspense>
       <Atmosphere />
+      <SaturnRings />
       {PINS.map((p) => (
-        <DistrictLandmark key={"lm-" + p.id} id={p.id} lat={p.lat} lon={p.lon} active={hovered === p.id} onHover={setHovered} onSelect={onSelect} />
+        <DistrictLandmark key={"lm-" + p.id} id={p.id} lat={p.lat} lon={p.lon} active={hovered === p.id} onHover={setHovered} onSelect={handleSelect} />
       ))}
       {PINS.map((p) => (
-        <CityPin key={p.id} pin={p} active={hovered === p.id} onHover={setHovered} onSelect={onSelect} />
+        <CityPin key={p.id} pin={p} active={hovered === p.id} small={small} onHover={setHovered} onSelect={handleSelect} />
       ))}
       <Stars radius={80} depth={40} count={2500} factor={3} saturation={0} fade speed={0.6} />
       {/* on-brand drifting sparkles — a little magic in the space around her world */}
@@ -523,8 +607,10 @@ const World: React.FC = () => {
     setDive(PINS.find((p) => p.id === id) ?? null);
     setSelecting(id);
     document.body.style.cursor = "auto";
-    // Boyfriend Island is a game, not a case-file district
-    const dest = id === "boyfriend-island" ? "/boyfriend-island" : `/location/${id}`;
+    // Boyfriend Island is a game and Trulyland is the park — not case files
+    const dest =
+      id === "boyfriend-island" ? "/boyfriend-island" :
+      id === "trulyland" ? "/trulyland" : `/location/${id}`;
     setTimeout(() => navigate(dest), 850);
   };
 
@@ -601,7 +687,9 @@ const World: React.FC = () => {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.7, duration: 0.8 }}
             >
-              ✦ drag to spin the planet · tap a city to enter ✦
+              {typeof window !== "undefined" && window.matchMedia("(hover: none)").matches
+                ? "✦ drag to spin · tap a city for its name · tap again to enter ✦"
+                : "✦ drag to spin the planet · tap a city to enter ✦"}
             </motion.p>
           </div>
         </div>

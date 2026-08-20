@@ -148,10 +148,12 @@ h1.title .lt{color:var(--bone);text-shadow:0 0 24px rgba(244,233,238,.35), 3px 3
 .prev-line{font-size:17px;color:#6d6376;margin-bottom:18px;min-height:24px;transition:opacity .3s}
 .cur-line{
   font-size:clamp(26px,5.4vw,44px);font-weight:800;line-height:1.3;min-height:60px;
-  background:linear-gradient(90deg, var(--deck-hot) var(--fill,0%), var(--bone) var(--fill,0%));
-  -webkit-background-clip:text;background-clip:text;color:transparent;
-  transition:none;
+  color:var(--bone);
 }
+/* per-letter karaoke highlight — words stay whole when wrapping */
+.cur-line .w{display:inline-block;white-space:nowrap}
+.cur-line .ch{transition:color .06s linear,text-shadow .06s linear}
+.cur-line .ch.lit{color:var(--deck-hot);text-shadow:0 0 14px rgba(255,45,135,.75)}
 .next-line{font-size:19px;color:#9a8fa3;margin-top:20px;min-height:26px}
 .mic-meter{height:6px;border-radius:3px;background:var(--web);overflow:hidden;margin-top:18px}
 .mic-meter i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--deck),var(--deck-hot));transition:width .08s linear}
@@ -351,8 +353,11 @@ h1.title .lt{color:var(--bone);text-shadow:0 0 24px rgba(244,233,238,.35), 3px 3
   <div class="panel" style="margin-top:40px">
     <h2>Tap-Sync</h2>
     <p class="hint">The track is playing. The moment each line <b>starts being sung</b>, hit the button (or press <b>SPACE</b>). Timestamps lock in as you go.</p>
+    <div class="row" style="justify-content:center;margin-bottom:10px">
+      <button class="btn ghost small" id="syncModeBtn">MODE: LINES — tap once per line</button>
+    </div>
     <div class="sync-current">
-      <div class="up-next">Tap when this line starts</div>
+      <div class="up-next" id="syncPromptLbl">Tap when this line starts</div>
       <div class="line-txt" id="syncLine">—</div>
       <div class="after" id="syncNextLine"></div>
     </div>
@@ -445,6 +450,7 @@ function applyVisuals(){
 
 /* Try to auto-load a shipped config when hosted on trulys.world */
 fetch("/karaoke-config.json").then(r=>r.ok?r.json():null).then(cfg=>{
+  if(cfg && typeof cfg.syncOffset === "number") SYNC_OFFSET = cfg.syncOffset;
   if(cfg && Array.isArray(cfg.songs)){ songs = cfg.songs.map(s=>({title:s.title,audioUrl:s.audioUrl||null,objectUrl:null,lyrics:s.lyrics||[]})); renderGrid(); }
   if(cfg && cfg.visuals){ visuals = Object.assign(visuals, cfg.visuals); applyVisuals(); }
 }).catch(()=>{});
@@ -528,23 +534,55 @@ function commitSetupFields(){
 }
 
 /* ================= TAP-SYNC ================= */
-let syncI = 0, syncTimes = [];
+/* Two modes. LINES: one tap per line (the classic pass). WORDS: one tap per
+   WORD — the taps become a words:[...] array on each line, which the playback
+   engine uses for exact per-word highlighting on rubato lines. */
+let syncI = 0, syncTimes = [], syncMode = "line", wordI = 0, curWords = [], wordTimesAll = [];
 document.getElementById("startSync").onclick = ()=>{
   commitSetupFields();
   const s = songs[editIdx];
   const src = s.objectUrl || s.audioUrl;
   if(!src){ document.getElementById("syncStatus").textContent = "Load audio first."; return; }
   if(!s.lyrics.length){ document.getElementById("syncStatus").textContent = "Paste lyrics first."; return; }
-  syncI = 0; syncTimes = [];
+  resetSyncProgress();
   document.getElementById("syncTotal").textContent = s.lyrics.length;
   audio.src = src; audio.currentTime = 0;
   audio.play().then(()=>{ go("sync"); syncTick(); updateSyncUI(); })
     .catch(()=>{ document.getElementById("syncStatus").textContent = "Couldn't play audio — check the file/URL."; });
 };
+function resetSyncProgress(){ syncI = 0; syncTimes = []; wordI = 0; curWords = []; wordTimesAll = []; }
+document.getElementById("syncModeBtn").onclick = ()=>{
+  syncMode = syncMode === "line" ? "word" : "line";
+  resetSyncProgress();                                   // switching restarts the pass
+  audio.currentTime = 0;
+  document.getElementById("syncModeBtn").textContent =
+    syncMode === "line" ? "MODE: LINES — tap once per line" : "MODE: WORDS — tap every word";
+  document.getElementById("tapNow").textContent =
+    syncMode === "line" ? "TAP — LINE STARTS NOW" : "TAP — WORD STARTS NOW";
+  document.getElementById("syncPromptLbl").textContent =
+    syncMode === "line" ? "Tap when this line starts" : "Tap as each word starts — the bright word is next";
+  updateSyncUI();
+};
 function updateSyncUI(){
   const s = songs[editIdx];
   document.getElementById("syncIdx").textContent = Math.min(syncI+1, s.lyrics.length);
-  document.getElementById("syncLine").textContent = s.lyrics[syncI] ? s.lyrics[syncI].text : "— all lines tapped —";
+  const el = document.getElementById("syncLine");
+  const line = s.lyrics[syncI];
+  if(!line){ el.textContent = "— all lines tapped —"; }
+  else if(syncMode === "line"){ el.textContent = line.text; }
+  else {
+    // word mode: tapped words pink, the next target bright + underlined
+    el.textContent = "";
+    line.text.split(" ").forEach((w,k)=>{
+      const sp = document.createElement("span");
+      sp.textContent = w;
+      if(k < wordI){ sp.style.color = "var(--deck-hot)"; }
+      else if(k === wordI){ sp.style.color = "var(--bone)"; sp.style.textDecoration = "underline"; sp.style.textUnderlineOffset = "4px"; }
+      else { sp.style.color = "#8a7f92"; }
+      el.appendChild(sp);
+      if(k < line.text.split(" ").length-1) el.appendChild(document.createTextNode(" "));
+    });
+  }
   document.getElementById("syncNextLine").textContent = s.lyrics[syncI+1] ? "next: " + s.lyrics[syncI+1].text : "";
 }
 function syncTick(){
@@ -555,8 +593,19 @@ function syncTick(){
 function doTap(){
   const s = songs[editIdx];
   if(syncI >= s.lyrics.length) return;
-  syncTimes.push(audio.currentTime);
-  syncI++;
+  if(syncMode === "line"){
+    syncTimes.push(audio.currentTime);
+    syncI++;
+  } else {
+    const wordsArr = s.lyrics[syncI].text.split(" ");
+    curWords.push(audio.currentTime);
+    wordI++;
+    if(wordI >= wordsArr.length){
+      wordTimesAll[syncI] = curWords;
+      syncTimes[syncI] = curWords[0];                    // line start = first word
+      syncI++; wordI = 0; curWords = [];
+    }
+  }
   updateSyncUI();
   if(syncI >= s.lyrics.length){ finishSync(); }
 }
@@ -564,14 +613,32 @@ document.getElementById("tapNow").onclick = doTap;
 document.addEventListener("keydown", e=>{
   if(e.code==="Space" && document.getElementById("sync").classList.contains("active")){ e.preventDefault(); doTap(); }
 });
-document.getElementById("syncUndo").onclick = ()=>{ if(syncI>0){ syncI--; syncTimes.pop(); updateSyncUI(); } };
+document.getElementById("syncUndo").onclick = ()=>{
+  if(syncMode === "line"){
+    if(syncI>0){ syncI--; syncTimes.pop(); }
+  } else if(wordI > 0){
+    wordI--; curWords.pop();
+  } else if(syncI > 0){
+    syncI--;
+    curWords = wordTimesAll[syncI] || [];
+    wordTimesAll[syncI] = undefined; syncTimes[syncI] = undefined;
+    wordI = Math.max(0, curWords.length - 1); curWords.pop();
+  }
+  updateSyncUI();
+};
 document.getElementById("syncFinish").onclick = finishSync;
 document.getElementById("syncBack").onclick = ()=>{ audio.pause(); go("setup"); };
 function finishSync(){
   const s = songs[editIdx];
   audio.pause();
-  s.lyrics = s.lyrics.map((l,i)=>({t: (syncTimes[i]!=null ? syncTimes[i] : l.t), text:l.text}));
-  document.getElementById("syncStatus").textContent = syncTimes.length + " lines synced ✓";
+  s.lyrics = s.lyrics.map((l,i)=>{
+    const out = { t: (syncTimes[i]!=null ? syncTimes[i] : l.t), text: l.text };
+    if(wordTimesAll[i]) out.words = wordTimesAll[i];               // fresh word pass
+    else if(l.words && syncTimes[i]==null) out.words = l.words;    // untouched line keeps its words
+    return out;                                                    // re-tapped line drops stale words
+  });
+  const n = syncTimes.filter(x=>x!=null).length;
+  document.getElementById("syncStatus").textContent = n + (syncMode==="word" ? " lines word-synced \u2713" : " lines synced \u2713");
   renderGrid();
   go("setup");
 }
@@ -665,13 +732,13 @@ async function startPlay(i){
   document.getElementById("comboTxt").textContent = "";
   document.getElementById("prevLine").textContent = "";
   document.getElementById("curLine").textContent = "Get ready…";
-  document.getElementById("curLine").style.setProperty("--fill","0%");
   document.getElementById("nextLine").textContent = s.lyrics[0] ? s.lyrics[0].text : "";
   go("play");
   requestWake();
   await initMic();
   // Kick off buffering now, then run the 3·2·1 countdown — by the time it
   // ends the track is loaded, so playback starts instantly (no "loading").
+  s._rate = songCharRate(s);
   audio.src = src; audio.currentTime = 0; audio.load();
   audio.onended = endPlay;
   await runCountdown();
@@ -693,6 +760,80 @@ function runCountdown(){
     })();
   });
 }
+/* ---------- letter-timing engine ----------
+   The config carries one timestamp per LINE (tap-synced), so per-letter timing
+   is derived: the song's vocal pace = the median seconds-per-character across
+   tightly packed line pairs, each line's SUNG duration = its weighted length x
+   that pace (capped at the gap to the next line, so highlights never drag
+   through instrumental breaks), and each letter takes its weighted share.
+   SYNC_OFFSET leads the audio clock slightly to cancel tap-sync reaction lag. */
+let SYNC_OFFSET = 0.12;
+function chWeight(c){ return c===" " ? 0.55 : /[,.!?;:\u2014-]/.test(c) ? 1.35 : 1; }
+function lineWeight(text){ let w=0; for(const c of text) w+=chWeight(c); return w; }
+function songCharRate(s){
+  const rates=[];
+  for(let i=0;i<s.lyrics.length-1;i++){
+    const a=s.lyrics[i], b=s.lyrics[i+1];
+    if(a.t==null || b.t==null) continue;
+    const gap=b.t-a.t;
+    if(gap>0.5 && gap<5.5) rates.push(gap/lineWeight(a.text));
+  }
+  if(!rates.length) return 0.075;
+  rates.sort((x,y)=>x-y);
+  return rates[Math.floor(rates.length/2)];
+}
+function sungWindow(s,i){
+  const start=s.lyrics[i].t ?? 0;
+  const gap=(i+1<s.lyrics.length && s.lyrics[i+1].t!=null) ? s.lyrics[i+1].t-start : 6;
+  const est=lineWeight(s.lyrics[i].text)*(s._rate||0.075);
+  const dur=Math.max(0.8, Math.min(gap-0.05, est));
+  return [start, start+dur];
+}
+let chSpans=[], chTimes=[], litPtr=0;
+function buildCurLine(s,i){
+  const el=document.getElementById("curLine");
+  el.textContent=""; chSpans=[]; chTimes=[]; litPtr=0;
+  if(i<0){ el.textContent="\u2026"; return; }
+  const line=s.lyrics[i], text=line.text;
+  const [a,b]=sungWindow(s,i);
+  const total=lineWeight(text);
+  const words=text.split(" ");
+  // Per-word windows. A line may carry words:[t0,t1,...] (one start per word,
+  // hand-synced in the studio's WORD mode) — those override the estimate, so
+  // rubato lines track the actual vocal. Otherwise each word gets its
+  // proportional slice of the estimated sung window.
+  const wt = Array.isArray(line.words) && line.words.length===words.length &&
+             line.words.every(x=>typeof x==="number") ? line.words : null;
+  let wins;
+  if(wt){
+    wins = words.map((word,k)=>{
+      const st=wt[k];
+      const en=(k+1<wt.length) ? wt[k+1] : st + lineWeight(word)*(s._rate||0.075) + 0.15;
+      return [st, Math.max(st+0.12, en)];
+    });
+  } else {
+    let pre=0;
+    wins = words.map((word,k)=>{
+      const ww=lineWeight(word);
+      const st=a+(pre/total)*(b-a), en=a+((pre+ww)/total)*(b-a);
+      pre+=ww+chWeight(" ");
+      return [st,en];
+    });
+  }
+  words.forEach((word,wi)=>{
+    const w=document.createElement("span"); w.className="w";
+    const [wa,wb]=wins[wi], ww=lineWeight(word);
+    let acc=0;
+    for(const c of word){
+      acc+=chWeight(c);
+      const sp=document.createElement("span"); sp.className="ch"; sp.textContent=c;
+      chTimes.push(wa+(acc/ww)*(wb-wa)); chSpans.push(sp);
+      w.appendChild(sp);
+    }
+    el.appendChild(w);
+    if(wi<words.length-1) el.appendChild(document.createTextNode(" "));
+  });
+}
 function lineWindow(s, i){
   const start = s.lyrics[i].t ?? 0;
   const end = (i+1 < s.lyrics.length && s.lyrics[i+1].t!=null) ? s.lyrics[i+1].t : Math.min(start+6, audio.duration||start+6);
@@ -702,6 +843,7 @@ function loop(){
   if(!document.getElementById("play").classList.contains("active")) return;
   const s = songs[playIdx];
   const t = audio.currentTime;
+  const tt = t + SYNC_OFFSET;   // highlight clock leads the audio slightly
 
   // progress bar
   if(audio.duration) document.getElementById("songProg").style.width = (t/audio.duration*100)+"%";
@@ -709,23 +851,23 @@ function loop(){
   // find active line
   let active = -1;
   for(let i=0;i<s.lyrics.length;i++){
-    if(s.lyrics[i].t!=null && t >= s.lyrics[i].t) active = i; else if(s.lyrics[i].t!=null) break;
+    if(s.lyrics[i].t!=null && tt >= s.lyrics[i].t) active = i; else if(s.lyrics[i].t!=null) break;
   }
   if(active !== curI){
     // close out previous line
     scoreLine();
     curI = active; lineVoiced = false; lineVoicedFrames = 0; lineTotalFrames = 0;
     document.getElementById("prevLine").textContent = curI>0 ? s.lyrics[curI-1].text : "";
-    document.getElementById("curLine").textContent = curI>=0 ? s.lyrics[curI].text : "…";
+    buildCurLine(s, curI);
     document.getElementById("nextLine").textContent = s.lyrics[curI+1] ? s.lyrics[curI+1].text : "";
     document.getElementById("comboTxt").textContent = combo>1 ? combo+"x COMBO" : "";
   }
 
   // line fill + mic scoring
   if(curI >= 0){
-    const [a,b] = lineWindow(s,curI);
-    const pct = Math.min(100, Math.max(0, (t-a)/(b-a)*100));
-    document.getElementById("curLine").style.setProperty("--fill", pct+"%");
+    while(litPtr < chTimes.length && chTimes[litPtr] <= tt){
+      chSpans[litPtr].classList.add("lit"); litPtr++;
+    }
     const lvl = micLevel();
     document.getElementById("micBar").style.width = Math.min(100,lvl*900)+"%";
     // Accumulate coverage across the whole line window instead of latching on

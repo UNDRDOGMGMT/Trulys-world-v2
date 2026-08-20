@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><!--tw-auth-guard--><script>(function(){try{var b=sessionStorage.getItem('tw-gate-bypass')==='1',s=false,i;for(i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.slice(0,3)==='sb-'&&k.indexOf('-auth-token')>-1&&localStorage.getItem(k)){s=true;break;}}if(!b&&!s){(window.top||window).location.replace('/join');}}catch(e){}})();</script>
+<head><!--tw-auth-guard--><script>(function(){try{var b=sessionStorage.getItem('tw-gate-bypass')==='1'||['localhost','127.0.0.1','[::1]'].indexOf(location.hostname)>-1,s=false,i;for(i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.slice(0,3)==='sb-'&&k.indexOf('-auth-token')>-1&&localStorage.getItem(k)){s=true;break;}}if(!b&&!s){(window.top||window).location.replace('/join');}}catch(e){}})();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>BOYFRIEND ISLAND — slice the red flags</title>
@@ -92,10 +92,22 @@ const cv=document.getElementById('cv'), ctx=cv.getContext('2d'), el=id=>document
 let W=0,H=0,DPR=1;
 function resize(){ DPR=Math.min(2,window.devicePixelRatio||1); W=innerWidth; H=innerHeight; cv.width=W*DPR; cv.height=H*DPR; cv.style.width=W+'px'; cv.style.height=H+'px'; ctx.setTransform(DPR,0,0,DPR,0,0); }
 addEventListener('resize',resize); resize();
-// swap in the Higgsfield island backdrop if present
-(function(){ const img=new Image(); img.onload=()=>{ const b=el('bg').style;
-    b.backgroundImage=`linear-gradient(180deg,rgba(21,10,34,.15),rgba(21,10,34,.05) 40%,rgba(21,10,34,.35)), url('/island/island.jpg')`;
-    b.backgroundSize='cover, cover'; b.backgroundPosition='center, center'; b.backgroundRepeat='no-repeat, no-repeat'; }; img.src='/island/island.jpg'; })();
+// swap in the Higgsfield island backdrop — portrait phones get the vertical
+// extension (island-v.jpg) so the art fills the screen instead of cropping
+// the landscape frame; re-picked live on rotate.
+(function(){
+  const mq = matchMedia('(orientation: portrait)');
+  function apply(){
+    const src = mq.matches ? '/island/island-v.jpg' : '/island/island.jpg';
+    const img = new Image();
+    img.onload = () => { const b = el('bg').style;
+      b.backgroundImage = `linear-gradient(180deg,rgba(21,10,34,.15),rgba(21,10,34,.05) 40%,rgba(21,10,34,.35)), url('${src}')`;
+      b.backgroundSize='cover, cover'; b.backgroundPosition='center, center'; b.backgroundRepeat='no-repeat, no-repeat'; };
+    img.src = src;
+  }
+  mq.addEventListener ? mq.addEventListener('change', apply) : mq.addListener(apply);
+  apply();
+})();
 
 // each sliceable object = a little Higgsfield cartoon sticker + label + red/green type
 const ITEMS=[

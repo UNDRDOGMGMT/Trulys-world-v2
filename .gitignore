@@ -7,3 +7,6 @@ dist-ssr
 .env
 .env.*.local
 tsconfig.tsbuildinfo
+
+_archive
+.claude

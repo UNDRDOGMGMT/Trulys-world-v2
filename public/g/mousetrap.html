@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><!--tw-auth-guard--><script>(function(){try{var h=location.hostname;if(h==='localhost'||h==='127.0.0.1'||h==='[::1]')return;var b=sessionStorage.getItem('tw-gate-bypass')==='1'||['localhost','127.0.0.1','[::1]'].indexOf(location.hostname)>-1,s=false,i;for(i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.slice(0,3)==='sb-'&&k.indexOf('-auth-token')>-1&&localStorage.getItem(k)){s=true;break;}}if(!b&&!s){(window.top||window).location.replace('/join');}}catch(e){}})();</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>THE MOUSETRAP — Trulyland</title>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Bebas+Neue&family=Cutive+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --hot:#ff2d8f; --magenta:#ff4fa3; --pink-light:#ffb3d9; --pink-deep:#a3155c;
+    --ink:#0c000f; --plum:#1a0620; --bone:#f4ecda; --chrome:#d9d9e3;
+    --green:#66e6a6; --red:#ff4d6d;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;
+    -webkit-user-select:none;user-select:none;}
+  html,body{height:100%;overflow:hidden;background:var(--ink);}
+  body{font-family:'Special Elite',monospace;color:var(--bone);
+    background:radial-gradient(ellipse 90% 60% at 50% 8%, #330a24 0%, #14020f 55%, #0c000f 100%);}
+
+  #stage{position:fixed;inset:0;display:flex;flex-direction:column;}
+
+  /* ── HUD ───────────────────────────────────────────────────────────── */
+  #hud{flex:0 0 auto;display:flex;align-items:center;gap:10px;z-index:20;
+    padding:calc(6px + env(safe-area-inset-top)) clamp(10px,2.4vw,22px) 6px;}
+  .act{font-family:'Cutive Mono',monospace;font-size:10px;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--pink-light);opacity:.8;line-height:1.5;}
+  .lvname{font-family:'Bebas Neue',sans-serif;font-size:clamp(17px,3.6vw,26px);
+    letter-spacing:.07em;line-height:1;color:var(--bone);
+    text-shadow:0 0 14px rgba(255,45,143,.55);}
+  #hudmid{flex:1 1 auto;min-width:0;}
+  #stars{font-size:15px;letter-spacing:2px;color:#3a2030;white-space:nowrap;}
+  #stars .on{color:#ffd98a;text-shadow:0 0 10px rgba(255,217,138,.8);}
+  .btn{font-family:'Bebas Neue',sans-serif;letter-spacing:.12em;cursor:pointer;
+    border:1.5px solid rgba(255,179,217,.45);background:rgba(255,79,163,.10);
+    color:var(--pink-light);border-radius:999px;padding:6px 13px;font-size:13px;
+    line-height:1;transition:.15s;white-space:nowrap;}
+  .btn:hover{background:rgba(255,79,163,.28);color:#fff;border-color:var(--magenta);}
+  .btn:active{transform:scale(.94);}
+  .btn.ghost{border-color:rgba(244,236,218,.22);color:rgba(244,236,218,.6);background:none;}
+
+  /* ── playfield ─────────────────────────────────────────────────────── */
+  #field{flex:1 1 auto;position:relative;min-height:0;display:flex;
+    align-items:center;justify-content:center;padding:0 clamp(6px,1.6vw,18px);}
+  #cvwrap{position:relative;line-height:0;
+    box-shadow:0 0 0 2px rgba(255,79,163,.4), 0 0 40px rgba(255,45,143,.22), 0 18px 50px rgba(0,0,0,.7);
+    border-radius:6px;overflow:hidden;background:#0b0210;}
+  canvas{display:block;touch-action:none;max-width:100%;max-height:100%;}
+  .scan{position:absolute;inset:0;pointer-events:none;mix-blend-mode:overlay;opacity:.30;
+    background:repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.55) 3px);}
+
+  /* ── tray ──────────────────────────────────────────────────────────── */
+  #tray{flex:0 0 auto;z-index:20;display:flex;align-items:center;gap:10px;
+    padding:8px clamp(10px,2.4vw,22px) calc(8px + env(safe-area-inset-bottom));}
+  #chips{flex:1 1 auto;display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;
+    padding:2px 0 4px;scrollbar-width:none;}
+  #chips::-webkit-scrollbar{display:none;}
+  .chip{flex:0 0 auto;position:relative;width:66px;height:66px;border-radius:9px;
+    border:1.5px solid rgba(255,179,217,.3);background:rgba(255,255,255,.045);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.14s;}
+  .chip img{width:74%;height:74%;object-fit:contain;pointer-events:none;
+    filter:drop-shadow(0 2px 6px rgba(0,0,0,.6));}
+  .chip .n{position:absolute;right:-4px;top:-5px;min-width:19px;height:19px;border-radius:999px;
+    background:var(--hot);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:12px;
+    display:flex;align-items:center;justify-content:center;padding:0 5px;
+    box-shadow:0 0 10px rgba(255,45,143,.7);}
+  .chip .lab{position:absolute;bottom:-15px;left:0;right:0;text-align:center;
+    font-family:'Cutive Mono',monospace;font-size:8px;letter-spacing:.1em;
+    text-transform:uppercase;color:rgba(255,179,217,.6);}
+  .chip.sel{border-color:var(--magenta);background:rgba(255,79,163,.24);
+    box-shadow:0 0 0 2px rgba(255,45,143,.35),0 0 18px rgba(255,45,143,.45);}
+  .chip.out{opacity:.28;cursor:default;}
+  #chips{padding-bottom:18px;}
+  #crank{font-family:'Bebas Neue',sans-serif;flex:0 0 auto;cursor:pointer;
+    font-size:clamp(17px,3.3vw,23px);letter-spacing:.16em;color:#fff;
+    padding:11px clamp(16px,3.4vw,30px);border-radius:999px;border:2px solid #ffd0e6;
+    background:linear-gradient(180deg,#ff7eb3 0%,#e91e5f 62%,#b30f44 100%);
+    box-shadow:0 0 18px rgba(255,45,143,.65),0 0 44px rgba(255,45,143,.28),inset 0 1px 0 rgba(255,255,255,.5);
+    transition:.14s;line-height:1;}
+  #crank:hover{transform:translateY(-1px) scale(1.03);}
+  #crank:active{transform:scale(.95);}
+  #crank.running{background:linear-gradient(180deg,#4a3350,#2b1a33);border-color:rgba(255,179,217,.35);
+    box-shadow:none;color:var(--pink-light);}
+
+  /* ── overlays ──────────────────────────────────────────────────────── */
+  .veil{position:absolute;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+    padding:14px;background:rgba(9,0,12,.86);backdrop-filter:blur(7px);
+    animation:fade .28s ease-out;}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .card{width:min(500px,95vw);max-height:100%;overflow:auto;text-align:center;
+    border:2px solid rgba(255,79,163,.5);border-radius:12px;padding:16px 18px 18px;
+    background:linear-gradient(180deg,rgba(38,6,28,.95),rgba(14,2,17,.97));
+    box-shadow:0 0 50px rgba(255,45,143,.3);}
+  .card h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(30px,7.6vw,50px);
+    letter-spacing:.05em;line-height:.94;color:var(--bone);
+    text-shadow:0 0 24px rgba(255,45,143,.75);}
+  .card h2{font-family:'Bebas Neue',sans-serif;font-size:clamp(24px,6vw,38px);
+    letter-spacing:.06em;line-height:1;margin-bottom:4px;}
+  .card .kicker{font-family:'Cutive Mono',monospace;font-size:10px;letter-spacing:.3em;
+    text-transform:uppercase;color:var(--magenta);margin-bottom:9px;}
+  .card p{font-size:13px;line-height:1.6;color:rgba(244,236,218,.82);margin:8px 0;}
+  .card p.small{font-size:11.5px;color:rgba(244,236,218,.55);line-height:1.6;}
+  .card .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px;}
+  .card img.mug{width:min(150px,36vw);margin:2px auto 4px;display:block;
+    filter:drop-shadow(0 10px 26px rgba(255,45,143,.4));}
+  .card img.poster{width:min(360px,78%);margin:0 auto 4px;display:block;border-radius:4px;
+    transform:rotate(-1deg);box-shadow:0 10px 30px rgba(0,0,0,.65);}
+  .bigstars{font-size:30px;letter-spacing:6px;color:#3a2030;margin:6px 0 2px;}
+  .bigstars .on{color:#ffd98a;text-shadow:0 0 16px rgba(255,217,138,.9);}
+  .lvgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px;}
+  .lvcell{border:1.5px solid rgba(255,179,217,.28);border-radius:9px;padding:9px 5px;
+    cursor:pointer;transition:.14s;background:rgba(255,255,255,.035);}
+  .lvcell:hover{border-color:var(--magenta);background:rgba(255,79,163,.16);}
+  .lvcell.locked{opacity:.3;cursor:default;}
+  .lvcell .num{font-family:'Bebas Neue',sans-serif;font-size:19px;line-height:1;color:var(--bone);}
+  .lvcell .nm{font-family:'Cutive Mono',monospace;font-size:8px;letter-spacing:.06em;
+    text-transform:uppercase;color:rgba(255,179,217,.72);margin-top:3px;line-height:1.3;}
+  .lvcell .st{font-size:9px;color:#ffd98a;margin-top:3px;letter-spacing:1px;height:11px;}
+  .tag{display:inline-block;font-family:'Cutive Mono',monospace;font-size:10px;
+    letter-spacing:.18em;text-transform:uppercase;color:var(--ink);background:var(--magenta);
+    padding:3px 9px;border-radius:3px;transform:rotate(-1.4deg);margin-bottom:8px;}
+
+  #toast{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:40;
+    font-family:'Cutive Mono',monospace;font-size:11px;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--bone);background:rgba(12,0,15,.9);border:1px solid rgba(255,79,163,.5);
+    padding:7px 15px;border-radius:999px;pointer-events:none;opacity:0;transition:opacity .22s;
+    max-width:90%;text-align:center;}
+  #toast.on{opacity:1;}
+
+  @media (max-width:600px){
+    .chip{width:56px;height:56px;}
+    #tray{gap:7px;}
+    .act{font-size:9px;letter-spacing:.16em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    #hud{gap:6px;}
+    .btn{padding:5px 9px;font-size:11px;}
+  }
+
+  /* The playfield is a landscape box; in portrait it shrinks to the width and
+     leaves the screen mostly empty. Nudge, don't block — it is still playable. */
+  #rotate{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:30;
+    display:none;align-items:center;gap:8px;font-family:'Cutive Mono',monospace;
+    font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--pink-light);
+    background:rgba(12,0,15,.85);border:1px solid rgba(255,79,163,.45);
+    padding:7px 14px;border-radius:999px;pointer-events:none;}
+  @media (orientation:portrait) and (max-width:820px){ #rotate{display:flex;} }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="hud">
+    <div id="hudmid">
+      <div class="act" id="actline">act 1 of 9 · trulyland</div>
+      <div class="lvname" id="lvname">THE ALLEY</div>
+    </div>
+    <div id="stars">✦✦✦</div>
+    <button class="btn ghost" id="btn-reset">RESET</button>
+    <button class="btn ghost" id="btn-levels">ACTS</button>
+    <button class="btn ghost" id="btn-sound">♪</button>
+  </div>
+
+  <div id="field">
+    <div id="cvwrap">
+      <canvas id="cv"></canvas>
+      <div class="scan"></div>
+    </div>
+    <div id="toast"></div>
+    <div id="rotate">⟳ turn your phone for a bigger alley</div>
+  </div>
+
+  <div id="tray">
+    <div id="chips"></div>
+    <button id="crank">CRANK IT</button>
+  </div>
+</div>
+
+<script src="/pinball/matter.min.js"></script>
+<script>
+/* ===========================================================================
+   THE MOUSETRAP — Trulyland's unlicensed mascot has to be caught.
+   ---------------------------------------------------------------------------
+   A Mouse Trap / Incredible Machine hybrid. You lay parts into the alley
+   behind the castle, hit CRANK, and a chain reaction knocks the hook off a
+   hanging birdcage. The cage falls. Seddy is walking a patrol the whole time,
+   so geometry alone isn't enough — the drop has to land where he'll BE.
+
+   Build notes:
+   - Physics is matter-js 0.20 (already vendored at /pinball/matter.min.js for
+     the pinball table). Rendering is our own canvas pass so parts draw as the
+     Higgsfield sprites rather than Matter's debug wireframes.
+   - EDIT and RUN are separate worlds. Editing never touches Matter: it mutates
+     a plain `placed[]` array. CRANK builds a fresh engine from level + placed.
+     Reset is therefore always exact, and a half-simulated body can never leak
+     back into the layout.
+   - Seddy is kinematic, not a rigid body. He walks his patrol on a fixed clock
+     so the puzzle is *solvable* — the player can read where he'll be at t. The
+     boombox is the only thing that changes his mind.
+   =========================================================================== */
+const { Engine, Composite, Bodies, Body, Events, Constraint, Vector } = Matter;
+
+/* ── world constants ─────────────────────────────────────────────────── */
+const W = 1000, H = 700, GROUND = 648;
+const RUN_LIMIT = 22;          // seconds before we call a run dead
+const SAVE_KEY  = 'tw-mousetrap-v1';
+
+/* ── art ─────────────────────────────────────────────────────────────── */
+const ART = {
+  poster: '/mousetrap/poster.jpg',
+  stage:  '/mousetrap/stage-wide.jpg',
+  idle:   '/mousetrap/mouse-idle.png',
+  taunt:  '/mousetrap/mouse-taunt.png',
+  caged:  '/mousetrap/mouse-caged.png',
+  ramp:   '/mousetrap/part-ramp.png',
+  pin:    '/mousetrap/part-pin.png',
+  record: '/mousetrap/part-record.png',
+  disco:  '/mousetrap/part-disco.png',
+  boot:   '/mousetrap/part-boot.png',
+  tub:    '/mousetrap/part-tub.png',
+  fan:    '/mousetrap/part-fan.png',
+  boombox:'/mousetrap/part-boombox.png',
+  cage:   '/mousetrap/part-cage.png',
+};
+const IMG = {};
+function loadArt(){
+  return Promise.all(Object.entries(ART).map(([k,src]) => new Promise(res => {
+    const i = new Image();
+    i.onload = () => { IMG[k] = i; res(); };
+    i.onerror = () => { IMG[k] = null; res(); };   // missing art must never brick the game
+    i.src = src;
+  })));
+}
+
+/* ── the parts bin ───────────────────────────────────────────────────────
+   body  — the collision box (what physics sees)
+   spr   — how big the sprite draws, and how far it sits off the body centre
+   rot   — whether the player may rotate it
+   ---------------------------------------------------------------------- */
+const PARTS = {
+  ramp:    { kind:'plank',  label:'ramp',    body:{w:186,h:20},  spr:{w:206,h:94,  oy:24},  rot:true,
+             blurb:'tartan plank. things roll down it.' },
+  pin:     { kind:'seesaw', label:'see-saw', body:{w:196,h:18},  spr:{w:212,h:103, oy:16},  rot:false,
+             blurb:'safety pin on a pivot. weight one end, the other flies up.' },
+  record:  { kind:'ball',   label:'record',  body:{r:32},        spr:{w:72,h:70},           rot:false,
+             dens:0.0014, rest:0.30, blurb:'a 7-inch. rolls forever.' },
+  disco:   { kind:'ball',   label:'disco',   body:{r:37},        spr:{w:80,h:79},           rot:false,
+             dens:0.0075, rest:0.16, blurb:'heavy. it does not get pushed around.' },
+  boot:    { kind:'kicker', label:'boot',    body:{w:64,h:78},   spr:{w:82,h:108,  oy:0},   rot:true,
+             blurb:'spring-loaded stiletto. kicks whatever touches it.' },
+  tub:     { kind:'block',  label:'tub',     body:{w:110,h:50},  spr:{w:126,h:63,  oy:0},   rot:false,
+             dens:0.005, blurb:'a tub full of nothing. heavy, and it slides.' },
+  fan:     { kind:'fan',    label:'dryer',   body:{w:96,h:58},   spr:{w:120,h:83,  oy:0},   rot:true,
+             blurb:'blows light things along. useless on the disco ball.' },
+  boombox: { kind:'blast',  label:'boombox', body:{w:116,h:76},  spr:{w:132,h:87,  oy:-2},  rot:true,
+             blurb:'one blast. shoves things — and spins Seddy the other way.' },
+  cage:    { kind:'cage',   label:'cage',    body:{w:112,h:146}, spr:{w:122,h:235, oy:-42}, rot:false,
+             blurb:'the trap. knock its hook and it drops.' },
+};
+const HOOK_W = 74, HOOK_H = 24;     // the sensor above a hanging cage
+
+/* ── levels ──────────────────────────────────────────────────────────────
+   walls  [x,y,w,h,angle?]  static scenery you build off
+   fixed  parts placed for you (not editable)
+   tray   what you're given
+   start  the ball that's released on CRANK
+   mouse  patrol lane — he walks x1..x2 at `speed` px/s, starting at `from`
+   ---------------------------------------------------------------------- */
+/* The alley's opening chute is shared from act 2 on. Its pitch was tuned in the
+   headless solver: gentler than 0.30 and the ball has no energy to cross the
+   field, steeper than 0.40 and the start point misses the raised left end. */
+const CHUTE = [60,170,300,16,0.34];
+
+const LEVELS = [
+{ id:1, name:'THE ALLEY', par:9,
+  tag:'he tagged the castle again',
+  hint:'the record needs a bridge. drop the ramp in the gap and tilt it with \u21bb.',
+  walls:[ [60,200,250,16,0.15] ],
+  fixed:[ {t:'cage', x:500, y:360} ],
+  tray:{ ramp:1 },
+  start:{ t:'record', x:110, y:120 },
+  mouse:{ x1:455, x2:545, speed:46, from:455 } },
+
+{ id:2, name:'HAIRSPRAY', par:7,
+  tag:'blow-dry the evidence',
+  hint:'the ramp can do it alone. the dryer makes it easy \u2014 but a part you never use is worth a star.',
+  walls:[ CHUTE ],
+  fixed:[ {t:'cage', x:560, y:360} ],
+  tray:{ ramp:1, fan:1 },
+  start:{ t:'record', x:120, y:55 },
+  mouse:{ x1:514, x2:606, speed:58, from:514 } },
+
+{ id:3, name:'KICK DRUM', par:7,
+  tag:'the boot goes in',
+  hint:'the cage hangs higher now. the boot fires whatever touches it, along the way it points.',
+  walls:[ CHUTE ],
+  fixed:[ {t:'cage', x:560, y:280} ],
+  tray:{ ramp:1, boot:1 },
+  start:{ t:'record', x:120, y:55 },
+  mouse:{ x1:514, x2:606, speed:62, from:606 } },
+
+{ id:4, name:'BALANCING ACT', par:7,
+  tag:'weight one end, watch the other',
+  hint:'a disco ball is heavy \u2014 it barely deflects. the see-saw turns its weight into a launch.',
+  walls:[ CHUTE ],
+  fixed:[ {t:'cage', x:600, y:400} ],
+  tray:{ ramp:1, pin:1 },
+  start:{ t:'disco', x:120, y:55 },
+  mouse:{ x1:554, x2:646, speed:66, from:646 } },
+
+{ id:5, name:'SOUND CHECK', par:8,
+  tag:'he does not like loud noises',
+  hint:'reaching the cage is the easy half. his lane is long now \u2014 the boombox drives him away from it.',
+  walls:[ CHUTE ],
+  fixed:[ {t:'cage', x:560, y:320} ],
+  tray:{ ramp:1, boombox:1, record:1 },
+  start:{ t:'record', x:120, y:55 },
+  mouse:{ x1:470, x2:700, speed:70, from:700 } },
+
+{ id:6, name:'YOU HANG THE CAGE', par:8,
+  tag:'your trap, your problem',
+  hint:'you hang the cage yourself now. it drops straight down \u2014 the brackets show where it lands.',
+  walls:[ CHUTE, [660,540,240,16] ],
+  fixed:[],
+  tray:{ cage:1, ramp:2 },
+  start:{ t:'record', x:120, y:55 },
+  mouse:{ x1:500, x2:700, speed:64, from:500 } },
+
+{ id:7, name:'TWO-STOREY', par:7,
+  tag:'down the back of the castle',
+  hint:'a lower deck to work off. hang the cage where the run ends, not where it starts.',
+  walls:[ CHUTE, [640,470,260,16,0.1], [180,520,220,16] ],
+  fixed:[],
+  tray:{ cage:1, ramp:2, boot:1, fan:1 },
+  start:{ t:'record', x:120, y:55 },
+  mouse:{ x1:520, x2:760, speed:70, from:760 } },
+
+{ id:8, name:'THE LONG CON', par:7,
+  tag:'everything in the alley',
+  hint:'the whole bin, and he is fast. the boombox is how you make him stand somewhere.',
+  walls:[ CHUTE, [700,420,220,16,0.12], [180,520,200,16] ],
+  fixed:[ {t:'tub', x:900, y:GROUND-25} ],
+  tray:{ cage:1, ramp:2, boot:1, fan:1, boombox:1, disco:1 },
+  start:{ t:'record', x:120, y:55 },
+  mouse:{ x1:470, x2:760, speed:70, from:760 } },
+
+{ id:9, name:'ENCORE', par:99,
+  tag:'free build \u00b7 no rules',
+  hint:'the whole bin, an empty alley and one mouse. do what you like.',
+  walls:[ CHUTE, [680,450,220,16,0.1], [190,520,200,16] ],
+  fixed:[],
+  tray:{ cage:1, ramp:3, pin:2, boot:2, fan:2, boombox:2, record:2, disco:2, tub:2 },
+  start:{ t:'record', x:120, y:55 },
+  mouse:{ x1:460, x2:800, speed:70, from:630 } },
+];
+
+/* ── save ────────────────────────────────────────────────────────────── */
+let SAVE = { stars:{}, seen:false };
+try { SAVE = Object.assign(SAVE, JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); } catch(e){}
+const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); } catch(e){} };
+const starsFor = id => SAVE.stars[id] || 0;
+const unlocked = id => id === 1 || starsFor(id - 1) > 0;
+
+/* ── sound — tiny WebAudio, no assets ────────────────────────────────── */
+let AC = null, muted = false, silent = false;
+function beep(freq, dur, type = 'square', gain = 0.06, slide = 0){
+  if (muted || silent) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === 'suspended') AC.resume();
+    const o = AC.createOscillator(), g = AC.createGain(), t = AC.currentTime;
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), t + dur);
+    g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + dur + 0.02);
+  } catch(e){}
+}
+const SFX = {
+  clack: () => beep(180 + Math.random()*90, 0.06, 'square', 0.035),
+  kick:  () => beep(420, 0.12, 'sawtooth', 0.07, -300),
+  blast: () => { beep(90, 0.28, 'sawtooth', 0.10, 60); beep(150, 0.22, 'square', 0.05); },
+  drop:  () => beep(320, 0.4, 'triangle', 0.09, -260),
+  clang: () => { beep(720, 0.5, 'triangle', 0.10, -520); beep(1180, 0.32, 'sine', 0.05, -700); },
+  win:   () => [0,120,240,400].forEach((d,i) => setTimeout(() => beep([523,659,784,1047][i], 0.28, 'triangle', 0.09), d)),
+  fail:  () => { beep(200, 0.3, 'square', 0.07, -120); setTimeout(() => beep(150, 0.4, 'square', 0.07, -90), 150); },
+  place: () => beep(880, 0.045, 'sine', 0.045),
+};
+
+/* ── canvas ──────────────────────────────────────────────────────────── */
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const wrap = document.getElementById('cvwrap'), field = document.getElementById('field');
+let scale = 1;
+function fit(){
+  const pad = 6;
+  const aw = field.clientWidth - pad*2, ah = field.clientHeight - pad*2;
+  scale = Math.max(0.15, Math.min(aw / W, ah / H));
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width  = Math.round(W * scale * dpr);
+  cv.height = Math.round(H * scale * dpr);
+  cv.style.width  = Math.round(W * scale) + 'px';
+  cv.style.height = Math.round(H * scale) + 'px';
+  wrap.style.width  = cv.style.width;
+  wrap.style.height = cv.style.height;
+  ctx.setTransform(scale*dpr, 0, 0, scale*dpr, 0, 0);   // draw in world units from here on
+}
+window.addEventListener('resize', () => { fit(); if (mode === 'edit') draw(); });
+
+/* The stage art is cover-fitted and scrimmed once into an offscreen canvas —
+   rescaling a 1344px source every frame was the single most expensive thing in
+   the render loop. */
+let baked = null;
+function bakeStage(){
+  baked = document.createElement('canvas');
+  baked.width = W; baked.height = H;
+  const b = baked.getContext('2d');
+  b.fillStyle = '#0b0210'; b.fillRect(0, 0, W, H);
+  const bg = IMG.stage;
+  if (bg){
+    const k = Math.max(W / bg.width, H / bg.height);
+    b.drawImage(bg, (W - bg.width*k)/2, (H - bg.height*k)/2, bg.width*k, bg.height*k);
+  }
+  const g = b.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, 'rgba(10,0,14,.30)'); g.addColorStop(.55, 'rgba(10,0,14,.10)');
+  g.addColorStop(1, 'rgba(10,0,14,.46)');
+  b.fillStyle = g; b.fillRect(0, 0, W, H);
+}
+
+/* ── game state ──────────────────────────────────────────────────────── */
+let lvIndex = 0, lv = LEVELS[0];
+let placed = [];            // [{t,x,y,angle}] — the player's layout
+let bag = {};               // remaining tray counts
+let selType = null;         // tray chip armed for placement
+let selIdx = -1;            // index into placed[] currently picked
+let dragging = null;        // {idx, dx, dy, fromTray}
+let mode = 'edit';          // edit | run | done
+let engine = null, bodies = [], runT = 0, lastT = 0, raf = 0;
+let mouse = null, cage = null, cageBody = null, released = false, landed = 0;
+let previewT = 0, previewRaf = 0;
+let outcome = null;         // 'win' | 'miss' | 'stall'
+let shake = 0, flash = 0;
+
+/* ── level setup ─────────────────────────────────────────────────────── */
+function loadLevel(i){
+  lvIndex = Math.max(0, Math.min(LEVELS.length - 1, i));
+  lv = LEVELS[lvIndex];
+  placed = [];
+  bag = Object.assign({}, lv.tray);
+  selType = null; selIdx = -1; dragging = null;
+  stopRun();
+  mode = 'edit';
+  syncHud(); buildChips(); draw(); startPreview();
+  toast(lv.hint, 4200);
+}
+
+function syncHud(){
+  document.getElementById('actline').textContent =
+    `act ${lv.id} of ${LEVELS.length} · ${lv.tag}`;
+  document.getElementById('lvname').textContent = lv.name;
+  const s = starsFor(lv.id);
+  document.getElementById('stars').innerHTML =
+    [0,1,2].map(i => `<span class="${i < s ? 'on' : ''}">✦</span>`).join('');
+}
+
+function buildChips(){
+  const box = document.getElementById('chips');
+  box.innerHTML = '';
+  Object.keys(lv.tray).forEach(t => {
+    const p = PARTS[t], n = bag[t] | 0;
+    const el = document.createElement('div');
+    el.className = 'chip' + (n <= 0 ? ' out' : '') + (selType === t ? ' sel' : '');
+    el.innerHTML = `<img src="${ART[t]}" alt="${p.label}"><span class="n">${n}</span>` +
+                   `<span class="lab">${p.label}</span>`;
+    el.onclick = () => {
+      if ((bag[t] | 0) <= 0 || mode !== 'edit') return;
+      selType = (selType === t) ? null : t;
+      selIdx = -1;
+      if (selType) toast(PARTS[t].blurb, 2600);
+      buildChips(); draw();
+    };
+    box.appendChild(el);
+  });
+}
+
+/* ── placement helpers ───────────────────────────────────────────────── */
+function aabb(t, x, y, angle){
+  const b = PARTS[t].body;
+  const w = b.r ? b.r*2 : b.w, h = b.r ? b.r*2 : b.h;
+  // rotated planks need their swept extent, not their raw box
+  const c = Math.abs(Math.cos(angle||0)), s = Math.abs(Math.sin(angle||0));
+  const ew = w*c + h*s, eh = w*s + h*c;
+  return { x: x - ew/2, y: y - eh/2, w: ew, h: eh };
+}
+const hit = (a, b) => a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+
+function legal(t, x, y, angle, ignoreIdx){
+  const box = aabb(t, x, y, angle);
+  if (box.x < 4 || box.y < 4 || box.x + box.w > W - 4) return false;
+  if (box.y + box.h > GROUND + 2) return false;
+  for (const w of lv.walls) if (hit(box, {x:w[0], y:w[1], w:w[2], h:w[3]})) return false;
+  for (const f of lv.fixed) if (hit(box, aabb(f.t, f.x, f.y, f.angle || 0))) return false;
+  placed.forEach((p, i) => { if (i !== ignoreIdx && hit(box, aabb(p.t, p.x, p.y, p.angle))) box.bad = true; });
+  if (box.bad) return false;
+  // his lane stays clear — you drop the cage over him, you don't wall him in
+  if (t !== 'cage'){
+    const lane = { x: lv.mouse.x1 - 46, y: GROUND - 96, w: (lv.mouse.x2 - lv.mouse.x1) + 92, h: 100 };
+    if (hit(box, lane)) return false;
+  }
+  return true;
+}
+
+function pickAt(x, y){
+  for (let i = placed.length - 1; i >= 0; i--){
+    const b = aabb(placed[i].t, placed[i].x, placed[i].y, placed[i].angle);
+    if (x >= b.x && x <= b.x+b.w && y >= b.y && y <= b.y+b.h) return i;
+  }
+  return -1;
+}
+
+/* ── pointer ─────────────────────────────────────────────────────────── */
+function toWorld(e){
+  const r = cv.getBoundingClientRect();
+  return { x: (e.clientX - r.left) / scale, y: (e.clientY - r.top) / scale };
+}
+cv.addEventListener('pointerdown', e => {
+  if (mode !== 'edit') return;
+  cv.setPointerCapture(e.pointerId);
+  const p = toWorld(e);
+  const i = pickAt(p.x, p.y);
+  if (i >= 0){
+    selIdx = i; selType = null; buildChips();
+    dragging = { idx:i, dx: placed[i].x - p.x, dy: placed[i].y - p.y };
+  } else if (selType){
+    const t = selType, def = PARTS[t];
+    const angle = def.rot ? 0 : 0;
+    if (legal(t, p.x, p.y, angle, -1)){
+      placed.push({ t, x:p.x, y:p.y, angle });
+      bag[t]--; selIdx = placed.length - 1;
+      if ((bag[t] | 0) <= 0) selType = null;
+      SFX.place(); buildChips();
+    } else toast('no room there', 1400);
+  } else selIdx = -1;
+  draw();
+});
+cv.addEventListener('pointermove', e => {
+  if (mode !== 'edit') return;
+  const p = toWorld(e);
+  if (dragging){
+    const it = placed[dragging.idx];
+    const nx = p.x + dragging.dx, ny = p.y + dragging.dy;
+    if (legal(it.t, nx, ny, it.angle, dragging.idx)){ it.x = nx; it.y = ny; }
+    draw();
+  } else { hover = p; draw(); }
+});
+let hover = null;
+cv.addEventListener('pointerup',     () => { dragging = null; });
+cv.addEventListener('pointercancel', () => { dragging = null; });
+cv.addEventListener('pointerleave',  () => { hover = null; if (mode === 'edit') draw(); });
+
+window.addEventListener('keydown', e => {
+  if (mode !== 'edit') return;
+  if (e.key === 'r' || e.key === 'R') rotateSel();
+  if (e.key === 'Backspace' || e.key === 'Delete') removeSel();
+  if (e.key === ' '){ e.preventDefault(); crank(); }
+});
+
+function rotateSel(){
+  if (selIdx < 0) return;
+  const it = placed[selIdx];
+  if (!PARTS[it.t].rot) { toast("that one doesn't turn", 1400); return; }
+  const step = Math.PI / 12;                       // 15°
+  for (let k = 1; k <= 24; k++){                   // find the next angle that fits
+    const a = it.angle + step * k;
+    if (legal(it.t, it.x, it.y, a, selIdx)){ it.angle = a; SFX.place(); break; }
+  }
+  draw();
+}
+function removeSel(){
+  if (selIdx < 0) return;
+  const it = placed[selIdx];
+  bag[it.t] = (bag[it.t] | 0) + 1;
+  placed.splice(selIdx, 1);
+  selIdx = -1; buildChips(); draw();
+}
+
+/* ── building the run ────────────────────────────────────────────────── */
+function spawn(t, x, y, angle, editable){
+  const def = PARTS[t], b = def.body;
+  let body;
+  const opt = { friction:0.42, frictionStatic:0.7, restitution:0.12, label:t };
+  if (b.r){
+    body = Bodies.circle(x, y, b.r, Object.assign(opt, {
+      density: def.dens || 0.0015, restitution: def.rest ?? 0.25, friction: 0.06,
+      frictionAir: 0.004, slop: 0.02 }));
+  } else if (def.kind === 'block'){
+    body = Bodies.rectangle(x, y, b.w, b.h, Object.assign(opt, { density: def.dens || 0.003 }));
+  } else if (def.kind === 'seesaw'){
+    body = Bodies.rectangle(x, y, b.w, b.h, Object.assign(opt, { density: 0.0022, frictionAir: 0.02 }));
+  } else if (def.kind === 'cage'){
+    // NOTE: born dynamic, then frozen. A body created with isStatic:true keeps
+    // infinite mass in _original, so setStatic(false) on release hands it back
+    // an infinite mass and every integration after that is NaN.
+    body = Bodies.rectangle(x, y, b.w, b.h, Object.assign(opt, {
+      density: 0.006, friction: 0.9, restitution: 0, frictionAir: 0.004 }));
+    Body.setStatic(body, true);
+  } else {
+    body = Bodies.rectangle(x, y, b.w, b.h, Object.assign(opt, { isStatic: true }));
+  }
+  Body.setAngle(body, angle || 0);
+  body.spr = t; body.kind = def.kind; body.editable = !!editable;
+  body.home = { x, y, a: angle || 0 };
+  return body;
+}
+
+function buildWorld(){
+  engine = Engine.create({ gravity:{ x:0, y:1 }, enableSleeping:false });
+  engine.positionIterations = 8; engine.velocityIterations = 7;
+  bodies = [];
+  const add = b => { bodies.push(b); Composite.add(engine.world, b); return b; };
+
+  // the alley itself
+  add(Bodies.rectangle(W/2, GROUND + 40, W + 400, 80, { isStatic:true, friction:0.6, label:'floor' }));
+  add(Bodies.rectangle(-30, H/2, 60, H*2, { isStatic:true, label:'wall' }));
+  add(Bodies.rectangle(W+30, H/2, 60, H*2, { isStatic:true, label:'wall' }));
+  lv.walls.forEach(w => {
+    const b = Bodies.rectangle(w[0] + w[2]/2, w[1] + w[3]/2, w[2], w[3],
+      { isStatic:true, friction:0.5, label:'ledge' });
+    if (w[4]) Body.setAngle(b, w[4]);
+    b.ledge = true; add(b);
+  });
+
+  cage = null; cageBody = null; released = false; landed = 0;
+  const all = lv.fixed.map(f => ({ ...f, fixed:true })).concat(placed.map(p => ({ ...p })));
+  all.forEach(p => {
+    const b = add(spawn(p.t, p.x, p.y, p.angle || 0, !p.fixed));
+    if (p.t === 'cage'){
+      cageBody = b;
+      cage = add(Bodies.rectangle(p.x, p.y - PARTS.cage.body.h/2 - HOOK_H/2, HOOK_W, HOOK_H,
+        { isStatic:true, isSensor:true, label:'hook' }));
+      cage.spr = null;
+    }
+    if (b.kind === 'seesaw'){
+      Composite.add(engine.world, Constraint.create({
+        pointA: { x:p.x, y:p.y }, bodyB: b, pointB: { x:0, y:0 },
+        length: 0, stiffness: 1, damping: 0.1, render:{ visible:false } }));
+    }
+  });
+
+  // the starter — static until CRANK, so the layout you see is the layout you get
+  const s = lv.start;
+  const ball = add(spawn(s.t, s.x, s.y, 0, false));
+  Body.setStatic(ball, true);
+  ball.starter = true;
+
+  // Seddy
+  mouse = { x: lv.mouse.from, dir: lv.mouse.from <= lv.mouse.x1 ? 1 : -1,
+            speed: lv.mouse.speed, boost: 0, pose:'idle', caught:false };
+
+  wireTriggers();
+}
+
+function wireTriggers(){
+  Events.on(engine, 'collisionStart', ev => {
+    for (const pair of ev.pairs){
+      const a = pair.bodyA, b = pair.bodyB;
+      handleHit(a, b); handleHit(b, a);
+      if (!a.isSensor && !b.isSensor && (!a.isStatic || !b.isStatic)){
+        const v = Math.abs(pair.collision.depth) + Math.hypot(
+          (a.velocity.x - b.velocity.x), (a.velocity.y - b.velocity.y));
+        if (v > 2.2) SFX.clack();
+      }
+    }
+  });
+}
+
+function handleHit(part, other){
+  // the hook is the clean shot, but shunting the cage itself works too — a
+  // 74px sensor is a needle to thread, and "knock the cage down" reads fine
+  if (!released && (part.label === 'hook' || part === cageBody) &&
+      !other.isSensor && !other.isStatic && !other.starterHeld){
+    releaseCage();
+  }
+  if (part.kind === 'kicker' && !part.fired && !other.isStatic && !other.isSensor){
+    part.fired = true; part.flash = 1;
+    const dir = Vector.rotate({ x:1, y:-0.35 }, part.angle);
+    Body.applyForce(other, other.position,
+      Vector.mult(Vector.normalise(dir), other.mass * 0.62));
+    SFX.kick();
+  }
+  if (part.kind === 'blast' && !part.fired && !other.isStatic && !other.isSensor){
+    part.fired = true; part.flash = 1;
+    blastFrom(part);
+  }
+}
+
+function releaseCage(){
+  if (released || !cageBody) return;
+  released = true;
+  Composite.remove(engine.world, cage);
+  Body.setStatic(cageBody, false);
+  Body.setVelocity(cageBody, { x:0, y:1 });
+  SFX.drop(); shake = 0.5;
+}
+
+function blastFrom(src){
+  SFX.blast(); shake = 0.8;
+  const dir = Vector.rotate({ x:1, y:0 }, src.angle);
+  bodies.forEach(b => {
+    if (b.isStatic || b.isSensor || b === src) return;
+    const d = Vector.sub(b.position, src.position), dist = Vector.magnitude(d);
+    if (dist > 300 || dist < 1) return;
+    if (Vector.dot(Vector.normalise(d), dir) < 0.25) return;      // it's a cone, not a bomb
+    Body.applyForce(b, b.position,
+      Vector.mult(Vector.normalise(d), b.mass * 0.5 * (1 - dist/300)));
+  });
+  // and it drives Seddy away from the speaker
+  const md = mouse.x - src.position.x;
+  if (Math.abs(md) < 340){ mouse.dir = Math.sign(md) || 1; mouse.boost = 1.6; }
+}
+
+/* ── the run ─────────────────────────────────────────────────────────── */
+function crank(){
+  if (mode === 'run'){ stopRun(); mode = 'edit'; document.getElementById('crank').textContent = 'CRANK IT';
+    document.getElementById('crank').classList.remove('running'); draw(); startPreview(); return; }
+  if (mode !== 'edit') return;
+  if (!lv.fixed.some(f => f.t === 'cage') && !placed.some(p => p.t === 'cage')){
+    toast('hang the cage first', 2000); return; }
+  try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); AC.resume(); } catch(e){}
+  buildWorld();
+  bodies.forEach(b => { if (b.starter) Body.setStatic(b, false); });
+  cancelAnimationFrame(previewRaf); previewRaf = 0;
+  mode = 'run'; runT = 0; outcome = null; lastT = performance.now();
+  const c = document.getElementById('crank');
+  c.textContent = 'STOP'; c.classList.add('running');
+  cancelAnimationFrame(raf); raf = requestAnimationFrame(tick);
+}
+function stopRun(){
+  cancelAnimationFrame(raf); raf = 0;
+  if (engine){ Engine.clear(engine); Composite.clear(engine.world, false); engine = null; }
+}
+
+function applyFans(){
+  bodies.forEach(f => {
+    if (f.kind !== 'fan') return;
+    const dir = Vector.rotate({ x:1, y:0 }, f.angle);
+    bodies.forEach(b => {
+      if (b.isStatic || b.isSensor || b === f) return;
+      const d = Vector.sub(b.position, f.position), dist = Vector.magnitude(d);
+      if (dist > 260 || dist < 1) return;
+      if (Vector.dot(Vector.normalise(d), dir) < 0.6) return;
+      const perp = Math.abs(Vector.cross(Vector.normalise(d), dir)) * dist;
+      if (perp > 60) return;
+      Body.applyForce(b, b.position, Vector.mult(dir, b.mass * 0.0075 * (1 - dist/260)));
+    });
+  });
+}
+
+function walkMouse(dt){
+  if (!mouse.caught){
+    if (mouse.boost > 0) mouse.boost -= dt;
+    const sp = mouse.speed * (mouse.boost > 0 ? 1.5 : 1);
+    mouse.x += mouse.dir * sp * dt;
+    if (mouse.x <= lv.mouse.x1){ mouse.x = lv.mouse.x1; mouse.dir = 1; }
+    if (mouse.x >= lv.mouse.x2){ mouse.x = lv.mouse.x2; mouse.dir = -1; }
+  }
+}
+
+function checkLanding(){
+  if (released && cageBody && !outcome){
+    const bottom = cageBody.position.y + PARTS.cage.body.h/2;
+    const still  = Math.abs(cageBody.velocity.y) < 0.6;
+    if (bottom > GROUND - 26 && still){
+      if (!landed){
+        landed = runT; SFX.clang(); shake = 1; flash = 0.5;
+        const over = Math.abs(cageBody.position.x - mouse.x) < PARTS.cage.body.w/2 - 10;
+        if (over){ mouse.caught = true; mouse.pose = 'caged'; }
+      }
+      if (runT - landed > 0.7) outcome = mouse.caught ? 'win' : 'miss';
+    }
+  }
+  if (!outcome && runT > RUN_LIMIT) outcome = released ? 'miss' : 'stall';
+}
+
+/* one simulation step — shared by the render loop and the headless solver */
+function stepSim(dt){
+  runT += dt;
+  let acc = dt;                      // fixed 120Hz so it plays the same on any display
+  while (acc > 0){ const s = Math.min(1/120, acc); Engine.update(engine, s * 1000); acc -= s; }
+  applyFans(); walkMouse(dt); checkLanding();
+  return outcome;
+}
+
+function tick(now){
+  const dt = Math.min(0.033, (now - lastT) / 1000); lastT = now;
+  const done = stepSim(dt);
+
+  if (shake > 0) shake = Math.max(0, shake - dt*3);
+  if (flash > 0) flash = Math.max(0, flash - dt*2.4);
+  bodies.forEach(b => { if (b.flash > 0) b.flash = Math.max(0, b.flash - dt*2.5); });
+
+  draw();
+  if (done && mode === 'run'){ finish(done); return; }
+  if (mode === 'run') raf = requestAnimationFrame(tick);
+}
+
+/* Headless solver hook. Runs a candidate layout through the real physics with
+   no rendering so level geometry can be proved solvable instead of eyeballed.
+   window.__sim(levelIndex, [{t,x,y,angle}], capSeconds) -> {outcome,t,...} */
+window.__sim = function(idx, plc, cap){
+  const keep = { i:lvIndex, l:lv, p:placed, m:mode, b:bag };
+  silent = true;
+  lvIndex = idx; lv = LEVELS[idx]; placed = (plc || []).map(o => ({ angle:0, ...o }));
+  buildWorld();
+  bodies.forEach(b => { if (b.starter) Body.setStatic(b, false); });
+  runT = 0; outcome = null; landed = 0; mode = 'sim';
+  const dt = 1/60, lim = cap || RUN_LIMIT;
+  const trace = [], starter = bodies.find(b => b.starter);
+  let k = 0, dead = 0;
+  while (!outcome && runT < lim){
+    stepSim(dt);
+    if (starter && (k++ % 6 === 0))
+      trace.push([+starter.position.x.toFixed(0), +starter.position.y.toFixed(0)]);
+    // Nothing left to happen: once the starter is down on the floor it can no
+    // longer reach a cage that is still hanging, so stop burning steps on it.
+    if (!released && starter && starter.position.y > GROUND - 70){
+      dead += dt;
+      if (dead > 0.25) break;
+    }
+  }
+  const out = { outcome: outcome || 'stall', t:+runT.toFixed(2), released, trace,
+                cageX: cageBody ? +cageBody.position.x.toFixed(1) : null,
+                mouseX: +mouse.x.toFixed(1) };
+  stopRun(); silent = false;
+  lvIndex = keep.i; lv = keep.l; placed = keep.p; mode = keep.m; bag = keep.b;
+  return out;
+};
+window.__legal = (t, x, y, a, arr, li) => {
+  const kp = placed, kl = lv;
+  placed = arr || []; if (li != null) lv = LEVELS[li];
+  const ok = legal(t, x, y, a, -1);
+  placed = kp; lv = kl; return ok;
+};
+window.__levels = LEVELS; window.__parts = PARTS; window.__W = W; window.__H = H; window.__G = GROUND;
+
+function finish(kind){
+  outcome = kind; mode = 'done';
+  const c = document.getElementById('crank');
+  c.textContent = 'CRANK IT'; c.classList.remove('running');
+  if (kind === 'win'){
+    SFX.win();
+    const leftover = Object.values(bag).reduce((a, n) => a + (n|0), 0);
+    let s = 1;
+    if (leftover > 0) s++;
+    if (runT <= lv.par) s++;
+    if (s > starsFor(lv.id)){ SAVE.stars[lv.id] = s; persist(); }
+    setTimeout(() => showResult(s, leftover), 700);
+  } else {
+    SFX.fail(); mouse.pose = 'taunt';
+    setTimeout(() => showResult(0, 0, kind), 600);
+  }
+  draw();
+}
+
+/* ── overlays ────────────────────────────────────────────────────────── */
+function veil(html){
+  const d = document.createElement('div');
+  d.className = 'veil'; d.innerHTML = `<div class="card">${html}</div>`;
+  document.getElementById('field').appendChild(d);
+  return d;
+}
+const clearVeils = () => document.querySelectorAll('.veil').forEach(v => v.remove());
+
+function missBlurb(){
+  const d = cageBody && mouse ? Math.round(cageBody.position.x - mouse.x) : 0;
+  const px = Math.abs(d);
+  if (px < 90)  return `the bars came down ${px}px ${d > 0 ? 'ahead of' : 'behind'} him. he felt the wind off it.`;
+  return `the cage hit wet asphalt ${px}px ${d > 0 ? 'ahead of' : 'behind'} him. he did not even flinch.`;
+}
+
+function showResult(s, leftover, kind){
+  const win = s > 0;
+  const misslines = {
+    miss:  ['CLOSE', missBlurb()],
+    stall: ['NOTHING HAPPENED', 'the chain never reached the cage. he waited around, then got bored.'],
+  };
+  const body = win
+    ? `<div class="kicker">act ${lv.id} · ${lv.name}</div>
+       <h1>CAUGHT HIM</h1>
+       <img class="mug" src="${ART.caged}" alt="the mouse, caged">
+       <div class="bigstars">${[0,1,2].map(i => `<span class="${i<s?'on':''}">✦</span>`).join('')}</div>
+       <p class="small">${runT.toFixed(1)}s${runT <= lv.par ? ' · under par' : ` · par ${lv.par}s`}
+          · ${leftover} part${leftover === 1 ? '' : 's'} left in the bin</p>
+       <div class="row">
+         <button class="btn ghost" id="r-again">RUN AGAIN</button>
+         ${lvIndex < LEVELS.length - 1
+            ? `<button class="btn" id="r-next">NEXT ACT →</button>`
+            : `<button class="btn" id="r-acts">ALL ACTS</button>`}
+       </div>`
+    : `<div class="kicker">act ${lv.id} · ${lv.name}</div>
+       <h1 style="color:var(--pink-light)">${misslines[kind][0]}</h1>
+       <img class="mug" src="${ART.taunt}" alt="the mouse, taunting">
+       <p>${misslines[kind][1]}</p>
+       <p class="small">${lv.hint}</p>
+       <div class="row"><button class="btn" id="r-again">TRY AGAIN</button>
+         <button class="btn ghost" id="r-acts">ACTS</button></div>`;
+  const v = veil(body);
+  const back = () => { clearVeils(); loadLevel(lvIndex); };
+  v.querySelector('#r-again') && (v.querySelector('#r-again').onclick = back);
+  v.querySelector('#r-next')  && (v.querySelector('#r-next').onclick  = () => { clearVeils(); loadLevel(lvIndex + 1); });
+  v.querySelector('#r-acts')  && (v.querySelector('#r-acts').onclick  = () => { clearVeils(); showActs(); });
+}
+
+function showActs(){
+  const cells = LEVELS.map((L, i) => {
+    const s = starsFor(L.id), open = unlocked(L.id);
+    return `<div class="lvcell${open ? '' : ' locked'}" data-i="${i}">
+      <div class="num">${L.id}</div><div class="nm">${L.name}</div>
+      <div class="st">${open ? '✦'.repeat(s) : '🔒'}</div></div>`;
+  }).join('');
+  const v = veil(`<div class="kicker">trulyland · back alley</div>
+    <h2>THE ACTS</h2>
+    <div class="lvgrid">${cells}</div>
+    <div class="row"><button class="btn ghost" id="a-close">BACK</button></div>`);
+  v.querySelectorAll('.lvcell').forEach(c => c.onclick = () => {
+    const i = +c.dataset.i;
+    if (!unlocked(LEVELS[i].id)) return;
+    clearVeils(); loadLevel(i);
+  });
+  v.querySelector('#a-close').onclick = () => clearVeils();
+}
+
+function showIntro(){
+  const v = veil(`<span class="tag">trulyland · unlicensed</span>
+    <img class="poster" src="${ART.poster}" alt="THE MOUSETRAP">
+    <img class="mug" src="${ART.idle}" alt="the bootleg mascot">
+    <p>There's a mouse in the park. Nobody hired him, nobody can get rid of him,
+       and he's been tagging the castle every night since the gates opened.</p>
+    <p class="small">Lay parts in the alley. Hit CRANK. The chain reaction has to knock
+       the cage off its hook — and the cage has to come down where he'll <em>be</em>,
+       not where he is. Drag to move · <b>↻</b> or <b>R</b> to turn · tap a part then
+       <b>PULL</b> to take it back.</p>
+    <div class="row">
+      <button class="btn" id="i-go">${SAVE.seen ? 'BACK TO IT' : 'START ACT 1'}</button>
+      ${SAVE.seen ? '<button class="btn ghost" id="i-acts">ACTS</button>' : ''}
+    </div>`);
+  v.querySelector('#i-go').onclick = () => {
+    SAVE.seen = true; persist(); clearVeils();
+    let n = 0; while (n < LEVELS.length - 1 && starsFor(LEVELS[n].id) > 0) n++;
+    loadLevel(n);
+  };
+  const a = v.querySelector('#i-acts'); if (a) a.onclick = () => { clearVeils(); showActs(); };
+}
+
+let toastT = 0;
+function toast(msg, ms = 2000){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('on');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => el.classList.remove('on'), ms);
+}
+
+/* ── render ──────────────────────────────────────────────────────────── */
+function sprite(key, x, y, w, h, angle, alpha){
+  const img = IMG[key];
+  ctx.save();
+  ctx.translate(x, y); if (angle) ctx.rotate(angle);
+  if (alpha != null) ctx.globalAlpha = alpha;
+  if (img) ctx.drawImage(img, -w/2, -h/2, w, h);
+  else { ctx.fillStyle = 'rgba(255,79,163,.55)'; ctx.fillRect(-w/2, -h/2, w, h); }
+  ctx.restore();
+}
+function drawPart(t, x, y, angle, alpha){
+  const d = PARTS[t], s = d.spr;
+  ctx.save();
+  ctx.translate(x, y); if (angle) ctx.rotate(angle);
+  ctx.translate(s.ox || 0, s.oy || 0);
+  const img = IMG[t];
+  if (alpha != null) ctx.globalAlpha = alpha;
+  if (img) ctx.drawImage(img, -s.w/2, -s.h/2, s.w, s.h);
+  else { ctx.fillStyle = 'rgba(255,79,163,.5)'; ctx.fillRect(-s.w/2, -s.h/2, s.w, s.h); }
+  ctx.restore();
+}
+
+function draw(){
+  ctx.save();
+  if (shake > 0){
+    ctx.translate((Math.random()-0.5) * shake * 9, (Math.random()-0.5) * shake * 9);
+  }
+  // backdrop — pre-baked with its scrim
+  ctx.fillStyle = '#0b0210'; ctx.fillRect(-20, -20, W+40, H+40);
+  if (baked) ctx.drawImage(baked, 0, 0);
+
+  // ledges — drawn about their centre at the SAME angle the body uses, or the
+  // player aims at a chute that isn't where the physics thinks it is
+  lv.walls.forEach(w => {
+    const cx = w[0] + w[2]/2, cy = w[1] + w[3]/2;
+    ctx.save();
+    ctx.translate(cx, cy); if (w[4]) ctx.rotate(w[4]);
+    ctx.fillStyle = '#170419';
+    ctx.fillRect(-w[2]/2, -w[3]/2, w[2], w[3]);
+    ctx.fillStyle = 'rgba(255,45,143,.20)';                 // underside glow
+    ctx.fillRect(-w[2]/2, w[3]/2, w[2], 5);
+    ctx.strokeStyle = 'rgba(255,79,163,.7)'; ctx.lineWidth = 2.5;
+    ctx.strokeRect(-w[2]/2, -w[3]/2, w[2], w[3]);
+    ctx.fillStyle = 'rgba(217,217,227,.75)';                // stud rivets
+    for (let sx = -w[2]/2 + 12; sx < w[2]/2 - 6; sx += 26){
+      ctx.beginPath(); ctx.arc(sx, 0, 2.2, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  });
+
+  // his lane
+  const m = lv.mouse;
+  ctx.save();
+  ctx.setLineDash([10, 8]); ctx.lineWidth = 3;
+  ctx.strokeStyle = 'rgba(255,45,143,.95)';
+  ctx.beginPath(); ctx.moveTo(m.x1, GROUND + 10); ctx.lineTo(m.x2, GROUND + 10); ctx.stroke();
+  ctx.setLineDash([]);
+  [m.x1, m.x2].forEach(x => {
+    ctx.beginPath(); ctx.moveTo(x, GROUND - 6); ctx.lineTo(x, GROUND + 18); ctx.stroke();
+  });
+  ctx.fillStyle = 'rgba(255,179,217,.85)'; ctx.font = "10px 'Cutive Mono', monospace";
+  ctx.textAlign = 'center';
+  ctx.fillText('HIS BEAT', (m.x1 + m.x2)/2, GROUND + 30);
+  ctx.restore();
+
+  if (mode === 'edit') drawEdit(); else drawRun();
+
+  // ground line
+  ctx.fillStyle = 'rgba(255,45,143,.30)'; ctx.fillRect(0, GROUND + 8, W, 2);
+
+  if (flash > 0){ ctx.fillStyle = `rgba(255,140,200,${flash * 0.5})`; ctx.fillRect(0, 0, W, H); }
+  ctx.restore();
+}
+
+function drawEdit(){
+  lv.fixed.forEach(f => {
+    drawPart(f.t, f.x, f.y, f.angle || 0);
+    if (f.t === 'cage') drawCageAim(f.x, f.y);
+  });
+  placed.forEach((p, i) => {
+    drawPart(p.t, p.x, p.y, p.angle);
+    if (p.t === 'cage') drawCageAim(p.x, p.y);
+    if (i === selIdx){
+      const b = aabb(p.t, p.x, p.y, p.angle);
+      ctx.save();
+      ctx.strokeStyle = '#ff2d8f'; ctx.lineWidth = 2.5; ctx.setLineDash([7, 6]);
+      ctx.strokeRect(b.x - 6, b.y - 6, b.w + 12, b.h + 12);
+      ctx.restore();
+      drawHandles(p, b);
+    }
+  });
+  // the starter, parked
+  const s = lv.start;
+  drawPart(s.t, s.x, s.y, 0, 0.95);
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,217,138,.85)'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
+  ctx.beginPath(); ctx.arc(s.x, s.y, (PARTS[s.t].body.r || 30) + 12, 0, Math.PI*2); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(255,217,138,.9)'; ctx.font = "13px 'Cutive Mono', monospace";
+  ctx.textAlign = 'center';
+  ctx.fillText('START', s.x, s.y - (PARTS[s.t].body.r || 30) - 20);
+  ctx.restore();
+
+  // ghost of the armed chip under the cursor
+  if (selType && hover && !dragging){
+    const ok = legal(selType, hover.x, hover.y, 0, -1);
+    ctx.save(); ctx.globalAlpha = ok ? 0.6 : 0.28;
+    drawPart(selType, hover.x, hover.y, 0);
+    ctx.restore();
+    if (!ok){
+      const b = aabb(selType, hover.x, hover.y, 0);
+      ctx.save(); ctx.strokeStyle = 'rgba(255,77,109,.9)'; ctx.lineWidth = 3;
+      ctx.strokeRect(b.x, b.y, b.w, b.h);
+      ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x+b.w, b.y+b.h); ctx.stroke();
+      ctx.restore();
+    }
+  }
+  const b = beatAt(previewT % 60);
+  drawMouse(b.x, 'idle', b.dir);
+}
+/* Where he'd be at t seconds into a run, given his lane and start phase.
+   Edit mode plays this on a loop; it is the same walk the sim performs. */
+function beatAt(t){
+  const m = lv.mouse, span = m.x2 - m.x1;
+  if (span <= 0) return { x:m.x1, dir:1 };
+  const d = m.from <= m.x1 ? 1 : -1;
+  const travelled = t * m.speed;
+  const first = d > 0 ? (m.x2 - m.from) : (m.from - m.x1);
+  if (travelled <= first) return { x: m.from + d * travelled, dir: d };
+  const rest = (travelled - first) % (span * 2);
+  const back = rest <= span;
+  return back
+    ? { x: (d > 0 ? m.x2 - rest : m.x1 + rest), dir: -d }
+    : { x: (d > 0 ? m.x1 + (rest - span) : m.x2 - (rest - span)), dir: d };
+}
+
+function previewLoop(now){
+  if (mode !== 'edit'){ previewRaf = 0; return; }
+  previewT = now / 1000;
+  draw();
+  previewRaf = requestAnimationFrame(previewLoop);
+}
+function startPreview(){
+  if (!previewRaf) previewRaf = requestAnimationFrame(previewLoop);
+}
+
+function drawHandles(p, b){
+  const btns = [];
+  if (PARTS[p.t].rot) btns.push({ k:'rot', s:'↻', x:b.x + b.w + 20, y:b.y - 6 });
+  btns.push({ k:'del', s:'PULL', x:b.x + b.w + 20, y:b.y + 26 });
+  handleHot = [];
+  btns.forEach(t => {
+    ctx.save();
+    ctx.fillStyle = 'rgba(12,0,15,.9)'; ctx.strokeStyle = '#ff4fa3'; ctx.lineWidth = 2;
+    const w = t.k === 'rot' ? 34 : 52, h = 28;
+    ctx.beginPath(); ctx.roundRect(t.x, t.y, w, h, 8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ffb3d9'; ctx.font = `${t.k === 'rot' ? 17 : 12}px 'Cutive Mono', monospace`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(t.s, t.x + w/2, t.y + h/2 + 1);
+    ctx.restore();
+    handleHot.push({ k:t.k, x:t.x, y:t.y, w, h });
+  });
+}
+let handleHot = [];
+cv.addEventListener('pointerdown', e => {
+  if (mode !== 'edit' || selIdx < 0) return;
+  const p = toWorld(e);
+  for (const h of handleHot){
+    if (p.x >= h.x && p.x <= h.x+h.w && p.y >= h.y && p.y <= h.y+h.h){
+      dragging = null;
+      if (h.k === 'rot') rotateSel(); else removeSel();
+      e.stopPropagation();
+      return;
+    }
+  }
+}, true);
+
+function drawCageAim(x, y){
+  ctx.save();
+  ctx.setLineDash([6, 9]); ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(255,179,217,.42)';
+  ctx.beginPath();
+  ctx.moveTo(x, y + PARTS.cage.body.h/2); ctx.lineTo(x, GROUND);
+  ctx.stroke(); ctx.setLineDash([]);
+  const hw = PARTS.cage.body.w/2;
+  ctx.strokeStyle = 'rgba(255,45,143,.85)'; ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(x - hw, GROUND - 14); ctx.lineTo(x - hw, GROUND + 6); ctx.lineTo(x - hw + 16, GROUND + 6);
+  ctx.moveTo(x + hw, GROUND - 14); ctx.lineTo(x + hw, GROUND + 6); ctx.lineTo(x + hw - 16, GROUND + 6);
+  ctx.stroke();
+  // the hook you have to hit
+  ctx.strokeStyle = '#ffd98a'; ctx.lineWidth = 2.5; ctx.setLineDash([4, 4]);
+  ctx.strokeRect(x - HOOK_W/2, y - PARTS.cage.body.h/2 - HOOK_H, HOOK_W, HOOK_H);
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(255,217,138,.95)'; ctx.font = "11px 'Cutive Mono', monospace";
+  ctx.textAlign = 'center';
+  ctx.fillText('HOOK', x, y - PARTS.cage.body.h/2 - HOOK_H - 8);
+  ctx.restore();
+}
+
+function drawRun(){
+  bodies.forEach(b => {
+    if (b.label === 'floor' || b.label === 'wall' || b.ledge || b.label === 'hook') return;
+    if (!b.spr) return;
+    drawPart(b.spr, b.position.x, b.position.y, b.angle);
+    if (b.flash > 0){
+      ctx.save(); ctx.globalAlpha = b.flash * 0.7;
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(b.position.x, b.position.y, 54, 0, Math.PI*2); ctx.stroke();
+      ctx.restore();
+    }
+  });
+  if (cage && !released){
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,217,138,.75)'; ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
+    ctx.strokeRect(cage.position.x - HOOK_W/2, cage.position.y - HOOK_H/2, HOOK_W, HOOK_H);
+    ctx.restore();
+  }
+  if (!mouse.caught) drawMouse(mouse.x, mouse.pose);
+  // clock
+  ctx.save();
+  ctx.fillStyle = runT > lv.par ? 'rgba(255,179,217,.6)' : 'rgba(255,217,138,.9)';
+  ctx.font = "15px 'Cutive Mono', monospace"; ctx.textAlign = 'right';
+  ctx.fillText(`${runT.toFixed(1)}s / par ${lv.par}s`, W - 14, 26);
+  ctx.restore();
+}
+
+function drawMouse(x, pose, dirOverride){
+  const key = pose === 'taunt' ? 'taunt' : 'idle';
+  const img0 = IMG[key];
+  const h = 148, w = h * (img0 ? img0.width / img0.height : 0.62);
+  const walking = mode === 'run' ? (mouse && !mouse.caught) : true;
+  const bob = walking ? Math.sin((mode === 'run' ? runT : previewT) * 9) * 3 : 0;
+  const facing = dirOverride != null ? dirOverride : (mode === 'run' && mouse ? mouse.dir : 1);
+  ctx.save();
+  ctx.translate(x, GROUND - h/2 + 4 + bob);
+  if (facing < 0) ctx.scale(-1, 1);                            // he faces where he's walking
+  const img = img0;
+  if (img) ctx.drawImage(img, -w/2, -h/2, w, h);
+  else { ctx.fillStyle = '#111'; ctx.fillRect(-w/2, -h/2, w, h); }
+  ctx.restore();
+  // shadow
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,45,143,.22)';
+  ctx.beginPath(); ctx.ellipse(x, GROUND + 8, w*0.34, 6, 0, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+/* ── chrome wiring ───────────────────────────────────────────────────── */
+document.getElementById('crank').onclick     = crank;
+document.getElementById('btn-reset').onclick = () => { clearVeils(); loadLevel(lvIndex); };
+document.getElementById('btn-levels').onclick = () => { clearVeils(); showActs(); };
+document.getElementById('btn-sound').onclick = e => {
+  muted = !muted; e.target.textContent = muted ? '✕' : '♪';
+  e.target.style.opacity = muted ? .4 : 1;
+};
+
+/* ── go ──────────────────────────────────────────────────────────────── */
+loadArt().then(() => {
+  bakeStage();
+  fit();
+  loadLevel(0);
+  showIntro();
+});
+</script>
+</body>
+</html>

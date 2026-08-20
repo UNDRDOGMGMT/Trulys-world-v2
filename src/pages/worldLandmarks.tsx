@@ -134,13 +134,35 @@ const Bar: React.FC<{ w?: number; h?: number; d?: number; x?: number; y?: number
   <mesh position={[x, y, z]}><boxGeometry args={[w, h, d]} /><meshBasicMaterial color={c} toneMapped={false} /></mesh>
 );
 
-// flat water / field patch (lilac)
-const Water: React.FC<{ r?: number; x?: number; z?: number; ring?: boolean; scale?: [number, number] }> = ({ r = 1.2, x = 0, z = 0, ring = true, scale = [1, 1] }) => (
-  <group position={[x, 0.02, z]} scale={[scale[0], 1, scale[1]]}>
-    <mesh rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[r, 40]} /><meshStandardMaterial color="#1a1440" emissive={PAL.lilac} emissiveIntensity={0.4} roughness={0.2} metalness={0.4} /></mesh>
-    {ring && <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}><ringGeometry args={[r - 0.05, r + 0.02, 40]} /><meshBasicMaterial color={PAL.ink} toneMapped={false} side={THREE.DoubleSide} /></mesh>}
-  </group>
-);
+// flat water patch — a feathered lilac-to-pink glow that melts into the globe's
+// painted ocean. (Was a hard lilac disc + rim, which read from orbit as random
+// grey circles stamped on the planet.)
+const waterGlowTex = (() => {
+  let t: THREE.CanvasTexture | null = null;
+  return () => {
+    if (t) return t;
+    const c = document.createElement("canvas"); c.width = c.height = 128;
+    const g = c.getContext("2d")!;
+    const gr = g.createRadialGradient(64, 64, 6, 64, 64, 64);
+    gr.addColorStop(0, "rgba(157,139,255,0.42)");
+    gr.addColorStop(0.5, "rgba(255,79,163,0.20)");
+    gr.addColorStop(1, "rgba(255,79,163,0)");
+    g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+    t = new THREE.CanvasTexture(c);
+    return t;
+  };
+})();
+const Water: React.FC<{ r?: number; x?: number; z?: number; ring?: boolean; scale?: [number, number] }> = ({ r = 1.2, x = 0, z = 0, ring = true, scale = [1, 1] }) => {
+  void ring; // kept for call-site compat; the glow has no rim by design
+  return (
+    <group position={[x, 0.018, z]} scale={[scale[0], 1, scale[1]]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[r * 2.9, r * 2.9]} />
+        <meshBasicMaterial map={waterGlowTex()} transparent depthWrite={false} toneMapped={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+    </group>
+  );
+};
 
 const Palm: React.FC<{ x?: number; z?: number; s?: number }> = ({ x = 0, z = 0, s = 1 }) => (
   <group position={[x, 0, z]} scale={s}>
@@ -293,7 +315,7 @@ const ValleyGrid: React.FC = () => (
 // INGLEWOOD — SoFi oval canopy over a lilac field
 const Stadium: React.FC = () => (
   <group>
-    <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1.25, 0.85, 1]}><circleGeometry args={[1, 40]} /><meshStandardMaterial color="#1a1440" emissive={PAL.lilac} emissiveIntensity={0.4} /></mesh>
+    <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1.25, 0.85, 1]}><circleGeometry args={[1, 40]} /><meshStandardMaterial color="#25093a" emissive={PAL.hot} emissiveIntensity={0.22} /></mesh>
     {/* bowl */}
     <mesh position={[0, 0.24, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1.25, 0.85, 1]}><torusGeometry args={[1.05, 0.24, 10, 48]} /><meshStandardMaterial color={PAL.paper} emissive="#180d24" emissiveIntensity={0.3} /></mesh>
     {/* oval canopy ring (roof) */}
@@ -492,11 +514,11 @@ const Mountain: React.FC<{ x?: number; z?: number; r?: number; h?: number }> = (
   return (
     <group position={[x, 0, z]}>
       <mesh geometry={geo}>
-        <meshStandardMaterial color="#3a2668" emissive={PAL.lilac} emissiveIntensity={0.16} roughness={1} flatShading={false} />
+        <meshStandardMaterial color="#2a1240" emissive={PAL.hot} emissiveIntensity={0.10} roughness={1} flatShading={false} />
       </mesh>
       {rings.map((rg, i) => (
         <mesh key={i} geometry={rg} position={[0, h * (i === 0 ? 0.30 : 0.58), 0]}>
-          <meshBasicMaterial color={PAL.lilac} transparent opacity={0.3} toneMapped={false} />
+          <meshBasicMaterial color={PAL.ink} transparent opacity={0.35} toneMapped={false} />
         </mesh>
       ))}
     </group>
@@ -704,24 +726,27 @@ const DtlaHood: React.FC = () => (
     <Cutout src="dt-theatre.png"   h={1.35} aspect={0.736} x={-1.05} z={0.95} glow={0.7} />
     <Cutout src="dt-disney.png"    h={0.98} aspect={1.427} x={0.7}   z={0.9} />
     <Billboard text="DEAR JOSHUA" x={-2.0} z={1.75} h={1.0} rot={0.35} />
+    <Billboard text="DOWNTOWN" x={2.3} z={1.6} h={0.95} rot={-0.35} />
     <Palm x={0.35} z={1.7} /><Palm x={2.05} z={0.35} />
   </group>
 );
-const WehoHood: React.FC = () => (<group><Chateau /><Billboard text="TRULY YOUNG" x={1.75} z={1.4} h={1.0} rot={-0.4} /><PopBuilding x={-1.5} z={1.3} w={0.6} h={0.7} d={0.6} /><PopBuilding x={-0.6} z={1.8} w={0.55} h={0.6} d={0.55} /></group>);
+const WehoHood: React.FC = () => (<group><Chateau /><Billboard text="TRULY YOUNG" x={1.75} z={1.4} h={1.0} rot={-0.4} /><Billboard text="WEHO" x={-2.1} z={0.4} h={0.9} rot={0.4} /><PopBuilding x={-1.5} z={1.3} w={0.6} h={0.7} d={0.6} /><PopBuilding x={-0.6} z={1.8} w={0.55} h={0.6} d={0.55} /></group>);
 const SantaMonicaHood: React.FC = () => (<group><FerrisWheel /><Billboard text="SANTA MONICA" x={-1.5} z={-0.9} h={1.0} rot={0.5} /><PopBuilding x={1.5} z={0.9} w={0.6} h={0.7} d={0.6} /></group>);
 const VeniceHood: React.FC = () => (<group><Boardwalk /><Billboard text="VENICE" x={0} z={-1.3} h={1.1} /><Palm x={-1.8} z={-0.4} /><Palm x={1.8} z={-0.4} /></group>);
-const SilverlakeHood: React.FC = () => (<group><Reservoir /><PopBuilding x={-1.8} z={1.0} w={0.55} h={0.9} d={0.55} /><PopBuilding x={1.7} z={1.1} w={0.55} h={0.7} d={0.55} /><Sign x={0} z={1.7} h={1.3} /></group>);
-const InglewoodHood: React.FC = () => (<group><Stadium /><Dome x={2.5} z={0.3} r={0.6} c={PAL.hot} /><PopBuilding x={0.2} z={-2.2} w={0.5} h={0.7} d={0.5} /><Billboard text="FOREVER" x={-2.0} z={-1.4} h={1.0} rot={0.4} /></group>);
-const LaxHood: React.FC = () => (<group><Ufo /><PopBuilding x={-2.2} z={-1.0} w={1.2} h={0.3} d={0.5} rot={0.3} /><PopBuilding x={2.2} z={-1.0} w={1.2} h={0.3} d={0.5} rot={-0.3} /></group>);
-const MalibuHood: React.FC = () => (<group><BeachHouse /><group position={[1.9, 0, 0.2]} scale={0.85}><BeachHouse /></group><mesh position={[-1.6, 0.14, 1.3]}><boxGeometry args={[0.24, 0.1, 1.4]} /><meshStandardMaterial color={PAL.paper} emissive={PAL.amber} emissiveIntensity={0.4} /></mesh></group>);
-const LongBeachHood: React.FC = () => (<group><Port /><Dome x={2.3} z={0.9} r={0.55} c={PAL.lilac} /><Billboard text="FEAR THE REAPER" x={-2.1} z={1.3} h={1.1} rot={0.4} /></group>);
-const BeverlyHillsHood: React.FC = () => (<group><Mansions /><Hotel x={-2.1} z={0.6} /><Billboard text="RODEO DR" x={1.9} z={1.2} h={0.9} rot={-0.4} /></group>);
-const KoreatownHood: React.FC = () => (<group><Midrise /><DecoTower x={-1.8} z={0.6} /><Sign x={1.7} z={0.9} h={1.6} /><Sign x={1.0} z={1.6} h={1.2} /><Billboard text="BOY" x={-1.9} z={1.7} h={1.3} rot={0.5} /></group>);
-const LaurelHood: React.FC = () => (<group><Cabin /><PopBuilding x={-1.9} z={0.8} w={0.6} h={0.6} d={0.6} /><Pine x={1.9} z={0.5} /><Pine x={2.2} z={-0.3} s={0.8} /></group>);
-const ValleyHood: React.FC = () => (<group><ValleyGrid /><Soundstage x={0} z={2.5} /><Billboard text="STUDIOS" x={-2.1} z={1.9} h={1.0} rot={0.4} /></group>);
+const SilverlakeHood: React.FC = () => (<group><Reservoir /><Billboard text="SILVER LAKE" x={0} z={-1.7} h={1.0} /><PopBuilding x={-1.8} z={1.0} w={0.55} h={0.9} d={0.55} /><PopBuilding x={1.7} z={1.1} w={0.55} h={0.7} d={0.55} /><Sign x={0} z={1.7} h={1.3} /></group>);
+const InglewoodHood: React.FC = () => (<group><Stadium /><Dome x={2.5} z={0.3} r={0.6} c={PAL.hot} /><PopBuilding x={0.2} z={-2.2} w={0.5} h={0.7} d={0.5} /><Billboard text="FOREVER" x={-2.0} z={-1.4} h={1.0} rot={0.4} /><Billboard text="INGLEWOOD" x={2.2} z={1.6} h={0.95} rot={-0.4} /></group>);
+const LaxHood: React.FC = () => (<group><Ufo /><Billboard text="LAX" x={0} z={1.7} h={0.95} /><PopBuilding x={-2.2} z={-1.0} w={1.2} h={0.3} d={0.5} rot={0.3} /><PopBuilding x={2.2} z={-1.0} w={1.2} h={0.3} d={0.5} rot={-0.3} /></group>);
+const MalibuHood: React.FC = () => (<group><BeachHouse /><group position={[1.9, 0, 0.2]} scale={0.85}><BeachHouse /></group><mesh position={[-1.6, 0.14, 1.3]}><boxGeometry args={[0.24, 0.1, 1.4]} /><meshStandardMaterial color={PAL.paper} emissive={PAL.amber} emissiveIntensity={0.4} /></mesh><Billboard text="MALIBU" x={0.2} z={-1.5} h={0.95} /></group>);
+const LongBeachHood: React.FC = () => (<group><Port /><Dome x={2.3} z={0.9} r={0.55} c={PAL.lilac} /><Billboard text="FEAR THE REAPER" x={-2.1} z={1.3} h={1.1} rot={0.4} /><Billboard text="LONG BEACH" x={2.3} z={-1.2} h={0.95} rot={-0.35} /></group>);
+const BeverlyHillsHood: React.FC = () => (<group><Mansions /><Hotel x={-2.1} z={0.6} /><Billboard text="RODEO DR" x={1.9} z={1.2} h={0.9} rot={-0.4} /><Billboard text="BEVERLY HILLS" x={-0.1} z={-1.8} h={1.0} /></group>);
+const KoreatownHood: React.FC = () => (<group><Midrise /><DecoTower x={-1.8} z={0.6} /><Sign x={1.7} z={0.9} h={1.6} /><Sign x={1.0} z={1.6} h={1.2} /><Billboard text="BOY" x={-1.9} z={1.7} h={1.3} rot={0.5} /><Billboard text="KOREATOWN" x={0.1} z={-1.9} h={1.0} /></group>);
+const LaurelHood: React.FC = () => (<group><Cabin /><Billboard text="LAUREL CANYON" x={-0.1} z={1.7} h={0.95} /><PopBuilding x={-1.9} z={0.8} w={0.6} h={0.6} d={0.6} /><Pine x={1.9} z={0.5} /><Pine x={2.2} z={-0.3} s={0.8} /></group>);
+const ValleyHood: React.FC = () => (<group><ValleyGrid /><Soundstage x={0} z={2.5} /><Billboard text="STUDIOS" x={-2.1} z={1.9} h={1.0} rot={0.4} /><Billboard text="THE VALLEY" x={2.1} z={2.0} h={1.0} rot={-0.4} /></group>);
 
-// BOYFRIEND ISLAND — a BROKEN-HEART-shaped island adrift in open water. Two heart
-// halves split by a jagged neon crack, with palms, a tiki cabana + the heart-arch.
+// BOYFRIEND ISLAND — the BROKEN HEART, built like a real island. Two heart
+// halves split by a jagged crack, each stacked as land-over-beach: a wider
+// bone-pink sand layer peeks out around the violet terrain (mottled canvas
+// texture), and a feathered glow decal melts the shore into the whirlpool.
 const HEART_PTS: [number, number][] = (() => {
   const p: [number, number][] = [];
   for (let i = 0; i <= 120; i++) {
@@ -732,59 +757,148 @@ const HEART_PTS: [number, number][] = (() => {
   }
   return p;
 })();
-// one half of the heart (right if side>0), closed with a JAGGED center seam = the break
+// one half of the heart (right if side>0), closed with a JAGGED seam = the break
 function halfHeart(side: number): THREE.Shape {
-  const s = new THREE.Shape();
+  const sh = new THREE.Shape();
   const arc = side > 0 ? HEART_PTS.slice(0, 61) : HEART_PTS.slice(60);
-  arc.forEach(([x, y], k) => (k === 0 ? s.moveTo(x, y) : s.lineTo(x, y)));
+  arc.forEach(([x, y], k) => (k === 0 ? sh.moveTo(x, y) : sh.lineTo(x, y)));
   const a = arc[arc.length - 1], b = arc[0], N = 8;
   for (let k = 1; k <= N; k++) {
     const f = k / N;
-    s.lineTo(side * (0.02 + (k % 2) * 0.08), a[1] + (b[1] - a[1]) * f);
+    sh.lineTo(side * (0.02 + (k % 2) * 0.08), a[1] + (b[1] - a[1]) * f);
   }
-  s.closePath();
-  return s;
+  sh.closePath();
+  return sh;
 }
-const heartHalfGeo = (side: number) => {
-  const g = new THREE.ExtrudeGeometry(halfHeart(side), { depth: 0.32, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 2 });
-  g.rotateX(-Math.PI / 2); g.scale(1.7, 1, 1.7);   // lay flat on the surface; heart point faces +z
+const heartHalfGeo = (side: number, spread: number, depth: number, bevel: number) => {
+  const g = new THREE.ExtrudeGeometry(halfHeart(side), {
+    depth, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel * 1.6, bevelSegments: 2,
+  });
+  g.rotateX(-Math.PI / 2);              // lay flat; heart point faces +z
+  g.scale(spread, 1, spread);
   return g;
 };
+// mottled violet terrain — blotches + a few warm window-dots, in map colors
+const isleTex = (() => {
+  let t: THREE.CanvasTexture | null = null;
+  return () => {
+    if (t) return t;
+    const c = document.createElement("canvas"); c.width = c.height = 128;
+    const g = c.getContext("2d")!;
+    g.fillStyle = "#241536"; g.fillRect(0, 0, 128, 128);
+    let seed = 7;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 60; i++) {                 // vegetation blotches
+      g.fillStyle = i % 3 ? "#2d1a45" : "#1c0f2c";
+      g.beginPath(); g.ellipse(rnd() * 128, rnd() * 128, 4 + rnd() * 10, 3 + rnd() * 7, rnd() * 3, 0, 6.28); g.fill();
+    }
+    for (let i = 0; i < 26; i++) {                 // pink & amber glints
+      g.fillStyle = i % 2 ? "rgba(255,79,163,0.5)" : "rgba(255,207,122,0.45)";
+      g.beginPath(); g.arc(rnd() * 128, rnd() * 128, 0.9 + rnd() * 1.1, 0, 6.28); g.fill();
+    }
+    t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(0.55, 0.55);
+    return t;
+  };
+})();
+const shoreGlowTex = (() => {
+  let t: THREE.CanvasTexture | null = null;
+  return () => {
+    if (t) return t;
+    const c = document.createElement("canvas"); c.width = c.height = 256;
+    const g = c.getContext("2d")!;
+    const grad = g.createRadialGradient(128, 128, 10, 128, 128, 128);
+    grad.addColorStop(0, "rgba(255,79,163,0.55)");
+    grad.addColorStop(0.45, "rgba(255,45,143,0.22)");
+    grad.addColorStop(1, "rgba(255,45,143,0)");
+    g.fillStyle = grad; g.fillRect(0, 0, 256, 256);
+    t = new THREE.CanvasTexture(c);
+    return t;
+  };
+})();
+const IsleHalf: React.FC<{ side: number }> = ({ side }) => {
+  const sand = useMemo(() => heartHalfGeo(side, 1.9, 0.06, 0.1), [side]);
+  const land = useMemo(() => heartHalfGeo(side, 1.7, 0.2, 0.05), [side]);
+  const edge = useMemo(() => edgesOf(land, 30), [land]);
+  const tex = useMemo(isleTex, []);
+  return (
+    <group position={[side * 0.16, 0, 0]}>
+      {/* the beach — a wider bone-pink shelf under the land */}
+      <mesh geometry={sand} position={[0, -0.03, 0]}>
+        <meshStandardMaterial color="#f2cfe0" emissive="#ff9ecb" emissiveIntensity={0.22} roughness={1} />
+      </mesh>
+      {/* the land — mottled violet terrain */}
+      <mesh geometry={land} position={[0, 0.05, 0]}>
+        <meshStandardMaterial map={tex} color="#ffffff" emissive={PAL.ink} emissiveIntensity={0.08} roughness={0.95} />
+      </mesh>
+      <lineSegments geometry={edge} position={[0, 0.05, 0]}>
+        <lineBasicMaterial color={PAL.hot} transparent opacity={0.5} toneMapped={false} />
+      </lineSegments>
+    </group>
+  );
+};
 const BoyfriendIslandHood: React.FC = () => {
-  const GAP = 0.16;
-  const rGeo = useMemo(() => heartHalfGeo(1), []);
-  const lGeo = useMemo(() => heartHalfGeo(-1), []);
-  const rEdge = useMemo(() => edgesOf(rGeo, 30), [rGeo]);
-  const lEdge = useMemo(() => edgesOf(lGeo, 30), [lGeo]);
   const arch = useMemo(() => new THREE.TorusGeometry(0.5, 0.085, 12, 26), []);
+  const glow = useMemo(shoreGlowTex, []);
   return (
     <group>
-      <Water r={3.1} ring scale={[1, 1]} />
-      {/* right + left heart halves, nudged apart = a broken heart */}
-      <group position={[GAP, 0, 0]}>
-        <mesh geometry={rGeo}><meshStandardMaterial color={PAL.paper} emissive={PAL.hot} emissiveIntensity={0.16} roughness={1} /></mesh>
-        <lineSegments geometry={rEdge}><lineBasicMaterial color={PAL.hot} transparent opacity={0.65} toneMapped={false} /></lineSegments>
-      </group>
-      <group position={[-GAP, 0, 0]}>
-        <mesh geometry={lGeo}><meshStandardMaterial color={PAL.paper} emissive={PAL.hot} emissiveIntensity={0.16} roughness={1} /></mesh>
-        <lineSegments geometry={lEdge}><lineBasicMaterial color={PAL.hot} transparent opacity={0.65} toneMapped={false} /></lineSegments>
-      </group>
+      {/* feathered shoreline glow, melting into the whirlpool — no disc, no rim */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]}>
+        <planeGeometry args={[8.5, 8.5]} />
+        <meshBasicMaterial map={glow} transparent depthWrite={false} toneMapped={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+      {/* the broken heart — two halves, jagged crack between */}
+      <IsleHalf side={1} />
+      <IsleHalf side={-1} />
       {/* palms on the two lobes (lobes sit toward -z) */}
-      <Palm x={-0.95} z={-1.2} s={1.2} /><Palm x={1.0} z={-1.2} s={1.2} /><Palm x={0} z={0.95} s={0.95} />
-      {/* tiki cabana on a lobe */}
-      <group position={[0.95, 0, -0.7]}>
+      <Palm x={-0.95} z={-1.15} s={1.15} /><Palm x={1.0} z={-1.15} s={1.15} /><Palm x={0} z={1.0} s={0.9} />
+      {/* tiki cabana on the right lobe */}
+      <group position={[0.95, 0.22, -0.65]}>
         <PopBuilding w={0.5} h={0.36} d={0.5} edge={PAL.hot} />
         <InkCone r={0.46} h={0.3} y={0.56} seg={4} rot={Math.PI / 4} edge={PAL.amber} />
       </group>
-      {/* neon heart-arch hovering over the crack + blinking beacon */}
+      {/* neon heart-arch over the crack + blinking beacon — the lore carrier */}
       <group position={[0, 1.3, -0.35]}><mesh geometry={arch} rotation={[0, 0, Math.PI]}><meshBasicMaterial color={PAL.hot} toneMapped={false} /></mesh></group>
       <Beacon y={1.3} color={PAL.hot} />
-      <Sign x={1.5} z={0.7} h={0.9} />
+      <Sign x={1.45} z={0.75} h={0.9} />
     </group>
   );
 };
 
+// TRULYLAND — her Disneyland. The black-and-pink fairytale castle from the
+// park page rebuilt in 3D: a keep with four turrets and a tall spire, pink
+// cone roofs, flags, a glowing gate, and TRULYLAND over the boulevard.
+const Turret: React.FC<{ x?: number; z?: number; r?: number; h?: number }> = ({ x = 0, z = 0, r = 0.2, h = 0.85 }) => (
+  <group position={[x, 0, z]}>
+    <InkCyl rt={r} rb={r * 1.18} h={h} y={h / 2} seg={10} edge={PAL.ink} />
+    <InkCone r={r * 1.55} h={0.52} y={h + 0.26} seg={10} edge={PAL.hot} />
+    <Bar w={0.018} h={0.22} d={0.018} x={0} y={h + 0.6} z={0} c={PAL.hot} />
+    <mesh position={[0.075, h + 0.65, 0]}><planeGeometry args={[0.15, 0.09]} /><meshBasicMaterial color={PAL.hot} side={THREE.DoubleSide} toneMapped={false} /></mesh>
+  </group>
+);
+const TrulylandHood: React.FC = () => (
+  <group>
+    {/* the keep */}
+    <PopBuilding w={1.35} h={0.8} d={0.95} />
+    {/* four corner turrets + the tall centre spire */}
+    <Turret x={-0.62} z={-0.42} /><Turret x={0.62} z={-0.42} />
+    <Turret x={-0.62} z={0.42} /><Turret x={0.62} z={0.42} />
+    <Turret x={0} z={-0.1} r={0.26} h={1.55} />
+    {/* glowing gate arch on the front face */}
+    <mesh position={[0, 0.3, 0.49]}><planeGeometry args={[0.34, 0.6]} /><meshBasicMaterial color={PAL.hot} toneMapped={false} /></mesh>
+    <mesh position={[0, 0.6, 0.49]} rotation={[0, 0, 0]}><circleGeometry args={[0.17, 20, 0, Math.PI]} /><meshBasicMaterial color={PAL.hot} toneMapped={false} /></mesh>
+    {/* heart beacon over the spire */}
+    <Beacon y={2.65} color={PAL.hot} />
+    {/* park boulevard: palms + the marquee */}
+    <Palm x={-1.5} z={1.25} s={0.95} /><Palm x={1.5} z={1.25} s={0.95} />
+    <Billboard text="TRULYLAND" x={0} z={1.95} h={1.05} />
+    <Billboard text="OPEN ALL NIGHT" x={2.1} z={0.6} h={0.85} rot={-0.45} />
+  </group>
+);
+
 const GEO: Record<string, { node: React.ReactNode; scale: number }> = {
+  trulyland: { node: <TrulylandHood />, scale: 0.06 },
   "boyfriend-island": { node: <BoyfriendIslandHood />, scale: 0.055 },
   hollywood: { node: <HollywoodHood />, scale: 0.06 },
   dtla: { node: <DtlaHood />, scale: 0.082 },

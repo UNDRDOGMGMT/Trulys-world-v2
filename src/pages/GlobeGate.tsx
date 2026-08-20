@@ -9,13 +9,19 @@ import PageMeta from "@/components/PageMeta";
  * unlocks it (stored per-device) and renders the real World page. This is a
  * design-in-progress curtain, not security — the check is intentionally simple.
  */
+// Any localhost build (dev server OR vite preview of dist) skips the curtain —
+// the password only ever challenges real visitors on the deployed domain.
+const IS_LOCAL =
+  typeof window !== "undefined" &&
+  ["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname);
+
 const GLOBE_KEY = "tw-globe-unlock";
 const GLOBE_PW = "trulysworldduh";
 
 const GlobeGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
   const [unlocked, setUnlocked] = useState(() => {
-    if (import.meta.env.DEV) return true; // localhost: no password while building
+    if (IS_LOCAL) return true; // any local build: no password while building
     try { return localStorage.getItem(GLOBE_KEY) === "1"; } catch { return false; }
   });
   const [pw, setPw] = useState("");

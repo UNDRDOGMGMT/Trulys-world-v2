@@ -64,7 +64,7 @@ const heartClip = (cx: number, cy: number, r: number) => {
 // The launch neighborhoods. x/y = % on the landscape map; xP/yP = % on the portrait map.
 // labelBelowP: on the tighter portrait map, hang the label under the pin so
 // neighboring labels don't collide (LC / WeHo / Hollywood cluster at the top).
-interface Waypoint { id: string; name: string; blurb: string; x: number; y: number; xP: number; yP: number; labelBelowP?: boolean; to?: string; }
+interface Waypoint { id: string; name: string; blurb: string; x: number; y: number; xP: number; yP: number; labelBelowP?: boolean; to?: string; clip?: string; }
 
 // Heart-shaped waypoint marker — fill = currentColor, stroke/glow via style so it
 // scales and lights up like the old dot did (on-brand for Truly's World hearts).
@@ -90,6 +90,9 @@ const WAYPOINTS: Waypoint[] = [
   { id: "lax", name: "LAX", blurb: "Mailing List", x: 44, y: 78, xP: 34, yP: 82, labelBelowP: true },
   { id: "inglewood", name: "Inglewood", blurb: "Dress-Up", x: 56, y: 81, xP: 55, yP: 82, labelBelowP: true },
   { id: "long-beach", name: "Long Beach", blurb: "B-Sides", x: 85, y: 90, xP: 82, yP: 92, labelBelowP: true },
+  // Trulyland — her Disneyland, out past Long Beach in the bottom-right corner.
+  // Own environment (not a /location hood), so it travels with its own clip.
+  { id: "disneyland", name: "Disneyland", blurb: "TRULYLAND", x: 93, y: 82, xP: 90, yP: 86, to: "/trulyland", clip: "/park/travel-wide.mp4", labelBelowP: true },
 ];
 
 // Future cities on the horizon — Truly's world keeps expanding. These distant
@@ -154,7 +157,7 @@ const pageVariants = {
 
 const MapHub: React.FC = () => {
   const { soundOn } = useUnlock();
-  const { travelTo } = useTravel();
+  const { travelTo, travelPlace } = useTravel();
   const navigate = useNavigate();
   const isPortrait = useIsPortrait();
   const { member, unlocked } = useMember();
@@ -416,9 +419,10 @@ const MapHub: React.FC = () => {
   const prefetchClip = (id: string) => {
     if (prefetched.current.has(id) || shouldReduceMedia()) return;
     prefetched.current.add(id);
+    const wp = WAYPOINTS.find((w) => w.id === id);
     const key = ASSET_KEY[id];
-    if (!key) return; // no travel clip for this hood — nothing to warm
-    const href = `/world/anim/${key}-wide.mp4`;
+    if (!key && !wp?.clip) return; // no travel clip for this pin — nothing to warm
+    const href = wp?.clip ?? `/world/anim/${key}-wide.mp4`;
     if (document.querySelector(`link[data-tw-prefetch="${href}"]`)) return;
     const link = document.createElement("link");
     link.rel = "prefetch";
@@ -445,11 +449,17 @@ const MapHub: React.FC = () => {
     if (soundOn) playClick();
     trackEvent("waypoint_click", { location: wp.id });
     prefetchClip(wp.id);
-    if (reduceMotion) { travelTo(wp.id); return; } // instant — TravelContext also skips the clip
+    // A pin with its own clip is a standalone environment (Trulyland) rather
+    // than a /location hood — same dive, different destination.
+    const go = () =>
+      wp.clip && wp.to
+        ? travelPlace({ path: wp.to, clip: wp.clip, name: wp.blurb, poster: "/park/travel-wide-poster.jpg" })
+        : travelTo(wp.id);
+    if (reduceMotion) { go(); return; }   // instant — TravelContext also skips the clip
     setDiving(wp);
     const c = coords(wp);
     frameTo(c.x, c.y, Z_MAX, true);   // push the camera into the district, then travel
-    diveTimer.current = setTimeout(() => travelTo(wp.id), 560);
+    diveTimer.current = setTimeout(go, 560);
   };
 
   // Pin behavior: a clean tap/click always dives into the district. The didPan
@@ -459,7 +469,7 @@ const MapHub: React.FC = () => {
     if (placeMode) return;                       // placement tool owns the pins
     if (didPan.current) { didPan.current = false; return; } // was a pan-drag, not a tap
     // Direct-link pins (e.g. Concert Tickets) are public — go straight there, no gate.
-    if (wp.to) { trackEvent("waypoint_link", { location: wp.id, to: wp.to }); navigate(wp.to); return; }
+    if (wp.to && !wp.clip) { trackEvent("waypoint_link", { location: wp.id, to: wp.to }); navigate(wp.to); return; }
     // The map is public; entering a waypoint needs a login. Guests get a friendly
     // "create an account" prompt (which remembers the district they wanted) rather
     // than an abrupt redirect — the modal's CTA sends them to /join.

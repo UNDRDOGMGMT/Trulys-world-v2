@@ -35,6 +35,9 @@ const Selects = React.lazy(() => import("./pages/Selects"));
 const CorbinBowl = React.lazy(() => import("./pages/CorbinBowl"));
 const CorbinInside = React.lazy(() => import("./pages/CorbinInside"));
 const CorbinArcade = React.lazy(() => import("./pages/CorbinArcade"));
+const Trulyland = React.lazy(() => import("./pages/Trulyland"));
+const Mousetrap = React.lazy(() => import("./pages/Mousetrap"));
+const ExMansion = React.lazy(() => import("./pages/ExMansion"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 const Gate = React.lazy(() => import("./pages/Gate"));
 const Account = React.lazy(() => import("./pages/Account"));
@@ -82,7 +85,7 @@ class RouteErrorBoundary extends React.Component<
 // canvas owns the viewport — no starfield, sparkle overlays, or persistent player.
 import { useMember } from '@/contexts/MemberContext';
 
-const BARE_PATHS = ["/cruise-night", "/do-not-disturb", "/dear-joshua-game", "/fear-the-reaper", "/forever-game", "/save-truly", "/boy-game", "/boyfriend-island", "/trulys-pinball", "/trulys-map-pinball", "/karaoke", "/boutique", "/corbin-bowl", "/corbin-bowl/inside", "/corbin-bowl/arcade", "/world", "/shadows", "/selects", "/join", "/vista", "/rsvp", "/tickets"];
+const BARE_PATHS = ["/cruise-night", "/do-not-disturb", "/dear-joshua-game", "/fear-the-reaper", "/forever-game", "/save-truly", "/boy-game", "/boyfriend-island", "/trulys-pinball", "/trulys-map-pinball", "/karaoke", "/boutique", "/corbin-bowl", "/corbin-bowl/inside", "/corbin-bowl/arcade", "/trulyland", "/trulyland/ex-mansion", "/mousetrap", "/world", "/shadows", "/selects", "/join", "/vista", "/rsvp", "/tickets"];
 
 // Login wall for member-only routes (waypoints, games, EP, account). Public
 // pages (map, landing, Shadows, Store) don't use this. Sends logged-out visitors
@@ -128,6 +131,20 @@ const SiteShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   );
 };
 
+// A pasted or hand-typed URL with a doubled slash (//trulyland/ex-mansion)
+// matches no route and lands on the 404, even though the page exists. Collapse
+// repeated slashes once, in place, before the routes are matched.
+const PathNormalizer: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  React.useEffect(() => {
+    if (!/\/{2,}/.test(location.pathname)) return;
+    const clean = location.pathname.replace(/\/{2,}/g, "/");
+    navigate(clean + location.search + location.hash, { replace: true });
+  }, [location, navigate]);
+  return null;
+};
+
 const AnimatedRoutes = () => {
   const location = useLocation();
   return (
@@ -164,6 +181,9 @@ const AnimatedRoutes = () => {
           <Route path="/corbin-bowl" element={<RequireAuth><CorbinBowl /></RequireAuth>} />
           <Route path="/corbin-bowl/inside" element={<RequireAuth><CorbinInside /></RequireAuth>} />
           <Route path="/corbin-bowl/arcade" element={<RequireAuth><CorbinArcade /></RequireAuth>} />
+          <Route path="/trulyland" element={<RequireAuth><Trulyland /></RequireAuth>} />
+          <Route path="/mousetrap" element={<RequireAuth><Mousetrap /></RequireAuth>} />
+          <Route path="/trulyland/ex-mansion" element={<RequireAuth><ExMansion /></RequireAuth>} />
           <Route path="/account" element={<RequireAuth><Account /></RequireAuth>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
@@ -197,6 +217,7 @@ const Gated = () => {
     <UnlockProvider>
       <BrowserRouter>
         <TravelProvider>
+          <PathNormalizer />
           <SiteShell>
             <AnimatedRoutes />
           </SiteShell>

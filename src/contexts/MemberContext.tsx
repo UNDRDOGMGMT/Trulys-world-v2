@@ -539,7 +539,9 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // PRE-LAUNCH: only staff bypass opens the site. Flip LAUNCHED at go-live.
   // DEV (localhost `npm run dev`): auto-unlock so building never hits the login
   // wall. import.meta.env.DEV is false in production builds, so this never ships.
-  const unlocked = import.meta.env.DEV || bypass || (LAUNCHED && !!member && passwordReady);
+  const isLocalHost = typeof window !== 'undefined' &&
+    ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname);
+  const unlocked = import.meta.env.DEV || isLocalHost || bypass || (LAUNCHED && !!member && passwordReady);
   const needsProfile = !!sessionEmail && !member && !bypass;
   const needsPassword = !!sessionEmail && !!member && !passwordReady && !bypass;
 

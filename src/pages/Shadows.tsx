@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import { useIsPortrait } from "@/hooks/useIsPortrait";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import CountdownTimer from "@/components/CountdownTimer";
@@ -12,6 +13,7 @@ const SHADOWS_RELEASE = new Date("2026-07-31T00:00:00-04:00");
 const SHADOWS_SRC = "/audio/04-shadows.mp3";
 
 const Shadows: React.FC = () => {
+  const isPortrait = useIsPortrait();
   const navigate = useNavigate();
   const [notify, setNotify] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -34,7 +36,7 @@ const Shadows: React.FC = () => {
         {/* full-bleed hero */}
         <div className="absolute inset-0 z-0" aria-hidden>
           <motion.img
-            src="/shadows/hero.jpg"
+            src={isPortrait ? "/shadows/hero-v.jpg" : "/shadows/hero.jpg"}
             alt=""
             className="absolute inset-0 h-full w-full object-cover"
             initial={{ scale: 1.12, opacity: 0 }}

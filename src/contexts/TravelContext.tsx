@@ -12,6 +12,8 @@ import { shouldReduceMedia } from "@/lib/network";
  */
 interface TravelCtx {
   travelTo: (id: string) => void;
+  /** Travel to any route (not a /location hood) with its own push-in clip — e.g. the park. */
+  travelPlace: (opts: { path: string; clip: string; name: string; poster?: string }) => void;
 }
 const Ctx = createContext<TravelCtx | null>(null);
 export const useTravel = () => {
@@ -54,7 +56,7 @@ export const TravelProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     doneRef.current = true;
     if (fbRef.current) { clearTimeout(fbRef.current); fbRef.current = null; }
     const t = targetRef.current;
-    if (t) navigate(`/location/${t}`); // city mounts under the overlay…
+    if (t) navigate(t);                // destination mounts under the overlay…
     setClip(null);                     // …then the overlay fades out (AnimatePresence exit)
   }, [navigate]);
 
@@ -64,10 +66,24 @@ export const TravelProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     // no clip, reduced motion, or Save-Data / slow network → go straight in
     if (!key || reduce || shouldReduceMedia()) { navigate(`/location/${id}`); return; }
-    targetRef.current = id;
+    targetRef.current = `/location/${id}`;
     doneRef.current = false;
     const name = locations.find((l) => l.id === id)?.name ?? id;
     setClip({ src: `/world/anim/${key}-wide.mp4`, poster: `/world/anim/${key}-wide-poster.jpg`, name });
+    fbRef.current = setTimeout(finish, 7200);
+  }, [navigate, finish]);
+
+  /**
+   * Same cinematic push-in, but for a standalone environment route (the park).
+   * Reduced motion / Save-Data lands you there directly, exactly like a hood.
+   */
+  const travelPlace = useCallback((opts: { path: string; clip: string; name: string; poster?: string }) => {
+    trackEvent("travel", { location: opts.path });
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reduce || shouldReduceMedia()) { navigate(opts.path); return; }
+    targetRef.current = opts.path;
+    doneRef.current = false;
+    setClip({ src: opts.clip, poster: opts.poster ?? "", name: opts.name });
     fbRef.current = setTimeout(finish, 7200);
   }, [navigate, finish]);
 
@@ -88,7 +104,7 @@ export const TravelProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [clip, finish]);
 
   return (
-    <Ctx.Provider value={{ travelTo }}>
+    <Ctx.Provider value={{ travelTo, travelPlace }}>
       {children}
       <AnimatePresence>
         {clip && (

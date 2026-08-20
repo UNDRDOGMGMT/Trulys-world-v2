@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><!--tw-auth-guard--><script>(function(){try{var b=sessionStorage.getItem('tw-gate-bypass')==='1',s=false,i;for(i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.slice(0,3)==='sb-'&&k.indexOf('-auth-token')>-1&&localStorage.getItem(k)){s=true;break;}}if(!b&&!s){(window.top||window).location.replace('/join');}}catch(e){}})();</script>
+<head><!--tw-auth-guard--><script>(function(){try{var b=sessionStorage.getItem('tw-gate-bypass')==='1'||['localhost','127.0.0.1','[::1]'].indexOf(location.hostname)>-1,s=false,i;for(i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.slice(0,3)==='sb-'&&k.indexOf('-auth-token')>-1&&localStorage.getItem(k)){s=true;break;}}if(!b&&!s){(window.top||window).location.replace('/join');}}catch(e){}})();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>BOY — say it to his face</title>
@@ -118,7 +118,17 @@
    ============================================================ */
 const el=id=>document.getElementById(id);
 const guyWrap=el('guyWrap'), guy=el('guy'), trulyWrap=el('trulyWrap'), street=el('street');
-street.style.backgroundImage="url('/boy/street.jpg?v=joshua2')";
+// portrait phones use the vertical street extension so the art fills the
+// screen; re-picked live on rotate.
+(function(){
+  const mq = matchMedia('(orientation: portrait)');
+  function apply(){
+    street.style.backgroundImage = mq.matches
+      ? "url('/boy/street-v.jpg')" : "url('/boy/street.jpg?v=joshua2')";
+  }
+  mq.addEventListener ? mq.addEventListener('change', apply) : mq.addListener(apply);
+  apply();
+})();
 const fx=el('fx'), ctx=fx.getContext('2d');
 let W=0,H=0,DPR=1;
 function resize(){ DPR=Math.min(2,window.devicePixelRatio||1); W=innerWidth; H=innerHeight; fx.width=W*DPR; fx.height=H*DPR; fx.style.width=W+'px'; fx.style.height=H+'px'; ctx.setTransform(DPR,0,0,DPR,0,0); }

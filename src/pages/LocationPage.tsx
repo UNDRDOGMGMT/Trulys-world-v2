@@ -280,7 +280,7 @@ const LocationPage: React.FC = () => {
                 initial={{ opacity: 0, scale: isPortrait ? 1.02 : 1.14 }}
                 animate={{ opacity: 1, scale: isPortrait ? 1 : 1.06 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.7, ease: "easeOut" }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
               >
                 {/* Mobile: cover at scale 1.0 = fills the whole screen seamlessly
                     (no letterbox) at the least-zoomed level, using the portrait art. */}

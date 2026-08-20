@@ -106,14 +106,14 @@ export const locations: LocationData[] = [
     environment: {
       start: 'aerial',
       views: [
-        { id: 'aerial', label: 'Hollywood Blvd', src: '/world/maps/hw-aerial.jpg', srcPortrait: '/world/maps/hw-aerial-v.jpg', video: '/world/anim/hw-aerial-cine.mp4', hotspots: [
+        { id: 'aerial', label: 'Hollywood Blvd', src: '/world/maps/hw-aerial.jpg', srcPortrait: '/world/maps/hw-aerial-v9.jpg', video: '/world/anim/hw-aerial-cine.mp4', hotspots: [
           { x: 17, y: 40, to: 'vista', label: 'The Vista' },
           { x: 46, y: 78, to: 'boulevard', label: 'The Boulevard' },
           { x: 85, y: 62, to: 'closeup', label: 'The Theatre' },
         ] },
-        { id: 'boulevard', label: 'The Boulevard', src: '/world/maps/hw-street.jpg', srcPortrait: '/world/maps/hw-street-v.jpg', video: '/world/anim/hw-street-cine.mp4', action: { label: 'Save Truly', to: '/save-truly' } },
-        { id: 'vista', label: 'The Vista', src: '/world/theater/vista-exterior.jpg', action: { label: 'Enter the Vista', to: '/vista' } },
-        { id: 'closeup', label: 'The Theatre', src: '/world/maps/hw-c3.jpg', srcPortrait: '/world/maps/hw-c3-v.jpg', video: '/world/anim/hw-c3-cine.mp4' },
+        { id: 'boulevard', label: 'The Boulevard', src: '/world/maps/hw-street.jpg', srcPortrait: '/world/maps/hw-street-v9.jpg', video: '/world/anim/hw-street-cine.mp4', action: { label: 'Save Truly', to: '/save-truly' } },
+        { id: 'vista', label: 'The Vista', src: '/world/theater/vista-exterior-wide.jpg', srcPortrait: '/world/theater/vista-exterior-v9.jpg', action: { label: 'Enter the Vista', to: '/vista' } },
+        { id: 'closeup', label: 'The Theatre', src: '/world/maps/hw-c3.jpg', srcPortrait: '/world/maps/hw-c3-v9.jpg', video: '/world/anim/hw-c3-cine.mp4' },
       ],
     },
     embeds: [
@@ -139,14 +139,14 @@ export const locations: LocationData[] = [
     environment: {
       start: 'aerial',
       views: [
-        { id: 'aerial', label: 'Downtown', src: '/world/maps/dtla-aerial.jpg', srcPortrait: '/world/maps/dtla-aerial-v.jpg', video: '/world/anim/dtla-aerial-cine.mp4', hotspots: [
+        { id: 'aerial', label: 'Downtown', src: '/world/maps/dtla-aerial.jpg', srcPortrait: '/world/maps/dtla-aerial-v9.jpg', video: '/world/anim/dtla-aerial-cine.mp4', hotspots: [
           { x: 80, y: 60, to: 'arts', label: 'Arts District' },
           { x: 47, y: 58, to: 'rooftops', label: 'Rooftops' },
           { x: 18, y: 68, to: 'street', label: 'Street Level' },
         ] },
-        { id: 'arts', label: 'Arts District', src: '/world/maps/dtla-arts.jpg', srcPortrait: '/world/maps/dtla-arts-v.jpg', video: '/world/anim/dtla-arts-cine.mp4' },
-        { id: 'rooftops', label: 'Rooftops', src: '/world/maps/dtla-c1.jpg', srcPortrait: '/world/maps/dtla-c1-v.jpg', video: '/world/anim/dtla-roof-cine.mp4', action: { label: 'Type Her Letter', to: '/dear-joshua-game' } },
-        { id: 'street', label: 'Street Level', src: '/world/maps/dtla-street-2.jpg', srcPortrait: '/world/maps/dtla-street-2-v.jpg', video: '/world/anim/dtla-street-2.mp4', action: { label: 'Cruise Night', to: '/cruise-night' } },
+        { id: 'arts', label: 'Arts District', src: '/world/maps/dtla-arts.jpg', srcPortrait: '/world/maps/dtla-arts-v9.jpg', video: '/world/anim/dtla-arts-cine.mp4' },
+        { id: 'rooftops', label: 'Rooftops', src: '/world/maps/dtla-c1-2.jpg', srcPortrait: '/world/maps/dtla-c1-2-v9.jpg', video: '/world/anim/dtla-roof-cine-2.mp4', action: { label: 'Type Her Letter', to: '/dear-joshua-game' } },
+        { id: 'street', label: 'Street Level', src: '/world/maps/dtla-street-2.jpg', srcPortrait: '/world/maps/dtla-street-2-v9.jpg', video: '/world/anim/dtla-street-2.mp4', action: { label: 'Cruise Night', to: '/cruise-night' } },
       ],
     },
   },
@@ -165,12 +165,12 @@ export const locations: LocationData[] = [
     environment: {
       start: 'aerial',
       views: [
-        { id: 'aerial', label: 'The Flats', src: '/world/maps/bh-aerial.jpg', srcPortrait: '/world/maps/bh-aerial-v.jpg', video: '/world/anim/bh-aerial-cine.mp4', hotspots: [
+        { id: 'aerial', label: 'The Flats', src: '/world/maps/bh-aerial.jpg', srcPortrait: '/world/maps/bh-aerial-v9.jpg', video: '/world/anim/bh-aerial-cine.mp4', hotspots: [
           { x: 26, y: 62, to: 'rodeo', label: 'Rodeo Drive' },
           { x: 76, y: 52, to: 'detail', label: 'The Gardens' },
         ] },
-        { id: 'rodeo', label: 'Rodeo Drive', src: '/world/maps/bh-rodeo.jpg', srcPortrait: '/world/maps/bh-rodeo-v.jpg' },
-        { id: 'detail', label: 'The Gardens', src: '/world/maps/bh-c1.jpg', srcPortrait: '/world/maps/bh-c1-v.jpg' },
+        { id: 'rodeo', label: 'Rodeo Drive', src: '/world/maps/bh-rodeo.jpg', srcPortrait: '/world/maps/bh-rodeo-v9.jpg' },
+        { id: 'detail', label: 'The Gardens', src: '/world/maps/bh-c1.jpg', srcPortrait: '/world/maps/bh-c1-v9.jpg' },
       ],
     },
   },
@@ -189,10 +189,10 @@ export const locations: LocationData[] = [
     environment: {
       start: 'aerial',
       views: [
-        { id: 'aerial', label: 'The Rooftops', src: '/world/maps/ktown-aerial.jpg', srcPortrait: '/world/maps/ktown-aerial-v.jpg', video: '/world/anim/ktown-aerial-cine.mp4', hotspots: [
+        { id: 'aerial', label: 'The Rooftops', src: '/world/maps/ktown-aerial.jpg', srcPortrait: '/world/maps/ktown-aerial-v9.jpg', video: '/world/anim/ktown-aerial-cine.mp4', hotspots: [
           { x: 76, y: 52, to: 'night', label: 'After Hours' },
         ] },
-        { id: 'night', label: 'After Hours', src: '/world/maps/ktown-night.jpg', srcPortrait: '/world/maps/ktown-night-v.jpg', action: { label: '♪ Sing Karaoke', to: '/karaoke' } },
+        { id: 'night', label: 'After Hours', src: '/world/maps/ktown-night.jpg', srcPortrait: '/world/maps/ktown-night-v9.jpg', action: { label: '♪ Sing Karaoke', to: '/karaoke' } },
       ],
     },
   },
@@ -210,12 +210,12 @@ export const locations: LocationData[] = [
     environment: {
       start: 'aerial',
       views: [
-        { id: 'aerial', label: 'Sunset Strip', src: '/world/maps/weho-aerial.jpg', srcPortrait: '/world/maps/weho-aerial-v.jpg', hotspots: [
+        { id: 'aerial', label: 'Sunset Strip', src: '/world/maps/weho-aerial.jpg', srcPortrait: '/world/maps/weho-aerial-v9.jpg', hotspots: [
           { x: 38, y: 34, to: 'chateau', label: 'The Chateau' },
           { x: 62, y: 66, to: 'store', label: 'The Store' },
         ] },
-        { id: 'chateau', label: 'The Chateau', src: '/world/maps/weho-chateau-facade.jpg', srcPortrait: '/world/maps/weho-chateau-facade-v.jpg', action: { label: 'Do Not Disturb', to: '/do-not-disturb' } },
-        { id: 'store', label: 'The Store', src: '/world/maps/weho-street.jpg', srcPortrait: '/world/maps/weho-street-v.jpg', action: { label: 'Enter The Store', to: '/boutique', shop: true } },
+        { id: 'chateau', label: 'The Chateau', src: '/world/maps/weho-chateau-facade.jpg', srcPortrait: '/world/maps/weho-chateau-facade-v9.jpg', action: { label: 'Do Not Disturb', to: '/do-not-disturb' } },
+        { id: 'store', label: 'The Store', src: '/world/maps/weho-street.jpg', srcPortrait: '/world/maps/weho-street-v9.jpg', action: { label: 'Enter The Store', to: '/boutique', shop: true } },
       ],
     },
   },
@@ -233,15 +233,15 @@ export const locations: LocationData[] = [
     environment: {
       start: 'aerial',
       views: [
-        { id: 'aerial', label: 'The Coastline', src: '/world/maps/sm-aerial.jpg', srcPortrait: '/world/maps/sm-aerial-v.jpg', video: '/world/anim/sm-aerial-cine.mp4', hotspots: [
+        { id: 'aerial', label: 'The Coastline', src: '/world/maps/sm-aerial.jpg', srcPortrait: '/world/maps/sm-aerial-v9.jpg', video: '/world/anim/sm-aerial-cine.mp4', hotspots: [
           { x: 42, y: 53, to: 'wheel', label: 'The Ferris Wheel' },
           { x: 26, y: 63, to: 'pier', label: 'The Pier' },
           { x: 66, y: 38, to: 'waterline', label: 'The Waterline' },
         ] },
-        { id: 'pier', label: 'The Pier', src: '/world/maps/sm-pier.jpg', srcPortrait: '/world/maps/sm-pier-v.jpg' },
-        { id: 'wheel', label: 'The Ferris Wheel', src: '/world/maps/sm-c1.jpg', srcPortrait: '/world/maps/sm-c1-v.jpg', video: '/world/anim/sm-loop.mp4' },
-        { id: 'arcade', label: 'The Arcade', src: '/world/maps/sm-c2.jpg', srcPortrait: '/world/maps/sm-c2-v.jpg' },
-        { id: 'waterline', label: 'The Waterline', src: '/world/maps/sm-c3.jpg', srcPortrait: '/world/maps/sm-c3-v.jpg' },
+        { id: 'pier', label: 'The Pier', src: '/world/maps/sm-pier-2.jpg', srcPortrait: '/world/maps/sm-pier-2-v9.jpg' },
+        { id: 'wheel', label: 'The Ferris Wheel', src: '/world/maps/sm-c1.jpg', srcPortrait: '/world/maps/sm-c1-v9.jpg', video: '/world/anim/sm-loop.mp4' },
+        { id: 'arcade', label: 'The Arcade', src: '/world/maps/sm-c2.jpg', srcPortrait: '/world/maps/sm-c2-v9.jpg' },
+        { id: 'waterline', label: 'The Waterline', src: '/world/maps/sm-c3.jpg', srcPortrait: '/world/maps/sm-c3-v9.jpg' },
       ],
     },
     embeds: [
@@ -258,18 +258,18 @@ export const locations: LocationData[] = [
     headline: 'VIDEOS',
     body: "Music videos — coming soon.",
     cta: { label: 'FOLLOW ON INSTAGRAM →', href: 'https://www.instagram.com/trulyoung' },
-    backgroundImage: '/world/maps/ven-canals.jpg',
+    backgroundImage: '/world/maps/ven-canals-2.jpg',
     environment: {
       start: 'canals',
       views: [
-        { id: 'canals', label: 'The Canals', src: '/world/maps/ven-canals.jpg', srcPortrait: '/world/maps/ven-canals-v.jpg', video: '/world/anim/ven-canals-cine.mp4', hotspots: [
+        { id: 'canals', label: 'The Canals', src: '/world/maps/ven-canals-2.jpg', srcPortrait: '/world/maps/ven-canals-2-v9.jpg', video: '/world/anim/ven-canals-cine-2.mp4', hotspots: [
           { x: 28, y: 42, to: 'boardwalk', label: 'The Boardwalk' },
           { x: 12, y: 30, to: 'abbot', label: 'Abbot Kinney' },
           { x: 68, y: 48, to: 'detail', label: 'Canal Detail' },
         ] },
-        { id: 'boardwalk', label: 'The Boardwalk', src: '/world/maps/ven-boardwalk.jpg', srcPortrait: '/world/maps/ven-boardwalk-v.jpg' },
-        { id: 'abbot', label: 'Abbot Kinney', src: '/world/maps/ven-abbot.jpg', srcPortrait: '/world/maps/ven-abbot-v.jpg' },
-        { id: 'detail', label: 'Canal Detail', src: '/world/maps/ven-c1.jpg', srcPortrait: '/world/maps/ven-c1-v.jpg' },
+        { id: 'boardwalk', label: 'The Boardwalk', src: '/world/maps/ven-boardwalk-2.jpg', srcPortrait: '/world/maps/ven-boardwalk-2-v9.jpg' },
+        { id: 'abbot', label: 'Abbot Kinney', src: '/world/maps/ven-abbot.jpg', srcPortrait: '/world/maps/ven-abbot-v9.jpg' },
+        { id: 'detail', label: 'Canal Detail', src: '/world/maps/ven-c1.jpg', srcPortrait: '/world/maps/ven-c1-v9.jpg' },
       ],
     },
   },
@@ -291,14 +291,14 @@ export const locations: LocationData[] = [
     environment: {
       start: 'aerial',
       views: [
-        { id: 'aerial', label: 'The Reservoir', src: '/world/maps/silverlake-aerial.jpg', srcPortrait: '/world/maps/silverlake-aerial-v.jpg', video: '/world/anim/silverlake-aerial-cine.mp4', action: { label: 'Download The Dear Joshua Campaign', to: '/selects', download: true }, hotspots: [
+        { id: 'aerial', label: 'The Reservoir', src: '/world/maps/silverlake-aerial.jpg', srcPortrait: '/world/maps/silverlake-aerial-v9.jpg', video: '/world/anim/silverlake-aerial-cine.mp4', action: { label: 'Download The Dear Joshua Campaign', to: '/selects', download: true }, hotspots: [
           { x: 14, y: 42, to: 'stairs', label: 'The Stairs' },
           { x: 55, y: 84, to: 'eastside', label: 'The Eastside' },
           { x: 86, y: 66, to: 'closeup', label: 'Close-up' },
         ] },
-        { id: 'eastside', label: 'The Eastside', src: '/world/maps/silverlake-street.jpg', srcPortrait: '/world/maps/silverlake-street-v.jpg', action: { label: 'Boy — Say It To His Face', to: '/boy-game' } },
-        { id: 'stairs', label: 'The Stairs', src: '/world/maps/silverlake-stairs.jpg', action: { label: 'Fear The Reaper', to: '/fear-the-reaper' } },
-        { id: 'closeup', label: 'Close-up', src: '/world/maps/silverlake-c3.jpg', srcPortrait: '/world/maps/silverlake-c3-v.jpg' },
+        { id: 'eastside', label: 'The Eastside', src: '/world/maps/silverlake-street.jpg', srcPortrait: '/world/maps/silverlake-street-v9.jpg', action: { label: 'Boy — Say It To His Face', to: '/boy-game' } },
+        { id: 'stairs', label: 'The Stairs', src: '/world/maps/silverlake-stairs-2.jpg', srcPortrait: '/world/maps/silverlake-stairs-2-v9.jpg', action: { label: 'Fear The Reaper', to: '/fear-the-reaper' } },
+        { id: 'closeup', label: 'Close-up', src: '/world/maps/silverlake-c3.jpg', srcPortrait: '/world/maps/silverlake-c3-v9.jpg' },
       ],
     },
     embeds: [
@@ -320,12 +320,12 @@ export const locations: LocationData[] = [
     environment: {
       start: 'ventura',
       views: [
-        { id: 'ventura', label: 'Ventura Blvd', src: '/world/maps/lc-ventura.jpg', srcPortrait: '/world/maps/lc-ventura-v.jpg', video: '/world/anim/lc-ventura-loop.mp4', hotspots: [
+        { id: 'ventura', label: 'Ventura Blvd', src: '/world/maps/lc-ventura-2.jpg', srcPortrait: '/world/maps/lc-ventura-2-v9.jpg', video: '/world/anim/lc-ventura-loop-2.mp4', hotspots: [
           { x: 52, y: 44, to: 'canyon', label: 'Up the Canyon' },
           { x: 74, y: 56, to: 'cabin', label: 'The Cabin' },
         ] },
-        { id: 'canyon', label: 'Laurel Canyon', src: '/world/maps/lc-canyon.jpg', srcPortrait: '/world/maps/lc-canyon-v.jpg' },
-        { id: 'cabin', label: 'The Cabin', src: '/world/anim/lc-poster.jpg', srcPortrait: '/world/maps/lc-poster-v.jpg' },
+        { id: 'canyon', label: 'Laurel Canyon', src: '/world/maps/lc-canyon.jpg', srcPortrait: '/world/maps/lc-canyon-v9.jpg' },
+        { id: 'cabin', label: 'The Cabin', src: '/world/anim/lc-poster.jpg', srcPortrait: '/world/maps/lc-poster-v9.jpg' },
       ],
     },
   },
@@ -343,14 +343,14 @@ export const locations: LocationData[] = [
     environment: {
       start: 'aerial',
       views: [
-        { id: 'aerial', label: 'The Grid', src: '/world/maps/val-aerial.jpg', srcPortrait: '/world/maps/val-aerial-v.jpg', video: '/world/anim/val-aerial-cine.mp4', hotspots: [
+        { id: 'aerial', label: 'The Grid', src: '/world/maps/val-aerial.jpg', srcPortrait: '/world/maps/val-aerial-v9.jpg', video: '/world/anim/val-aerial-cine.mp4', hotspots: [
           { x: 55, y: 60, to: 'street', label: 'Ventura Blvd' },
           { x: 38, y: 78, to: 'pool', label: 'The Backyard' },
           { x: 82, y: 52, to: 'detail', label: 'The Flamingo' },
         ] },
-        { id: 'street', label: 'Ventura Blvd', src: '/world/maps/val-street.jpg', srcPortrait: '/world/maps/val-street-v.jpg', action: { label: '🎳 Corbin Bowl — the EP Arcade', to: '/corbin-bowl' } },
-        { id: 'pool', label: 'The Backyard', src: '/world/maps/val-pool.jpg', srcPortrait: '/world/maps/val-pool-v.jpg' },
-        { id: 'detail', label: 'The Flamingo', src: '/world/maps/val-c3.jpg', srcPortrait: '/world/maps/val-c3-v.jpg' },
+        { id: 'street', label: 'Ventura Blvd', src: '/world/maps/val-street-2.jpg', srcPortrait: '/world/maps/val-street-2-v9.jpg', action: { label: '🎳 Corbin Bowl — the EP Arcade', to: '/corbin-bowl' } },
+        { id: 'pool', label: 'The Backyard', src: '/world/maps/val-pool.jpg', srcPortrait: '/world/maps/val-pool-v9.jpg' },
+        { id: 'detail', label: 'The Flamingo', src: '/world/maps/val-c3.jpg', srcPortrait: '/world/maps/val-c3-v9.jpg' },
       ],
     },
   },
@@ -372,14 +372,14 @@ export const locations: LocationData[] = [
     environment: {
       start: 'cliffs',
       views: [
-        { id: 'cliffs', label: 'The Cliffs', src: '/world/maps/malibu-cliffs.jpg', srcPortrait: '/world/maps/malibu-cliffs-v.jpg', video: '/world/anim/malibu-cliffs-cine.mp4', hotspots: [
+        { id: 'cliffs', label: 'The Cliffs', src: '/world/maps/malibu-cliffs.jpg', srcPortrait: '/world/maps/malibu-cliffs-v9.jpg', video: '/world/anim/malibu-cliffs-cine.mp4', hotspots: [
           { x: 46, y: 70, to: 'pch', label: 'PCH' },
           { x: 16, y: 46, to: 'pier', label: 'The Pier' },
           { x: 60, y: 44, to: 'detail', label: 'The Horizon' },
         ] },
-        { id: 'pch', label: 'PCH', src: '/world/maps/malibu-pch.jpg', srcPortrait: '/world/maps/malibu-pch-v.jpg' },
-        { id: 'pier', label: 'The Pier', src: '/world/maps/malibu-pier.jpg', srcPortrait: '/world/maps/malibu-pier-v.jpg' },
-        { id: 'detail', label: 'The Horizon', src: '/world/maps/malibu-c1.jpg', srcPortrait: '/world/maps/malibu-c1-v.jpg' },
+        { id: 'pch', label: 'PCH', src: '/world/maps/malibu-pch.jpg', srcPortrait: '/world/maps/malibu-pch-v9.jpg' },
+        { id: 'pier', label: 'The Pier', src: '/world/maps/malibu-pier-2.jpg', srcPortrait: '/world/maps/malibu-pier-2-v9.jpg' },
+        { id: 'detail', label: 'The Horizon', src: '/world/maps/malibu-c1.jpg', srcPortrait: '/world/maps/malibu-c1-v9.jpg' },
       ],
     },
   },
@@ -398,14 +398,14 @@ export const locations: LocationData[] = [
     environment: {
       start: 'sofi',
       views: [
-        { id: 'sofi', label: 'The Stadium', src: '/world/maps/ing-sofi.jpg', srcPortrait: '/world/maps/ing-sofi-v.jpg', video: '/world/anim/ing-sofi-cine.mp4', hotspots: [
+        { id: 'sofi', label: 'The Stadium', src: '/world/maps/ing-sofi.jpg', srcPortrait: '/world/maps/ing-sofi-v9.jpg', video: '/world/anim/ing-sofi-cine.mp4', hotspots: [
           { x: 42, y: 52, to: 'forum', label: 'The Forum' },
           { x: 80, y: 60, to: 'street', label: 'The Strip' },
           { x: 14, y: 42, to: 'detail', label: 'City Lights' },
         ] },
-        { id: 'forum', label: 'The Forum', src: '/world/maps/ing-forum.jpg', srcPortrait: '/world/maps/ing-forum-v.jpg' },
-        { id: 'street', label: 'The Strip', src: '/world/maps/ing-street.jpg', srcPortrait: '/world/maps/ing-street-v.jpg' },
-        { id: 'detail', label: 'City Lights', src: '/world/maps/ing-c1.jpg', srcPortrait: '/world/maps/ing-c1-v.jpg' },
+        { id: 'forum', label: 'The Forum', src: '/world/maps/ing-forum.jpg', srcPortrait: '/world/maps/ing-forum-v9.jpg' },
+        { id: 'street', label: 'The Strip', src: '/world/maps/ing-street.jpg', srcPortrait: '/world/maps/ing-street-v9.jpg' },
+        { id: 'detail', label: 'City Lights', src: '/world/maps/ing-c1.jpg', srcPortrait: '/world/maps/ing-c1-v9.jpg' },
       ],
     },
   },
@@ -420,18 +420,18 @@ export const locations: LocationData[] = [
     headline: 'MAILING LIST',
     body: "Sign up for release news.",
     cta: { label: '🕹 TRULY\'S PINBALL — DEAR JOSHUA EDITION', href: '/trulys-pinball' },
-    backgroundImage: '/world/maps/lax-arrivals.jpg',
+    backgroundImage: '/world/maps/lax-arrivals-2.jpg',
     environment: {
       start: 'arrivals',
       views: [
-        { id: 'arrivals', label: 'Arrivals', src: '/world/maps/lax-arrivals.jpg', srcPortrait: '/world/maps/lax-arrivals-v.jpg', hotspots: [
+        { id: 'arrivals', label: 'Arrivals', src: '/world/maps/lax-arrivals-2.jpg', srcPortrait: '/world/maps/lax-arrivals-2-v9.jpg', hotspots: [
           { x: 78, y: 60, to: 'interior', label: 'Interior' },
           { x: 92, y: 38, to: 'window', label: 'Window Seat' },
           { x: 18, y: 42, to: 'approach', label: 'Approach' },
         ] },
-        { id: 'interior', label: 'Interior', src: '/world/maps/lax-ufo-interior.jpg', srcPortrait: '/world/maps/lax-ufo-interior-v.jpg', video: '/world/anim/lax-ufo-interior-cine.mp4' },
-        { id: 'window', label: 'Window Seat', src: '/world/maps/lax-ufo-window.jpg', srcPortrait: '/world/maps/lax-ufo-window-v.jpg', video: '/world/anim/lax-ufo-window-cine.mp4' },
-        { id: 'approach', label: 'Approach', src: '/world/maps/lax-approach.jpg', srcPortrait: '/world/maps/lax-approach-v.jpg' },
+        { id: 'interior', label: 'Interior', src: '/world/maps/lax-ufo-interior.jpg', srcPortrait: '/world/maps/lax-ufo-interior-v9.jpg', video: '/world/anim/lax-ufo-interior-cine.mp4' },
+        { id: 'window', label: 'Window Seat', src: '/world/maps/lax-ufo-window.jpg', srcPortrait: '/world/maps/lax-ufo-window-v9.jpg', video: '/world/anim/lax-ufo-window-cine.mp4' },
+        { id: 'approach', label: 'Approach', src: '/world/maps/lax-approach.jpg', srcPortrait: '/world/maps/lax-approach-v9.jpg' },
       ],
     },
   },
@@ -449,14 +449,14 @@ export const locations: LocationData[] = [
     environment: {
       start: 'aerial',
       views: [
-        { id: 'aerial', label: 'The Harbor', src: '/world/maps/lb-aerial.jpg', srcPortrait: '/world/maps/lb-aerial-v.jpg', video: '/world/anim/lb-aerial-cine.mp4', hotspots: [
+        { id: 'aerial', label: 'The Harbor', src: '/world/maps/lb-aerial.jpg', srcPortrait: '/world/maps/lb-aerial-v9.jpg', video: '/world/anim/lb-aerial-cine.mp4', hotspots: [
           { x: 48, y: 45, to: 'ship', label: 'The Queen Mary' },
           { x: 14, y: 60, to: 'port', label: 'The Port' },
           { x: 80, y: 52, to: 'light', label: 'The Lighthouse' },
         ] },
-        { id: 'ship', label: 'The Queen Mary', src: '/world/maps/lb-ship.jpg', srcPortrait: '/world/maps/lb-ship-v.jpg' },
-        { id: 'port', label: 'The Port', src: '/world/maps/lb-port.jpg', srcPortrait: '/world/maps/lb-port-v.jpg' },
-        { id: 'light', label: 'The Lighthouse', src: '/world/maps/lb-light.jpg', srcPortrait: '/world/maps/lb-light-v.jpg' },
+        { id: 'ship', label: 'The Queen Mary', src: '/world/maps/lb-ship.jpg', srcPortrait: '/world/maps/lb-ship-v9.jpg' },
+        { id: 'port', label: 'The Port', src: '/world/maps/lb-port.jpg', srcPortrait: '/world/maps/lb-port-v9.jpg' },
+        { id: 'light', label: 'The Lighthouse', src: '/world/maps/lb-light.jpg', srcPortrait: '/world/maps/lb-light-v9.jpg' },
       ],
     },
     embeds: [

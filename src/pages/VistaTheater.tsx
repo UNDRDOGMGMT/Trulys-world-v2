@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import PageMeta from "@/components/PageMeta";
+import { useIsPortrait } from "@/hooks/useIsPortrait";
 
 /**
  * The Vista Theatre — a cinematic walk-in built from real footage. Three
@@ -23,6 +24,7 @@ const CLIPS = [
 ];
 // Destination still — the seated auditorium with the curtains open around the screen.
 const AUDITORIUM = "/world/theater/vista-auditorium.jpg";
+const AUDITORIUM_V = "/world/theater/vista-auditorium-v.jpg"; // 9:16 extension for phones
 
 // Native pixel size of the auditorium still — the seated stage locks to this aspect
 // so the screen overlay stays put on the art at any window size.
@@ -33,6 +35,7 @@ const AUD_H = 1536;
 const SCREEN = { leftPct: 31.2, topPct: 32.0, widthPct: 37.6, heightPct: 38.6 };
 
 const VistaTheater: React.FC = () => {
+  const isPortrait = useIsPortrait();
   const navigate = useNavigate();
   // phase 0..CLIPS.length-1 = playing that clip; phase === CLIPS.length = seated
   const [phase, setPhase] = useState(0);
@@ -116,7 +119,7 @@ const VistaTheater: React.FC = () => {
                   height: `min(100dvh, calc(100vw * ${AUD_H} / ${AUD_W}))`,
                 }}
               >
-                <img src={AUDITORIUM} alt="" className="absolute inset-0 h-full w-full object-cover" draggable={false} />
+                <img src={isPortrait ? AUDITORIUM_V : AUDITORIUM} alt="" className="absolute inset-0 h-full w-full object-cover" draggable={false} />
                 <div className="pointer-events-none absolute inset-0"
                      style={{ boxShadow: "inset 0 0 140px 30px rgba(0,0,0,0.5)" }} />
 
