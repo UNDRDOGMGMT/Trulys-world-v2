@@ -212,10 +212,11 @@ export const locations: LocationData[] = [
       views: [
         { id: 'aerial', label: 'Sunset Strip', src: '/world/maps/weho-aerial.jpg', srcPortrait: '/world/maps/weho-aerial-v9.jpg', hotspots: [
           { x: 38, y: 34, to: 'chateau', label: 'The Chateau' },
-          { x: 62, y: 66, to: 'store', label: 'The Store' },
+          { x: 62, y: 66, to: 'street', label: 'The Strip' },
         ] },
         { id: 'chateau', label: 'The Chateau', src: '/world/maps/weho-chateau-facade.jpg', srcPortrait: '/world/maps/weho-chateau-facade-v9.jpg', action: { label: 'Do Not Disturb', to: '/do-not-disturb' } },
-        { id: 'store', label: 'The Store', src: '/world/maps/weho-street.jpg', srcPortrait: '/world/maps/weho-street-v9.jpg', action: { label: 'Enter The Store', to: '/boutique', shop: true } },
+        { id: 'street', label: 'The Strip', src: '/world/maps/weho-street.jpg', srcPortrait: '/world/maps/weho-street-v9.jpg' },
+        { id: 'store', label: 'The Stores', src: '/shop/exterior-2.jpg', srcPortrait: '/shop/exterior-2-v.jpg', action: { label: 'The Boutique & The Record Shop', to: '/boutique', shop: true } },
       ],
     },
   },

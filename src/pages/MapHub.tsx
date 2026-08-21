@@ -92,7 +92,7 @@ const WAYPOINTS: Waypoint[] = [
   { id: "long-beach", name: "Long Beach", blurb: "B-Sides", x: 85, y: 90, xP: 82, yP: 92, labelBelowP: true },
   // Trulyland — her Disneyland, out past Long Beach in the bottom-right corner.
   // Own environment (not a /location hood), so it travels with its own clip.
-  { id: "disneyland", name: "Disneyland", blurb: "TRULYLAND", x: 93, y: 82, xP: 90, yP: 86, to: "/trulyland", clip: "/park/travel-wide.mp4", labelBelowP: true },
+  { id: "disneyland", name: "Disneyland", blurb: "TRULYLAND", x: 93, y: 82, xP: 90, yP: 86, to: "/trulyland", clip: "/park/approach-wide.mp4", labelBelowP: true },
 ];
 
 // Future cities on the horizon — Truly's world keeps expanding. These distant
@@ -453,7 +453,7 @@ const MapHub: React.FC = () => {
     // than a /location hood — same dive, different destination.
     const go = () =>
       wp.clip && wp.to
-        ? travelPlace({ path: wp.to, clip: wp.clip, name: wp.blurb, poster: "/park/travel-wide-poster.jpg" })
+        ? travelPlace({ path: wp.to, clip: wp.clip, name: wp.blurb, poster: "/park/approach-wide-poster.jpg" })
         : travelTo(wp.id);
     if (reduceMotion) { go(); return; }   // instant — TravelContext also skips the clip
     setDiving(wp);
@@ -509,6 +509,9 @@ const MapHub: React.FC = () => {
             <button onClick={() => navigate("/shadows")} className="btn-retro !text-[10px] !py-1 !px-3" aria-label="Shadows">
               &#10022; SHADOWS
             </button>
+            <button onClick={() => navigate("/boutique")} className="btn-retro !text-[10px] !py-1 !px-3" aria-label="The Store — merch and records">
+              &#9829; STORE
+            </button>
             {member && (
               <button onClick={() => navigate("/account")} aria-label="Your member dashboard"
                 className="btn-retro !text-[10px] !py-1 !px-3 shimmer-sweep"
@@ -548,6 +551,7 @@ const MapHub: React.FC = () => {
                 {[
                   { label: "◉ The Globe", to: "/world" },
                   { label: "✦ Shadows", to: "/shadows" },
+                  { label: "♥ The Store", to: "/boutique" },
                   { label: "♪ Sing", to: "/karaoke" },
                   ...(member ? [{ label: `♦ Your World · ${member.points.toLocaleString()} pts`, to: "/account" }] : []),
                 ].map((it) => (

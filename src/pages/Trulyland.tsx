@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import PageMeta from "@/components/PageMeta";
@@ -29,21 +29,50 @@ const ATTRACTIONS: Attraction[] = [
   { name: "The Ex-Mansion", sub: "999 happy haunts, all of them boys", to: "/trulyland/ex-mansion" },
 ];
 
+/**
+ * Three beats, in order: you arrive above the park (bird's-eye), you drop in
+ * (the descent clip), and you land in front of the castle, where the directory
+ * takes you to everything else.
+ */
+type Stage = "aerial" | "diving" | "castle";
+
 const Trulyland: React.FC = () => {
   const navigate = useNavigate();
   const isPortrait = useIsPortrait();
-  const [open, setOpen] = useState(false);      // park directory
+  const [stage, setStage] = useState<Stage>("aerial");
+  const [open, setOpen] = useState(false);       // park directory
   const [ambient, setAmbient] = useState(false); // the living plate has decoded
+  const diveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // The still is always painted; the ambient loop (flags, neon flicker, glitter,
   // fog) fades in over it once it can play. Reduced motion / Save-Data keeps the
   // still and never fetches the loop.
   const still = isPortrait ? "/park/castle-v.jpg" : "/park/castle.jpg";
   const loop = isPortrait ? "/park/castle-loop-v.mp4" : "/park/castle-loop.mp4";
+  const aerial = isPortrait ? "/park/aerial-v.jpg" : "/park/aerial.jpg";
   const motionOK = useMemo(
     () => !shouldReduceMedia() && !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches,
     []
   );
+
+  // Drop out of the sky onto the castle. Without the clip (reduced motion,
+  // Save-Data) you just land.
+  const dive = useCallback(() => {
+    if (stage !== "aerial") return;
+    if (!motionOK) { setStage("castle"); return; }
+    setStage("diving");
+    diveTimer.current = setTimeout(() => setStage("castle"), 7000);   // fallback if the clip stalls
+  }, [stage, motionOK]);
+  const land = useCallback(() => {
+    if (diveTimer.current) { clearTimeout(diveTimer.current); diveTimer.current = null; }
+    setStage("castle");
+  }, []);
+  useEffect(() => () => { if (diveTimer.current) clearTimeout(diveTimer.current); }, []);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && stage === "diving") land(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [stage, land]);
 
   return (
     <>
@@ -53,11 +82,90 @@ const Trulyland: React.FC = () => {
         path="/trulyland"
       />
       <div className="fixed inset-0 overflow-hidden bg-[#12000f]">
-        {/* the castle — arrives mid-arch (stitched to the travel clip) and pulls
-            back into the straight-on plaza POV */}
+        {/* ── BEAT 1 — the park from above ── */}
+        <AnimatePresence>
+          {stage === "aerial" && (
+            <motion.button
+              key="aerial"
+              onClick={dive}
+              className="absolute inset-0 z-20 cursor-pointer"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.6 }}
+              aria-label="Zoom in on Trulyland"
+            >
+              <motion.div
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: `url('${aerial}')` }}
+                initial={{ scale: 1.02 }}
+                animate={{ scale: 1.09 }}
+                transition={{ duration: 26, ease: "linear" }}
+              />
+              <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 46%, transparent 44%, rgba(12,0,15,0.8) 100%)" }} />
+              <div className="scanlines pointer-events-none absolute inset-0 opacity-25" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[34vh]" style={{ background: "linear-gradient(180deg, transparent, rgba(12,0,15,0.92))" }} />
+
+              <motion.div
+                className="absolute inset-0 flex flex-col items-center justify-end px-6 pb-[7vh] text-center"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <span
+                  className="mb-2 font-display text-[10px] uppercase tracking-[0.42em] text-pink-light md:text-xs"
+                  style={{ textShadow: "0 2px 10px rgba(0,0,0,0.9), 0 0 16px rgba(255,79,163,0.75)" }}
+                >
+                  ✦ now approaching ✦
+                </span>
+                <h1 className="chrome-text-pink font-display text-4xl leading-none md:text-6xl" style={{ textShadow: "0 0 26px rgba(255,79,163,0.55)" }}>
+                  TRULYLAND
+                </h1>
+                <p className="mb-5 mt-3 max-w-md font-whimsy text-sm leading-relaxed text-cream md:text-base" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.95)" }}>
+                  The whole park, lit up and running all night. Drop in on the castle.
+                </p>
+                <span className="btn-retro shimmer-sweep !px-9 !py-3.5 !text-base md:!text-lg">✦ ZOOM IN ✦</span>
+              </motion.div>
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        {/* ── BEAT 2 — the drop ── */}
+        <AnimatePresence>
+          {stage === "diving" && (
+            <motion.div
+              key="dive"
+              className="absolute inset-0 z-30 flex items-center justify-center bg-black"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <video
+                src="/park/aerial-dive.mp4"
+                poster={aerial}
+                autoPlay muted playsInline preload="auto"
+                onEnded={land}
+                className="h-full w-full object-cover [@media(orientation:portrait)]:object-contain"
+              />
+              <div className="pointer-events-none absolute inset-0" style={{ boxShadow: "inset 0 0 220px rgba(0,0,0,0.75)" }} />
+              <motion.div className="pointer-events-none absolute inset-x-0 top-0 bg-black" initial={{ height: 0 }} animate={{ height: "7vh" }} exit={{ height: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} />
+              <motion.div className="pointer-events-none absolute inset-x-0 bottom-0 bg-black" initial={{ height: 0 }} animate={{ height: "7vh" }} exit={{ height: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} />
+              <button
+                onClick={land}
+                style={{ top: "max(1rem, calc(env(safe-area-inset-top) + 0.5rem))", right: "max(1rem, env(safe-area-inset-right))" }}
+                className="absolute z-10 rounded-full border border-white/25 bg-black/55 px-4 py-1.5 font-display text-[11px] uppercase tracking-[0.15em] text-cream/85 backdrop-blur-sm transition-colors hover:text-white"
+              >
+                Skip ✕
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── BEAT 3 — on the ground, in front of the castle ── */}
         <motion.div
           className="absolute inset-0"
-          initial={{ scale: 1.5, filter: "brightness(1.7)" }}
+          initial={{ scale: 1.18, filter: "brightness(1.35)" }}
           animate={{ scale: 1.06, filter: "brightness(1)" }}
           transition={{ duration: 2.2, ease: [0.16, 1, 0.3, 1] }}
         >
@@ -85,9 +193,9 @@ const Trulyland: React.FC = () => {
         {/* stepping-through-the-gate glare, burning off on arrival */}
         <motion.div
           className="pointer-events-none absolute inset-0 bg-[#ff8ed0]"
-          initial={{ opacity: 0.85 }}
+          initial={{ opacity: 0.5 }}
           animate={{ opacity: 0 }}
-          transition={{ duration: 1.6, ease: "easeOut" }}
+          transition={{ duration: 1.4, ease: "easeOut" }}
         />
 
         {/* neon breathing off the castle + vignette */}
@@ -128,14 +236,14 @@ const Trulyland: React.FC = () => {
 
         {/* ── the marquee ── */}
         <AnimatePresence>
-          {!open && (
+          {!open && stage === "castle" && (
             <motion.div
               key="marquee"
               className="absolute inset-0 flex flex-col items-center justify-end px-6 pb-[6vh] text-center"
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 12 }}
-              transition={{ delay: 1.5, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ delay: 1.1, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
             >
               <span
                 className="mb-2 font-display text-[10px] uppercase tracking-[0.42em] text-pink-light md:text-xs"
@@ -165,7 +273,7 @@ const Trulyland: React.FC = () => {
 
         {/* ── the park directory ── */}
         <AnimatePresence>
-          {open && (
+          {open && stage === "castle" && (
             <motion.div
               key="directory"
               className="absolute inset-0 flex flex-col items-center justify-center overflow-y-auto px-5 py-[8vh]"
@@ -231,11 +339,11 @@ const Trulyland: React.FC = () => {
 
         {/* back to the map */}
         <button
-          onClick={() => navigate("/map")}
+          onClick={() => (stage === "castle" ? setStage("aerial") : navigate("/map"))}
           style={{ top: "max(0.75rem, env(safe-area-inset-top))", left: "max(0.75rem, env(safe-area-inset-left))" }}
           className="fixed z-20 rounded-full border border-white/20 bg-black/50 px-3.5 py-1.5 font-display text-[10px] uppercase tracking-[0.15em] text-white/70 backdrop-blur-sm transition-colors hover:text-white"
         >
-          ← the map
+          {stage === "castle" ? "↑ the whole park" : "← the map"}
         </button>
       </div>
     </>

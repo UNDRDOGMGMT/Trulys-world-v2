@@ -24,10 +24,9 @@ import { audit } from "@/lib/audit";
 
 type View = "street" | "room" | ZoneId;
 
-// Pre-launch: the Store interior is locked — nobody previews the room before the
-// drop. Flip to true at launch to let people step inside. Until then "step inside"
-// just says "opening soon" and the door stays shut.
-const STORE_OPEN = false;
+// Launch night: both doors are open — the boutique on the left, Imposter
+// Sindrome Records next door on the right.
+const STORE_OPEN = true;
 
 interface Zone {
   id: ZoneId; label: string; kicker: string; tint: string;
@@ -129,6 +128,9 @@ const Boutique: React.FC = () => {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const toastT = useRef<number>();
+  // The record shop has its own door on the street: entering it that way makes
+  // "back" return to the street, not into the boutique room.
+  const recordsFromStreet = useRef(false);
 
   useEffect(() => {
     try { localStorage.setItem(BAG_KEY, JSON.stringify(bag)); } catch { /* storage full */ }
@@ -147,7 +149,8 @@ const Boutique: React.FC = () => {
   // Warm the next plate so walking through the shop never shows a blank frame.
   useEffect(() => {
     const srcs = view === "street"
-      ? [isP ? "/shop/room-v.jpg" : "/shop/room.jpg"]
+      ? [isP ? "/shop/room-v.jpg" : "/shop/room.jpg",
+         isP ? "/shop/records-v.jpg" : "/shop/records.jpg"]  // both doors are entrances now
       : Object.values(ZONE_ART).map((z) => (isP ? z.port : z.land));
     srcs.forEach((s) => { const i = new Image(); i.src = s; });
   }, [view, isP]);
@@ -208,7 +211,7 @@ const Boutique: React.FC = () => {
   const zone: ZoneId | null = view === "street" || view === "room" ? null : view;
   const zoneMeta = zone ? ZONES.find((z) => z.id === zone)! : null;
   const plate =
-    view === "street" ? (isP ? "/shop/exterior-v.jpg" : "/shop/exterior.jpg")
+    view === "street" ? (isP ? "/shop/exterior-2-v.jpg" : "/shop/exterior-2.jpg")
     : view === "room" ? (isP ? "/shop/room-v.jpg" : "/shop/room.jpg")
     : (isP ? ZONE_ART[view].port : ZONE_ART[view].land);
 
@@ -240,10 +243,10 @@ const Boutique: React.FC = () => {
         {/* ---------- street: the door ---------- */}
         {view === "street" && (
           <>
-          {/* locked record store next door — Imposter Sindrome Records, opening soon */}
+          {/* the record store next door — Imposter Sindrome Records, its own door */}
           <button
-            onClick={() => say("Imposter Sindrome Records — opening soon ♥")}
-            aria-label="Imposter Sindrome Records — opening soon"
+            onClick={() => { recordsFromStreet.current = true; setView("records"); }}
+            aria-label="Imposter Sindrome Records — step inside"
             className="absolute group z-20"
             style={isP ? { left: "50%", top: "11%", width: "50%", height: "46%" } : { left: "60%", top: "7%", width: "40%", height: "70%" }}
           >
@@ -252,7 +255,22 @@ const Boutique: React.FC = () => {
             <span className="absolute left-1/2 -translate-x-1/2 bottom-[10%] flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity pointer-events-none
                              font-mono text-[9px] tracking-[0.24em] uppercase text-[#e6dcf5] bg-black/55 rounded-full px-3 py-1.5 backdrop-blur-sm"
                   style={{ textShadow: "0 2px 8px rgba(6,3,12,.95)" }}>
-              🔒 opening soon
+              ♪ the record shop
+            </span>
+          </button>
+          {/* the boutique door on the left — same treatment, pink */}
+          <button
+            onClick={() => setView("room")}
+            aria-label="The boutique — step inside"
+            className="absolute group z-20"
+            style={isP ? { left: "0%", top: "11%", width: "50%", height: "46%" } : { left: "0%", top: "7%", width: "58%", height: "70%" }}
+          >
+            <span className="absolute inset-[7%] rounded-2xl border-2 border-transparent opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity duration-300"
+                  style={{ borderColor: "#ff4fa3", boxShadow: "0 0 34px #ff4fa355, inset 0 0 40px #ff4fa322" }} />
+            <span className="absolute left-1/2 -translate-x-1/2 bottom-[10%] flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity pointer-events-none
+                             font-mono text-[9px] tracking-[0.24em] uppercase text-[#ffd9ec] bg-black/55 rounded-full px-3 py-1.5 backdrop-blur-sm"
+                  style={{ textShadow: "0 2px 8px rgba(6,3,12,.95)" }}>
+              ♥ the boutique
             </span>
           </button>
           <motion.div className="absolute inset-0 flex flex-col items-center justify-end pb-[9vh] px-6 text-center"
@@ -268,13 +286,20 @@ const Boutique: React.FC = () => {
               THE STORE
             </h1>
             <p className="font-mono text-[clamp(11px,1.6vw,14px)] text-[#d3c4ea] max-w-[38ch] leading-relaxed mt-3">
-              {STORE_OPEN ? "Her shop is a room, not a website. Push the door." : "Her shop is a room, not a website. The doors open soon ♥"}
+              Two doors, one block — the boutique &amp; the record shop. Push either one.
             </p>
-            <button onClick={() => (STORE_OPEN ? setView("room") : say("The Store — opening soon ♥"))}
-              className="mt-6 font-display text-sm sm:text-base tracking-[0.12em] text-[#2a1730] bg-[#ffcf7a] rounded-full px-9 py-3.5
-                         shadow-[0_0_28px_rgba(255,207,122,.5)] hover:-translate-y-0.5 hover:shadow-[0_0_40px_rgba(255,207,122,.85)] transition-all">
-              {STORE_OPEN ? "▸ step inside" : "🔒 opening soon"}
-            </button>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <button onClick={() => setView("room")}
+                className="font-display text-sm sm:text-base tracking-[0.12em] text-[#2a1730] bg-[#ff4fa3] rounded-full px-8 py-3.5
+                           shadow-[0_0_28px_rgba(255,79,163,.5)] hover:-translate-y-0.5 hover:shadow-[0_0_40px_rgba(255,79,163,.85)] transition-all">
+                ♥ the boutique
+              </button>
+              <button onClick={() => { recordsFromStreet.current = true; setView("records"); }}
+                className="font-display text-sm sm:text-base tracking-[0.12em] text-[#1d1030] bg-[#b07bff] rounded-full px-8 py-3.5
+                           shadow-[0_0_28px_rgba(176,123,255,.5)] hover:-translate-y-0.5 hover:shadow-[0_0_40px_rgba(176,123,255,.85)] transition-all">
+                ♪ the record shop
+              </button>
+            </div>
             </div>
           </motion.div>
           </>
@@ -369,10 +394,16 @@ const Boutique: React.FC = () => {
         <div className="absolute top-0 inset-x-0 z-30 flex items-start justify-between p-3 sm:p-5"
              style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
           <button
-            onClick={() => (view === "street" ? navigate("/location/weho") : setView(view === "room" ? "street" : "room"))}
+            onClick={() => {
+              if (view === "street") { navigate("/location/weho"); return; }
+              if (view === "room") { setView("street"); return; }
+              if (view === "records" && recordsFromStreet.current) { recordsFromStreet.current = false; setView("street"); return; }
+              setView("room");
+            }}
             className="font-mono text-[10px] tracking-[0.18em] uppercase text-white/70 hover:text-white
                        border border-white/20 rounded-full px-3.5 py-2 bg-black/45 backdrop-blur-sm transition-colors">
-            {view === "street" ? "← weho" : view === "room" ? "← the street" : "← the room"}
+            {view === "street" ? "← weho" : view === "room" ? "← the street"
+              : view === "records" && recordsFromStreet.current ? "← the street" : "← the room"}
           </button>
           <button onClick={() => setBagOpen(true)}
             className="font-mono text-[10px] tracking-[0.18em] uppercase text-[#2a1730] bg-[#ffcf7a]
