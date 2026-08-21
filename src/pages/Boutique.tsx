@@ -24,9 +24,10 @@ import { audit } from "@/lib/audit";
 
 type View = "street" | "room" | ZoneId;
 
-// Launch night: both doors are open — the boutique on the left, Imposter
-// Sindrome Records next door on the right.
+// Launch night: the record shop is open (the EP is out) — the merch boutique
+// next door is blocked off until the merch drop is ready.
 const STORE_OPEN = true;
+const MERCH_OPEN = false;
 
 interface Zone {
   id: ZoneId; label: string; kicker: string; tint: string;
@@ -258,10 +259,10 @@ const Boutique: React.FC = () => {
               ♪ the record shop
             </span>
           </button>
-          {/* the boutique door on the left — same treatment, pink */}
+          {/* the boutique door on the left — blocked off until the merch drop */}
           <button
-            onClick={() => setView("room")}
-            aria-label="The boutique — step inside"
+            onClick={() => (MERCH_OPEN ? setView("room") : say("The boutique — merch opening soon ♥"))}
+            aria-label={MERCH_OPEN ? "The boutique — step inside" : "The boutique — opening soon"}
             className="absolute group z-20"
             style={isP ? { left: "0%", top: "11%", width: "50%", height: "46%" } : { left: "0%", top: "7%", width: "58%", height: "70%" }}
           >
@@ -270,7 +271,7 @@ const Boutique: React.FC = () => {
             <span className="absolute left-1/2 -translate-x-1/2 bottom-[10%] flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity pointer-events-none
                              font-mono text-[9px] tracking-[0.24em] uppercase text-[#ffd9ec] bg-black/55 rounded-full px-3 py-1.5 backdrop-blur-sm"
                   style={{ textShadow: "0 2px 8px rgba(6,3,12,.95)" }}>
-              ♥ the boutique
+              {MERCH_OPEN ? "♥ the boutique" : "🔒 merch — opening soon"}
             </span>
           </button>
           <motion.div className="absolute inset-0 flex flex-col items-center justify-end pb-[9vh] px-6 text-center"
@@ -286,18 +287,18 @@ const Boutique: React.FC = () => {
               THE STORE
             </h1>
             <p className="font-mono text-[clamp(11px,1.6vw,14px)] text-[#d3c4ea] max-w-[38ch] leading-relaxed mt-3">
-              Two doors, one block — the boutique &amp; the record shop. Push either one.
+              The record shop is open — the EP is out. The boutique next door opens soon ♥
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-              <button onClick={() => setView("room")}
-                className="font-display text-sm sm:text-base tracking-[0.12em] text-[#2a1730] bg-[#ff4fa3] rounded-full px-8 py-3.5
-                           shadow-[0_0_28px_rgba(255,79,163,.5)] hover:-translate-y-0.5 hover:shadow-[0_0_40px_rgba(255,79,163,.85)] transition-all">
-                ♥ the boutique
-              </button>
               <button onClick={() => { recordsFromStreet.current = true; setView("records"); }}
                 className="font-display text-sm sm:text-base tracking-[0.12em] text-[#1d1030] bg-[#b07bff] rounded-full px-8 py-3.5
                            shadow-[0_0_28px_rgba(176,123,255,.5)] hover:-translate-y-0.5 hover:shadow-[0_0_40px_rgba(176,123,255,.85)] transition-all">
                 ♪ the record shop
+              </button>
+              <button onClick={() => say("The boutique — merch opening soon ♥")}
+                className="font-display text-sm sm:text-base tracking-[0.12em] text-[#ffd9ec] bg-black/45 border border-pink/40 rounded-full px-8 py-3.5
+                           hover:border-pink/70 transition-all">
+                🔒 merch — opening soon
               </button>
             </div>
             </div>

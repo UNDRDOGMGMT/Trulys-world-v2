@@ -13,7 +13,7 @@ import Logo from "@/components/Logo";
 import PageMeta from "@/components/PageMeta";
 import { useUnlock } from "@/contexts/UnlockContext";
 import { useMember } from "@/contexts/MemberContext";
-import { useTravel, ASSET_KEY } from "@/contexts/TravelContext";
+import { useTravel, ASSET_KEY, CLIP_V2 } from "@/contexts/TravelContext";
 import { useIsPortrait } from "@/hooks/useIsPortrait";
 import { playClick, startAmbient, stopAmbient } from "@/lib/audio";
 import { trackEvent } from "@/lib/analytics";
@@ -422,7 +422,9 @@ const MapHub: React.FC = () => {
     const wp = WAYPOINTS.find((w) => w.id === id);
     const key = ASSET_KEY[id];
     if (!key && !wp?.clip) return; // no travel clip for this pin — nothing to warm
-    const href = wp?.clip ?? `/world/anim/${key}-wide.mp4`;
+    // Must mirror TravelContext's versioning or we warm (and keep hot) the old clip.
+    const v = CLIP_V2.has(key) ? "-wide-2" : "-wide";
+    const href = wp?.clip ?? `/world/anim/${key}${v}.mp4`;
     if (document.querySelector(`link[data-tw-prefetch="${href}"]`)) return;
     const link = document.createElement("link");
     link.rel = "prefetch";

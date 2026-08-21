@@ -26,7 +26,7 @@ export const useTravel = () => {
 // This is the *complete* set of hoods with a pulled {key}-wide.mp4 — an id that
 // isn't here has no clip, so travelTo skips straight to the city rather than
 // staging a 7.2s black screen waiting for a 404 to fire onEnded.
-const CLIP_V2 = new Set(["malibu", "ven", "lc", "sm", "bh", "weho"]);
+export const CLIP_V2 = new Set(["malibu", "ven", "lc", "sm", "bh", "weho"]);
 
 export const ASSET_KEY: Record<string, string> = {
   dtla: "dtla",
