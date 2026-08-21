@@ -1,4 +1,5 @@
 import React, { Suspense } from "react";
+import PreviewGate from "./components/PreviewGate";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { Analytics } from "@vercel/analytics/react";
@@ -227,11 +228,13 @@ const Gated = () => {
 };
 
 const App = () => (
-  <MemberProvider>
-    <Gated />
-    <Analytics />
-    <SpeedInsights />
-  </MemberProvider>
+  <PreviewGate>
+    <MemberProvider>
+      <Gated />
+      <Analytics />
+      <SpeedInsights />
+    </MemberProvider>
+  </PreviewGate>
 );
 
 export default App;
