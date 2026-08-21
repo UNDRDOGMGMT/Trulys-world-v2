@@ -6,12 +6,14 @@ import { trackEvent } from "@/lib/analytics";
  * Her links, link-in-bio style — one tap out to every platform, on the front
  * page so nobody has to hunt for them.
  *
- * ⚠️ Every href here was verified live against the platform (Spotify artist id,
- * Apple Music artist id, IG handle, YouTube channel whose latest upload is the
- * "shadows" official video). TIKTOK_URL is the one we could not confirm from
- * outside — drop her handle in and the row lights up automatically.
+ * Every href here was verified live against the platform: the Spotify and
+ * Apple Music artist ids both resolve to the Dear Joshua EP, the YouTube
+ * channel's latest upload is the "shadows" official video, and the TikTok
+ * handle (supplied by Paul, confirmed via oembed) resolves to "Truly".
+ * A null TIKTOK_URL renders that row inert rather than sending fans somewhere
+ * wrong.
  */
-const TIKTOK_URL: string | null = null;
+const TIKTOK_URL: string | null = "https://www.tiktok.com/@b1kinitrill";
 
 interface SocialLink {
   id: string;
@@ -58,7 +60,7 @@ const LINKS: SocialLink[] = [
   {
     id: "tiktok",
     label: "TikTok",
-    handle: "@trulyoung",
+    handle: "@b1kinitrill",
     href: TIKTOK_URL,
     icon: (
       <Icon d="M16.6 5.82A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 0 1-2.59 2.5 2.59 2.59 0 1 1 .77-5.06V9.7a5.67 5.67 0 0 0-.77-.05A5.67 5.67 0 1 0 15.54 15.3V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3a4.28 4.28 0 0 1-3.24-1.48z" />
