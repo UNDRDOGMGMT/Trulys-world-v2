@@ -24,9 +24,9 @@ import { audit } from "@/lib/audit";
 
 type View = "street" | "room" | ZoneId;
 
-// Launch night: the record shop is open (the EP is out) — the merch boutique
-// next door is blocked off until the merch drop is ready.
-const STORE_OPEN = true;
+// Both storefronts are blocked off until launch — flip these when the record
+// shop / merch drop are ready to open.
+const RECORDS_OPEN = false;
 const MERCH_OPEN = false;
 
 interface Zone {
@@ -246,8 +246,8 @@ const Boutique: React.FC = () => {
           <>
           {/* the record store next door — Imposter Sindrome Records, its own door */}
           <button
-            onClick={() => { recordsFromStreet.current = true; setView("records"); }}
-            aria-label="Imposter Sindrome Records — step inside"
+            onClick={() => { if (RECORDS_OPEN) { recordsFromStreet.current = true; setView("records"); } else { say("The record shop — opening soon ♥"); } }}
+            aria-label={RECORDS_OPEN ? "Imposter Sindrome Records — step inside" : "The record shop — opening soon"}
             className="absolute group z-20"
             style={isP ? { left: "50%", top: "11%", width: "50%", height: "46%" } : { left: "60%", top: "7%", width: "40%", height: "70%" }}
           >
@@ -256,7 +256,7 @@ const Boutique: React.FC = () => {
             <span className="absolute left-1/2 -translate-x-1/2 bottom-[10%] flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity pointer-events-none
                              font-mono text-[9px] tracking-[0.24em] uppercase text-[#e6dcf5] bg-black/55 rounded-full px-3 py-1.5 backdrop-blur-sm"
                   style={{ textShadow: "0 2px 8px rgba(6,3,12,.95)" }}>
-              ♪ the record shop
+              {RECORDS_OPEN ? "♪ the record shop" : "🔒 records — opening soon"}
             </span>
           </button>
           {/* the boutique door on the left — blocked off until the merch drop */}
@@ -287,13 +287,13 @@ const Boutique: React.FC = () => {
               THE STORE
             </h1>
             <p className="font-mono text-[clamp(11px,1.6vw,14px)] text-[#d3c4ea] max-w-[38ch] leading-relaxed mt-3">
-              The record shop is open — the EP is out. The boutique next door opens soon ♥
+              Opening soon ♥
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-              <button onClick={() => { recordsFromStreet.current = true; setView("records"); }}
-                className="font-display text-sm sm:text-base tracking-[0.12em] text-[#1d1030] bg-[#b07bff] rounded-full px-8 py-3.5
-                           shadow-[0_0_28px_rgba(176,123,255,.5)] hover:-translate-y-0.5 hover:shadow-[0_0_40px_rgba(176,123,255,.85)] transition-all">
-                ♪ the record shop
+              <button onClick={() => say("The record shop — opening soon ♥")}
+                className="font-display text-sm sm:text-base tracking-[0.12em] text-[#e6dcf5] bg-black/45 border border-[#b07bff]/40 rounded-full px-8 py-3.5
+                           hover:border-[#b07bff]/70 transition-all">
+                🔒 records — opening soon
               </button>
               <button onClick={() => say("The boutique — merch opening soon ♥")}
                 className="font-display text-sm sm:text-base tracking-[0.12em] text-[#ffd9ec] bg-black/45 border border-pink/40 rounded-full px-8 py-3.5

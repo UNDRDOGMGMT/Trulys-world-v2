@@ -216,7 +216,7 @@ export const locations: LocationData[] = [
         ] },
         { id: 'chateau', label: 'The Chateau', src: '/world/maps/weho-chateau-facade.jpg', srcPortrait: '/world/maps/weho-chateau-facade-v9.jpg', action: { label: 'Do Not Disturb', to: '/do-not-disturb' } },
         { id: 'street', label: 'The Strip', src: '/world/maps/weho-street.jpg', srcPortrait: '/world/maps/weho-street-v9.jpg' },
-        { id: 'store', label: 'The Stores', src: '/shop/exterior-2.jpg', srcPortrait: '/shop/exterior-2-v.jpg', action: { label: 'The Record Shop — Open Now', to: '/boutique', shop: true } },
+        { id: 'store', label: 'The Stores', src: '/shop/exterior-2.jpg', srcPortrait: '/shop/exterior-2-v.jpg', action: { label: 'The Stores — Opening Soon', to: '/boutique', shop: true } },
       ],
     },
   },
