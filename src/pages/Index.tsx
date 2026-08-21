@@ -11,6 +11,7 @@ import SessionChip from "@/components/SessionChip";
 import Shape from "@/components/Shape";
 import HandDrawnFrame from "@/components/HandDrawnFrame";
 import PageMeta from "@/components/PageMeta";
+import SocialLinks from "@/components/SocialLinks";
 
 // Tonight's drop. After midnight ET the countdown renders nothing and the
 // OUT NOW button carries the block.
@@ -179,6 +180,9 @@ const Index: React.FC = () => {
               ♪ sing it yourself →
             </button>
           </motion.div>
+
+          {/* her links — every platform, one tap */}
+          <SocialLinks reduceMotion={reduceMotion} className="mb-8" />
 
           {/* Toggles */}
           <motion.div
