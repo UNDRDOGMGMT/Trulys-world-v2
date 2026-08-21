@@ -92,7 +92,7 @@ const WAYPOINTS: Waypoint[] = [
   { id: "long-beach", name: "Long Beach", blurb: "B-Sides", x: 85, y: 90, xP: 82, yP: 92, labelBelowP: true },
   // Trulyland — her Disneyland, out past Long Beach in the bottom-right corner.
   // Own environment (not a /location hood), so it travels with its own clip.
-  { id: "disneyland", name: "Disneyland", blurb: "TRULYLAND", x: 93, y: 82, xP: 90, yP: 86, to: "/trulyland", clip: "/park/approach-wide.mp4", labelBelowP: true },
+  { id: "disneyland", name: "Trulyland", blurb: "TRULYLAND", x: 93, y: 82, xP: 90, yP: 86, to: "/trulyland", clip: "/park/approach-wide.mp4", labelBelowP: true },
 ];
 
 // Future cities on the horizon — Truly's world keeps expanding. These distant
