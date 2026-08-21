@@ -293,7 +293,7 @@ const LEVELS = [
   fixed:[ {t:'cage', x:560, y:280} ],
   tray:{ ramp:1, boot:1 },
   start:{ t:'record', x:120, y:55 },
-  mouse:{ x1:514, x2:606, speed:62, from:606 } },
+  mouse:{ x1:500, x2:620, speed:72, from:606 } },
 
 { id:4, name:'BALANCING ACT', par:7,
   tag:'weight one end, watch the other',
@@ -302,7 +302,7 @@ const LEVELS = [
   fixed:[ {t:'cage', x:600, y:400} ],
   tray:{ ramp:1, pin:1 },
   start:{ t:'disco', x:120, y:55 },
-  mouse:{ x1:554, x2:646, speed:66, from:646 } },
+  mouse:{ x1:540, x2:660, speed:78, from:646 } },
 
 { id:5, name:'SOUND CHECK', par:8,
   tag:'he does not like loud noises',
@@ -311,7 +311,7 @@ const LEVELS = [
   fixed:[ {t:'cage', x:560, y:320} ],
   tray:{ ramp:1, boombox:1, record:1 },
   start:{ t:'record', x:120, y:55 },
-  mouse:{ x1:470, x2:700, speed:70, from:700 } },
+  mouse:{ x1:460, x2:710, speed:82, from:700, sway:0.30 } },
 
 { id:6, name:'YOU HANG THE CAGE', par:8,
   tag:'your trap, your problem',
@@ -320,7 +320,7 @@ const LEVELS = [
   fixed:[],
   tray:{ cage:1, ramp:2 },
   start:{ t:'record', x:120, y:55 },
-  mouse:{ x1:500, x2:700, speed:64, from:500 } },
+  mouse:{ x1:485, x2:715, speed:76, from:500 } },
 
 { id:7, name:'TWO-STOREY', par:7,
   tag:'down the back of the castle',
@@ -329,7 +329,7 @@ const LEVELS = [
   fixed:[],
   tray:{ cage:1, ramp:2, boot:1, fan:1 },
   start:{ t:'record', x:120, y:55 },
-  mouse:{ x1:520, x2:760, speed:70, from:760 } },
+  mouse:{ x1:505, x2:770, speed:82, from:760, sway:0.35 } },
 
 { id:8, name:'THE LONG CON', par:7,
   tag:'everything in the alley',
@@ -338,9 +338,18 @@ const LEVELS = [
   fixed:[ {t:'tub', x:900, y:GROUND-25} ],
   tray:{ cage:1, ramp:2, boot:1, fan:1, boombox:1, disco:1 },
   start:{ t:'record', x:120, y:55 },
-  mouse:{ x1:470, x2:760, speed:70, from:760 } },
+  mouse:{ x1:460, x2:770, speed:86, from:760, sway:0.35 } },
 
-{ id:9, name:'ENCORE', par:99,
+{ id:9, name:'DO OR DIE', par:8,
+  tag:'same alley, other direction',
+  hint:'everything is mirrored — the chute drops him in from the right. build backwards.',
+  walls:[ [640,170,300,16,-0.34], [140,440,260,16,-0.06] ],
+  fixed:[ {t:'cage', x:430, y:415} ],
+  tray:{ ramp:2, boot:1 },
+  start:{ t:'record', x:880, y:55 },
+  mouse:{ x1:240, x2:460, speed:84, from:240, sway:0.35 } },
+
+{ id:10, name:'ENCORE', par:99,
   tag:'free build \u00b7 no rules',
   hint:'the whole bin, an empty alley and one mouse. do what you like.',
   walls:[ CHUTE, [680,450,220,16,0.1], [190,520,200,16] ],
@@ -382,6 +391,17 @@ const SFX = {
   fail:  () => { beep(200, 0.3, 'square', 0.07, -120); setTimeout(() => beep(150, 0.4, 'square', 0.07, -90), 150); },
   place: () => beep(880, 0.045, 'sine', 0.045),
 };
+
+/* ── music — "Do Or Die" loops under the alley ─────────────────────── */
+let MUSIC = null;
+function music(){
+  if (!MUSIC){
+    MUSIC = new Audio('/mousetrap/do-or-die.m4a');
+    MUSIC.loop = true; MUSIC.volume = 0.30; MUSIC.preload = 'auto';
+  }
+  if (muted){ MUSIC.pause(); return; }
+  MUSIC.play().catch(() => {});
+}
 
 /* ── canvas ──────────────────────────────────────────────────────────── */
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
@@ -716,6 +736,7 @@ function blastFrom(src){
 
 /* ── the run ─────────────────────────────────────────────────────────── */
 function crank(){
+  music();
   if (mode === 'run'){ stopRun(); mode = 'edit'; document.getElementById('crank').textContent = 'CRANK IT';
     document.getElementById('crank').classList.remove('running'); draw(); startPreview(); return; }
   if (mode !== 'edit') return;
@@ -754,7 +775,11 @@ function applyFans(){
 function walkMouse(dt){
   if (!mouse.caught){
     if (mouse.boost > 0) mouse.boost -= dt;
-    const sp = mouse.speed * (mouse.boost > 0 ? 1.5 : 1);
+    // sway: his pace breathes sinusoidally on later acts — deterministic (keyed
+    // to runT), so runs replay identically, but timing him is no longer a
+    // constant-speed read.
+    const sw = lv.mouse.sway ? (1 + lv.mouse.sway * Math.sin(runT * 1.9)) : 1;
+    const sp = mouse.speed * (mouse.boost > 0 ? 1.5 : 1) * sw;
     mouse.x += mouse.dir * sp * dt;
     if (mouse.x <= lv.mouse.x1){ mouse.x = lv.mouse.x1; mouse.dir = 1; }
     if (mouse.x >= lv.mouse.x2){ mouse.x = lv.mouse.x2; mouse.dir = -1; }
@@ -1209,6 +1234,7 @@ document.getElementById('btn-reset').onclick = () => { clearVeils(); loadLevel(l
 document.getElementById('btn-levels').onclick = () => { clearVeils(); showActs(); };
 document.getElementById('btn-sound').onclick = e => {
   muted = !muted; e.target.textContent = muted ? '✕' : '♪';
+  if (MUSIC){ if (muted) MUSIC.pause(); else MUSIC.play().catch(()=>{}); }
   e.target.style.opacity = muted ? .4 : 1;
 };
 
