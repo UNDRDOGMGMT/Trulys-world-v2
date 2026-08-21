@@ -26,6 +26,8 @@ export const useTravel = () => {
 // This is the *complete* set of hoods with a pulled {key}-wide.mp4 — an id that
 // isn't here has no clip, so travelTo skips straight to the city rather than
 // staging a 7.2s black screen waiting for a 404 to fire onEnded.
+const CLIP_V2 = new Set(["malibu", "ven", "lc", "sm", "bh", "weho"]);
+
 export const ASSET_KEY: Record<string, string> = {
   dtla: "dtla",
   silverlake: "silverlake",
@@ -69,7 +71,10 @@ export const TravelProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     targetRef.current = `/location/${id}`;
     doneRef.current = false;
     const name = locations.find((l) => l.id === id)?.name ?? id;
-    setClip({ src: `/world/anim/${key}-wide.mp4`, poster: `/world/anim/${key}-wide-poster.jpg`, name });
+    // Cities whose travel clip was regenerated in the map-bright pass ship as
+    // {key}-wide-2 — versioned filenames so caches can't serve the old art.
+    const v = CLIP_V2.has(key) ? "-wide-2" : "-wide";
+    setClip({ src: `/world/anim/${key}${v}.mp4`, poster: `/world/anim/${key}${v}-poster.jpg`, name });
     fbRef.current = setTimeout(finish, 7200);
   }, [navigate, finish]);
 

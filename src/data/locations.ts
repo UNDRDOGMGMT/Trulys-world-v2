@@ -161,15 +161,15 @@ export const locations: LocationData[] = [
     headline: 'PRESS & EPK.',
     body: "Bio, photos, and links for press and partners.",
     cta: { label: 'FOLLOW ON INSTAGRAM →', href: 'https://www.instagram.com/trulyoung' },
-    backgroundImage: '/world/maps/bh-aerial.jpg',
+    backgroundImage: '/world/maps/bh-aerial-3.jpg',
     environment: {
       start: 'aerial',
       views: [
-        { id: 'aerial', label: 'The Flats', src: '/world/maps/bh-aerial.jpg', srcPortrait: '/world/maps/bh-aerial-v9.jpg', video: '/world/anim/bh-aerial-cine.mp4', hotspots: [
+        { id: 'aerial', label: 'The Flats', src: '/world/maps/bh-aerial-3.jpg', srcPortrait: '/world/maps/bh-aerial-v9b.jpg', video: '/world/anim/bh-aerial-cine-2.mp4', hotspots: [
           { x: 26, y: 62, to: 'rodeo', label: 'Rodeo Drive' },
           { x: 76, y: 52, to: 'detail', label: 'The Gardens' },
         ] },
-        { id: 'rodeo', label: 'Rodeo Drive', src: '/world/maps/bh-rodeo.jpg', srcPortrait: '/world/maps/bh-rodeo-v9.jpg' },
+        { id: 'rodeo', label: 'Rodeo Drive', src: '/world/maps/bh-rodeo-3.jpg', srcPortrait: '/world/maps/bh-rodeo-v9b.jpg' },
         { id: 'detail', label: 'The Gardens', src: '/world/maps/bh-c1.jpg', srcPortrait: '/world/maps/bh-c1-v9.jpg' },
       ],
     },
@@ -230,11 +230,11 @@ export const locations: LocationData[] = [
     headline: 'LIVING ROOM SESSIONS',
     body: "Live sessions on YouTube.",
     cta: { label: 'WATCH ON YOUTUBE', href: 'https://www.youtube.com/watch?v=E4UoxDHn5-o' },
-    backgroundImage: '/world/maps/sm-aerial.jpg',
+    backgroundImage: '/world/maps/sm-aerial-3.jpg',
     environment: {
       start: 'aerial',
       views: [
-        { id: 'aerial', label: 'The Coastline', src: '/world/maps/sm-aerial.jpg', srcPortrait: '/world/maps/sm-aerial-v9.jpg', video: '/world/anim/sm-aerial-cine.mp4', hotspots: [
+        { id: 'aerial', label: 'The Coastline', src: '/world/maps/sm-aerial-3.jpg', srcPortrait: '/world/maps/sm-aerial-v9b.jpg', video: '/world/anim/sm-aerial-cine-2.mp4', hotspots: [
           { x: 42, y: 53, to: 'wheel', label: 'The Ferris Wheel' },
           { x: 26, y: 63, to: 'pier', label: 'The Pier' },
           { x: 66, y: 38, to: 'waterline', label: 'The Waterline' },
@@ -369,18 +369,18 @@ export const locations: LocationData[] = [
     extras: [
       { label: 'Tap any photo to save it.' },
     ],
-    backgroundImage: '/world/maps/malibu-cliffs.jpg',
+    backgroundImage: '/world/maps/malibu-cliffs-3.jpg',
     environment: {
       start: 'cliffs',
       views: [
-        { id: 'cliffs', label: 'The Cliffs', src: '/world/maps/malibu-cliffs.jpg', srcPortrait: '/world/maps/malibu-cliffs-v9.jpg', video: '/world/anim/malibu-cliffs-cine.mp4', hotspots: [
+        { id: 'cliffs', label: 'The Cliffs', src: '/world/maps/malibu-cliffs-3.jpg', srcPortrait: '/world/maps/malibu-cliffs-v9b.jpg', video: '/world/anim/malibu-cliffs-cine-2.mp4', hotspots: [
           { x: 46, y: 70, to: 'pch', label: 'PCH' },
           { x: 16, y: 46, to: 'pier', label: 'The Pier' },
           { x: 60, y: 44, to: 'detail', label: 'The Horizon' },
         ] },
-        { id: 'pch', label: 'PCH', src: '/world/maps/malibu-pch.jpg', srcPortrait: '/world/maps/malibu-pch-v9.jpg' },
+        { id: 'pch', label: 'PCH', src: '/world/maps/malibu-pch-3.jpg', srcPortrait: '/world/maps/malibu-pch-v9b.jpg' },
         { id: 'pier', label: 'The Pier', src: '/world/maps/malibu-pier-2.jpg', srcPortrait: '/world/maps/malibu-pier-2-v9.jpg' },
-        { id: 'detail', label: 'The Horizon', src: '/world/maps/malibu-c1.jpg', srcPortrait: '/world/maps/malibu-c1-v9.jpg' },
+        { id: 'detail', label: 'The Horizon', src: '/world/maps/malibu-c1-3.jpg', srcPortrait: '/world/maps/malibu-c1-v9b.jpg' },
       ],
     },
   },
