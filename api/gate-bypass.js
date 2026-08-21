@@ -8,9 +8,15 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, error: 'method not allowed' });
   }
 
-  const expected = String(process.env.GATE_BYPASS_CODE || '').trim();
-  if (!expected) {
-    // Not configured on this deployment — staff code won't work until the env is set.
+  // Two independently-rotatable codes: the staff code (GATE_BYPASS_CODE) and a
+  // shareable demo code (GATE_DEMO_CODE) for label/press walkthroughs. Either
+  // env may also hold a comma-separated list.
+  const expected = [process.env.GATE_BYPASS_CODE, process.env.GATE_DEMO_CODE]
+    .flatMap((v) => String(v || '').split(','))
+    .map((v) => v.trim().toUpperCase())
+    .filter(Boolean);
+  if (!expected.length) {
+    // Not configured on this deployment — no code will work until the env is set.
     return res.status(503).json({ ok: false, error: 'bypass not configured — set GATE_BYPASS_CODE on Vercel' });
   }
 
@@ -19,7 +25,7 @@ export default async function handler(req, res) {
     try { body = JSON.parse(body); } catch { body = {}; }
   }
   const code = String(body?.code ?? '').trim();
-  if (!code || code.toUpperCase() !== expected.toUpperCase()) {
+  if (!code || !expected.includes(code.toUpperCase())) {
     return res.status(401).json({ ok: false, error: 'invalid code' });
   }
 
